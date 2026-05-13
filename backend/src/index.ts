@@ -1,22 +1,55 @@
 /**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.jsonc`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
+ * Cloudflare Workers - Friends Location App Backend
+ * Hono.js Framework with D1 Database
  */
 
-import {Hono} from "hono"
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import auth from './routes/auth.routes';
 
-const app = new Hono()
+// Environment types
+interface Env {
+  DB: D1Database;
+  JWT_SECRET: string;
+}
 
-app.get("/", (c)=>{
-	  return c.text("Backend is live!")
-})
+const app = new Hono<{ Bindings: Env }>();
 
-export default app
+// Middleware
+app.use('*', cors());
+
+// Health check
+app.get('/', (c) => {
+  return c.json({
+    message: 'Friends Location API is live!',
+    version: '1.0.0',
+  });
+});
+
+// Routes
+app.route('/auth', auth);
+
+// 404 handler
+app.notFound((c) => {
+  return c.json(
+    {
+      success: false,
+      message: 'Route not found',
+    },
+    404
+  );
+});
+
+// Error handler
+app.onError((err, c) => {
+  console.error('Application error:', err);
+  return c.json(
+    {
+      success: false,
+      message: 'Internal server error',
+    },
+    500
+  );
+});
+
+export default app;

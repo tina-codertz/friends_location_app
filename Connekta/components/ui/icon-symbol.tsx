@@ -21,6 +21,8 @@ const ICON_MAP: Record<string, string> = {
   'gear': '⚙️',
   'plus': '+',
   'xmark': '✕',
+  'fingerprint': '🫆',
+  'fingerprint.fill': '🫆',
 };
 
 export const IconSymbol: React.FC<IconSymbolProps> = ({

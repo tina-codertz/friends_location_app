@@ -1,8 +1,15 @@
 CREATE TABLE users (
-  id TEXT PRIMARY KEY,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
   username TEXT UNIQUE NOT NULL,
-  email TEXT,
+  device_id TEXT NOT NULL,
+  verified INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
-  device_id TEXT,
-  created_at TEXT
+CREATE TABLE otp_codes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL,
+  code TEXT NOT NULL,
+  expires_at DATETIME NOT NULL
 );
