@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import FloatingWords from '@/components/background/FloatingWords';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -183,20 +184,31 @@ export default function LandingPage() {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const advance = useCallback(() => {
-    if (slide >= SLIDES.length - 1) return;
+  /** Animate transition to any slide (forward or backward) */
+  const goToSlide = useCallback((targetSlide: number) => {
+    if (targetSlide === slide || targetSlide < 0 || targetSlide >= SLIDES.length) return;
+
+    const direction = targetSlide > slide ? -1 : 1; // slide out left vs right
+
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: -30, duration: 180, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: direction * 30, duration: 180, useNativeDriver: true }),
     ]).start(() => {
-      setSlide((s) => s + 1);
-      slideAnim.setValue(30);
+      setSlide(targetSlide);
+      slideAnim.setValue(-direction * 30);
       Animated.parallel([
         Animated.timing(fadeAnim, { toValue: 1, duration: 260, useNativeDriver: true }),
         Animated.timing(slideAnim, { toValue: 0, duration: 260, useNativeDriver: true }),
       ]).start();
     });
   }, [slide, fadeAnim, slideAnim]);
+
+  /** Tap-anywhere advances forward only when not on last slide */
+  const advance = useCallback(() => {
+    if (slide < SLIDES.length - 1) {
+      goToSlide(slide + 1);
+    }
+  }, [slide, goToSlide]);
 
   const handleJoin = () => {
     router.push('/auth/AuthScreen');
@@ -219,6 +231,9 @@ export default function LandingPage() {
         {/* ── Dark gradient background ── */}
         <View style={styles.bgBase} />
 
+        {/* ── Floating words background ── */}
+        <FloatingWords />
+
         {/* ── Subtle radial glow behind phone ── */}
         <View style={styles.glow} />
 
@@ -235,16 +250,22 @@ export default function LandingPage() {
         {/* ── Bottom content ── */}
         <View style={styles.bottomContent}>
 
-          {/* Pill tabs */}
+          {/* Pill indicators (tappable) */}
           <View style={styles.pillRow}>
             {SLIDES.map((s) => (
-              <View
+              <TouchableOpacity
                 key={s.id}
-                style={[
-                  styles.pill,
-                  slide === s.id && styles.pillActive,
-                ]}
-              />
+                onPress={() => goToSlide(s.id)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+              >
+                <View
+                  style={[
+                    styles.pill,
+                    slide === s.id && styles.pillActive,
+                  ]}
+                />
+              </TouchableOpacity>
             ))}
           </View>
 
@@ -254,26 +275,47 @@ export default function LandingPage() {
             <Text style={styles.subheading}>{headings[slide].sub}</Text>
           </Animated.View>
 
-          {/* Tab labels */}
+          {/* Tab labels — TAPPABLE for back-and-forth navigation */}
           <View style={styles.tabLabels}>
             {['LIVE MAP', 'FRIENDS LIST', 'DEVICE AUTH'].map((label, i) => (
-              <Text
+              <TouchableOpacity
                 key={i}
-                style={[styles.tabLabel, slide === i && styles.tabLabelActive]}
+                onPress={() => goToSlide(i)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
               >
-                {label}
-              </Text>
+                <Text
+                  style={[styles.tabLabel, slide === i && styles.tabLabelActive]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
 
-          {/* CTA */}
-          {isLast ? (
-            <TouchableOpacity style={styles.joinBtn} onPress={handleJoin} activeOpacity={0.85}>
-              <Text style={styles.joinBtnText}>Get Started</Text>
-            </TouchableOpacity>
-          ) : (
+          {/* CTA — always visible, with contextual text */}
+          <TouchableOpacity
+            style={[
+              styles.joinBtn,
+              !isLast && styles.joinBtnSecondary,
+            ]}
+            onPress={isLast ? handleJoin : advance}
+            activeOpacity={0.85}
+          >
+            <Text
+              style={[
+                styles.joinBtnText,
+                !isLast && styles.joinBtnTextSecondary,
+              ]}
+            >
+              {isLast ? 'Get Started' : 'Next'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Tap-anywhere hint on non-last slides */}
+          {!isLast && (
             <View style={styles.tapHint}>
-              <Text style={styles.tapHintText}>Tap anywhere to continue</Text>
+              <Text style={styles.tapHintText}>or tap anywhere to continue</Text>
             </View>
           )}
         </View>
@@ -541,19 +583,19 @@ const styles = StyleSheet.create({
   tabLabels: {
     flexDirection: 'row',
     gap: 20,
-    marginBottom: 28,
+    marginBottom: 22,
   },
   tabLabel: {
     color: C.whiteLow,
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.8,
+    paddingBottom: 3,
   },
   tabLabelActive: {
     color: C.whiteHigh,
     borderBottomWidth: 1.5,
     borderBottomColor: C.accent,
-    paddingBottom: 3,
   },
   joinBtn: {
     backgroundColor: C.accent,
@@ -561,11 +603,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
+  joinBtnSecondary: {
+    backgroundColor: 'rgba(45,212,191,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(45,212,191,0.35)',
+  },
   joinBtnText: {
     color: '#07111f',
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
+  },
+  joinBtnTextSecondary: {
+    color: C.accent,
   },
   tapHint: { alignItems: 'center', paddingVertical: 8 },
   tapHintText: { color: C.whiteLow, fontSize: 12, letterSpacing: 0.5 },
