@@ -2,8 +2,8 @@
  * GlassCard — Reusable glassmorphism card component
  *
  * Provides a frosted-glass surface with translucent background,
- * subtle border glow, and optional shadow. Designed for the
- * deep-navy (#07111f) theme used across the app.
+ * subtle border glow, and optional shadow. Automatically adapts
+ * to the device's light/dark mode via useAppTheme().
  */
 
 import React from 'react';
@@ -12,22 +12,8 @@ import {
   StyleSheet,
   ViewStyle,
   Animated,
-  Dimensions,
 } from 'react-native';
-
-const { width: SW } = Dimensions.get('window');
-
-// ─── Theme tokens ────────────────────────────────────────────────────────────
-const GLASS = {
-  bgLight: 'rgba(255,255,255,0.06)',
-  bgMedium: 'rgba(255,255,255,0.10)',
-  bgHeavy: 'rgba(255,255,255,0.14)',
-  borderLight: 'rgba(255,255,255,0.10)',
-  borderMedium: 'rgba(255,255,255,0.18)',
-  borderHeavy: 'rgba(255,255,255,0.25)',
-  shadowColor: 'rgba(0,0,0,0.40)',
-  tealGlow: 'rgba(45,212,191,0.12)',
-};
+import { useAppTheme } from '@/context/ThemeContext';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type GlassIntensity = 'light' | 'medium' | 'heavy';
@@ -59,6 +45,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   animated = false,
   animationDelay = 0,
 }) => {
+  const { colors } = useAppTheme();
   const opacity = React.useRef(new Animated.Value(animated ? 0 : 1)).current;
   const translateY = React.useRef(new Animated.Value(animated ? 18 : 0)).current;
 
@@ -81,36 +68,44 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     return () => clearTimeout(timer);
   }, [animated, animationDelay]);
 
-  // Pick intensity-based colours
+  // Pick intensity-based colours from theme
   const bgColor =
     intensity === 'light'
-      ? GLASS.bgLight
+      ? colors.glassBgLight
       : intensity === 'heavy'
-        ? GLASS.bgHeavy
-        : GLASS.bgMedium;
+        ? colors.glassBgHeavy
+        : colors.glassBgMedium;
 
   const borderColor = glowAccent
-    ? GLASS.tealGlow
+    ? colors.tealGlow
     : intensity === 'light'
-      ? GLASS.borderLight
+      ? colors.glassBorderLight
       : intensity === 'heavy'
-        ? GLASS.borderHeavy
-        : GLASS.borderMedium;
+        ? colors.glassBorderHeavy
+        : colors.glassBorderMedium;
 
   const cardStyle: ViewStyle = {
     backgroundColor: bgColor,
     borderRadius,
     borderWidth: 1,
     borderColor,
-    // Shadow
-    shadowColor: GLASS.shadowColor,
+    shadowColor: colors.glassShadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
     elevation: 8,
-    // Padding
     padding: 20,
     overflow: 'hidden',
+  };
+
+  const highlightStyle = {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.glassHighlight,
+    borderRadius,
   };
 
   if (animated) {
@@ -122,8 +117,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
           style,
         ]}
       >
-        {/* Inner highlight line */}
-        <View style={[styles.innerHighlight, { borderRadius }]} />
+        <View style={highlightStyle} />
         {children}
       </Animated.View>
     );
@@ -131,22 +125,10 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
   return (
     <View style={[cardStyle, style]}>
-      <View style={[styles.innerHighlight, { borderRadius }]} />
+      <View style={highlightStyle} />
       {children}
     </View>
   );
 };
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  innerHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-});
 
 export default GlassCard;

@@ -1,13 +1,16 @@
 import React, { useRef, useEffect } from 'react';
 import { View, StyleSheet, Dimensions, Animated } from 'react-native';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const { height: SH } = Dimensions.get('window');
 
 /**
  * AnimatedBackground - Simple floating animated background elements
- * Used in landing page and other screens for visual depth
+ * Used in landing page and other screens for visual depth.
+ * Adapts glow colour to device theme via useAppTheme().
  */
 export default function AnimatedBackground() {
+  const { colors } = useAppTheme();
   const animations = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -62,8 +65,8 @@ export default function AnimatedBackground() {
 
   return (
     <View style={styles.container} pointerEvents="none">
-      {/* Background glow effects */}
-      <View style={styles.glow} />
+      {/* Background glow effect — themed */}
+      <View style={[styles.glow, { backgroundColor: colors.tealGlow }]} />
     </View>
   );
 }
@@ -78,7 +81,6 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: 'rgba(45,212,191,0.08)',
     top: '10%',
     left: '50%',
     marginLeft: -150,

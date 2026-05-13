@@ -11,26 +11,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import FloatingWords from '@/components/background/FloatingWords';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const { width: SW, height: SH } = Dimensions.get('window');
-
-// ─── Colour tokens (match your screenshot palette) ───────────────────────────
-const C = {
-  bg: '#07111f',           // deep navy
-  bgCard: '#0d1f35',       // slightly lighter card
-  bgCardBorder: '#1a3152',
-  accent: '#2dd4bf',       // teal / cyan
-  accentPurple: '#a78bfa', // purple dots
-  accentOrange: '#fb923c', // orange dot
-  white: '#ffffff',
-  whiteHigh: 'rgba(255,255,255,0.92)',
-  whiteMid: 'rgba(255,255,255,0.55)',
-  whiteLow: 'rgba(255,255,255,0.25)',
-  liveGreen: '#22c55e',
-  pillBg: 'rgba(255,255,255,0.06)',
-  pillBorder: 'rgba(255,255,255,0.12)',
-  tealGlow: 'rgba(45,212,191,0.15)',
-};
 
 // ─── Slide content definitions ────────────────────────────────────────────────
 const SLIDES = [
@@ -43,6 +26,7 @@ const SLIDES = [
 
 /** Tiny pulsing "LIVE" badge */
 function LiveBadge() {
+  const { colors, accent } = useAppTheme();
   const pulse = useRef(new Animated.Value(1)).current;
   React.useEffect(() => {
     Animated.loop(
@@ -53,29 +37,29 @@ function LiveBadge() {
     ).start();
   }, []);
   return (
-    <View style={styles.liveBadge}>
-      <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
-      <Text style={styles.liveText}>LIVE</Text>
+    <View style={[styles.liveBadge, { backgroundColor: colors.liveGreenBg }]}>
+      <Animated.View style={[styles.liveDot, { opacity: pulse, backgroundColor: accent.green }]} />
+      <Text style={[styles.liveText, { color: accent.green }]}>LIVE</Text>
     </View>
   );
 }
 
 /** Fake map with coloured avatar pins */
 function MockMap() {
+  const { colors, accent } = useAppTheme();
   const pins = [
-    { label: 'Alex', color: C.accentPurple, top: SH * 0.28, left: SW * 0.15 },
-    { label: 'You',  color: C.accent,       top: SH * 0.35, left: SW * 0.25 },
-    { label: 'Sam',  color: C.accentOrange, top: SH * 0.45, left: SW * 0.30 },
+    { label: 'Alex', color: accent.purple, top: SH * 0.28, left: SW * 0.15 },
+    { label: 'You',  color: accent.teal,   top: SH * 0.35, left: SW * 0.25 },
+    { label: 'Sam',  color: accent.orange, top: SH * 0.45, left: SW * 0.30 },
   ];
   return (
-    <View style={styles.mapContainer}>
-      {/* pins */}
+    <View style={[styles.mapContainer, { backgroundColor: colors.mapBg }]}>
       {pins.map((p) => (
         <View key={p.label} style={[styles.pinWrap, { top: p.top, left: p.left }]}>
           <View style={[styles.pinBubble, { backgroundColor: p.color }]}>
             <Text style={styles.pinLabel}>{p.label}</Text>
           </View>
-          <View style={[styles.pinDot, { backgroundColor: p.color === C.accent ? '#ffffff' : p.color }]} />
+          <View style={[styles.pinDot, { backgroundColor: p.color === accent.teal ? '#ffffff' : p.color }]} />
         </View>
       ))}
     </View>
@@ -84,17 +68,18 @@ function MockMap() {
 
 /** Slide 0 — Live Map phone mockup */
 function Slide0() {
+  const { colors, accent } = useAppTheme();
   return (
-    <View style={styles.phoneShell}>
+    <View style={[styles.phoneShell, { backgroundColor: colors.bgCard, borderColor: colors.bgCardBorder }]}>
       <View style={styles.phoneStatusBar}>
-        <Text style={styles.phoneTime}>9:41</Text>
+        <Text style={[styles.phoneTime, { color: colors.textPrimary }]}>9:41</Text>
         <LiveBadge />
       </View>
       <MockMap />
-      <View style={styles.phoneTabBar}>
-        {['map-pin', 'users', 'bell', 'shield'].map((icon, i) => (
+      <View style={[styles.phoneTabBar, { backgroundColor: colors.phoneTabBg, borderTopColor: colors.divider }]}>
+        {['map-pin', 'users', 'bell', 'shield'].map((_icon, i) => (
           <View key={i} style={styles.tabItem}>
-            <View style={[styles.tabIcon, i === 0 && styles.tabIconActive]} />
+            <View style={[styles.tabIcon, { backgroundColor: colors.pill }, i === 0 && { backgroundColor: accent.teal }]} />
           </View>
         ))}
       </View>
@@ -104,35 +89,36 @@ function Slide0() {
 
 /** Slide 1 — Friends list mockup */
 function Slide1() {
+  const { colors, accent } = useAppTheme();
   const friends = [
-    { initials: 'A', name: 'Alex K.',    sub: 'Sharing loc…', color: C.accentPurple, sharing: true },
-    { initials: 'S', name: 'Sam T.',     sub: 'Sharing loc…', color: '#22c55e',      sharing: true },
-    { initials: 'J', name: 'Jordan R.',  sub: 'Location off', color: C.accentOrange, sharing: false },
+    { initials: 'A', name: 'Alex K.',    sub: 'Sharing loc…', color: accent.purple, sharing: true },
+    { initials: 'S', name: 'Sam T.',     sub: 'Sharing loc…', color: accent.green,  sharing: true },
+    { initials: 'J', name: 'Jordan R.',  sub: 'Location off', color: accent.orange, sharing: false },
   ];
   return (
-    <View style={styles.phoneShell}>
+    <View style={[styles.phoneShell, { backgroundColor: colors.bgCard, borderColor: colors.bgCardBorder }]}>
       <View style={styles.friendsHeader}>
-        <Text style={styles.friendsLabel}>FRIENDS</Text>
-        <Text style={styles.friendsCount}>3 Active</Text>
+        <Text style={[styles.friendsLabel, { color: colors.textTertiary }]}>FRIENDS</Text>
+        <Text style={[styles.friendsCount, { color: colors.textPrimary }]}>3 Active</Text>
       </View>
       <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 8 }}>
         {friends.map((f, i) => (
-          <View key={i} style={styles.friendRow}>
+          <View key={i} style={[styles.friendRow, { borderBottomColor: colors.divider }]}>
             <View style={[styles.friendAvatar, { backgroundColor: f.color }]}>
               <Text style={styles.friendInitial}>{f.initials}</Text>
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.friendName}>{f.name}</Text>
-              <Text style={[styles.friendSub, { color: f.sharing ? C.accent : C.whiteLow }]}>{f.sub}</Text>
+              <Text style={[styles.friendName, { color: colors.textPrimary }]}>{f.name}</Text>
+              <Text style={[styles.friendSub, { color: f.sharing ? accent.teal : colors.textTertiary }]}>{f.sub}</Text>
             </View>
-            <View style={[styles.sharingDot, { backgroundColor: f.sharing ? C.accent : 'transparent', borderColor: f.sharing ? C.accent : C.whiteLow }]} />
+            <View style={[styles.sharingDot, { backgroundColor: f.sharing ? accent.teal : 'transparent', borderColor: f.sharing ? accent.teal : colors.textTertiary }]} />
           </View>
         ))}
       </View>
-      <View style={styles.phoneTabBar}>
+      <View style={[styles.phoneTabBar, { backgroundColor: colors.phoneTabBg, borderTopColor: colors.divider }]}>
         {[0,1,2,3].map((i) => (
           <View key={i} style={styles.tabItem}>
-            <View style={[styles.tabIcon, i === 1 && styles.tabIconActive]} />
+            <View style={[styles.tabIcon, { backgroundColor: colors.pill }, i === 1 && { backgroundColor: accent.teal }]} />
           </View>
         ))}
       </View>
@@ -142,33 +128,34 @@ function Slide1() {
 
 /** Slide 2 — Device auth mockup */
 function Slide2() {
+  const { colors, accent } = useAppTheme();
   return (
-    <View style={styles.phoneShell}>
+    <View style={[styles.phoneShell, { backgroundColor: colors.bgCard, borderColor: colors.bgCardBorder }]}>
       <View style={styles.authIconWrap}>
-        <View style={styles.authIcon}>
-          <View style={styles.authIconInner} />
+        <View style={[styles.authIcon, { backgroundColor: colors.tealGlow, borderColor: accent.teal }]}>
+          <View style={[styles.authIconInner, { backgroundColor: accent.teal }]} />
         </View>
       </View>
       <View style={{ paddingHorizontal: 20, flex: 1 }}>
-        <Text style={styles.authTitle}>Device Auth</Text>
-        <Text style={styles.authSub}>No password needed</Text>
+        <Text style={[styles.authTitle, { color: colors.textPrimary }]}>Device Auth</Text>
+        <Text style={[styles.authSub, { color: colors.textSecondary }]}>No password needed</Text>
         <View style={styles.inputField}>
-          <Text style={styles.inputLabel}>Username</Text>
-          <View style={styles.inputBox}>
-            <Text style={styles.inputValue}>@jackson</Text>
-            <View style={styles.cursor} />
+          <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Username</Text>
+          <View style={[styles.inputBox, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+            <Text style={[styles.inputValue, { color: colors.textPrimary }]}>@jackson</Text>
+            <View style={[styles.cursor, { backgroundColor: accent.teal }]} />
           </View>
         </View>
-        <View style={styles.biometricRow}>
+        <View style={[styles.biometricRow, { backgroundColor: colors.tealGlass, borderColor: colors.tealBorder }]}>
           <View style={styles.biometricIcon}>
-            <View style={styles.biometricRing} />
-            <View style={styles.biometricCenter} />
+            <View style={[styles.biometricRing, { borderColor: accent.teal }]} />
+            <View style={[styles.biometricCenter, { backgroundColor: accent.teal }]} />
           </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.bioTitle}>Biometric Unlock</Text>
-            <Text style={styles.bioSub}>Face ID · Touch ID</Text>
+            <Text style={[styles.bioTitle, { color: colors.textPrimary }]}>Biometric Unlock</Text>
+            <Text style={[styles.bioSub, { color: colors.textSecondary }]}>Face ID · Touch ID</Text>
           </View>
-          <View style={styles.toggle}>
+          <View style={[styles.toggle, { backgroundColor: accent.teal }]}>
             <View style={styles.toggleThumb} />
           </View>
         </View>
@@ -180,6 +167,7 @@ function Slide2() {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const router = useRouter();
+  const { colors, accent } = useAppTheme();
   const [slide, setSlide] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -188,7 +176,7 @@ export default function LandingPage() {
   const goToSlide = useCallback((targetSlide: number) => {
     if (targetSlide === slide || targetSlide < 0 || targetSlide >= SLIDES.length) return;
 
-    const direction = targetSlide > slide ? -1 : 1; // slide out left vs right
+    const direction = targetSlide > slide ? -1 : 1;
 
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
@@ -226,16 +214,16 @@ export default function LandingPage() {
 
   return (
     <TouchableWithoutFeedback onPress={!isLast ? advance : undefined}>
-      <View style={styles.root}>
+      <View style={[styles.root, { backgroundColor: colors.bg }]}>
 
-        {/* ── Dark gradient background ── */}
-        <View style={styles.bgBase} />
+        {/* ── Background ── */}
+        <View style={[styles.bgBase, { backgroundColor: colors.bg }]} />
 
-        {/* ── Floating words background ── */}
+        {/* ── Floating words ── */}
         <FloatingWords />
 
-        {/* ── Subtle radial glow behind phone ── */}
-        <View style={styles.glow} />
+        {/* ── Subtle radial glow ── */}
+        <View style={[styles.glow, { backgroundColor: colors.tealGlow }]} />
 
         {/* ── Phone mockup (animated) ── */}
         <Animated.View
@@ -262,7 +250,8 @@ export default function LandingPage() {
                 <View
                   style={[
                     styles.pill,
-                    slide === s.id && styles.pillActive,
+                    { backgroundColor: colors.pill },
+                    slide === s.id && [styles.pillActive, { backgroundColor: accent.teal }],
                   ]}
                 />
               </TouchableOpacity>
@@ -271,8 +260,8 @@ export default function LandingPage() {
 
           {/* Heading */}
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-            <Text style={styles.heading}>{headings[slide].title}</Text>
-            <Text style={styles.subheading}>{headings[slide].sub}</Text>
+            <Text style={[styles.heading, { color: colors.textPrimary }]}>{headings[slide].title}</Text>
+            <Text style={[styles.subheading, { color: colors.textSecondary }]}>{headings[slide].sub}</Text>
           </Animated.View>
 
           {/* Tab labels — TAPPABLE for back-and-forth navigation */}
@@ -285,7 +274,11 @@ export default function LandingPage() {
                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
               >
                 <Text
-                  style={[styles.tabLabel, slide === i && styles.tabLabelActive]}
+                  style={[
+                    styles.tabLabel,
+                    { color: colors.textTertiary },
+                    slide === i && [styles.tabLabelActive, { color: colors.textPrimary, borderBottomColor: accent.teal }],
+                  ]}
                 >
                   {label}
                 </Text>
@@ -293,11 +286,16 @@ export default function LandingPage() {
             ))}
           </View>
 
-          {/* CTA — always visible, with contextual text */}
+          {/* CTA — always visible */}
           <TouchableOpacity
             style={[
               styles.joinBtn,
-              !isLast && styles.joinBtnSecondary,
+              { backgroundColor: accent.teal },
+              !isLast && {
+                backgroundColor: colors.tealGlass,
+                borderWidth: 1,
+                borderColor: colors.tealBorder,
+              },
             ]}
             onPress={isLast ? handleJoin : advance}
             activeOpacity={0.85}
@@ -305,17 +303,18 @@ export default function LandingPage() {
             <Text
               style={[
                 styles.joinBtnText,
-                !isLast && styles.joinBtnTextSecondary,
+                { color: colors.bg },
+                !isLast && { color: accent.teal },
               ]}
             >
               {isLast ? 'Get Started' : 'Next'}
             </Text>
           </TouchableOpacity>
 
-          {/* Tap-anywhere hint on non-last slides */}
+          {/* Tap hint */}
           {!isLast && (
             <View style={styles.tapHint}>
-              <Text style={styles.tapHintText}>or tap anywhere to continue</Text>
+              <Text style={[styles.tapHintText, { color: colors.textTertiary }]}>or tap anywhere to continue</Text>
             </View>
           )}
         </View>
@@ -330,8 +329,8 @@ const PHONE_W = SW * 0.62;
 const PHONE_H = PHONE_W * 1.9;
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
-  bgBase: { ...StyleSheet.absoluteFillObject, backgroundColor: C.bg },
+  root: { flex: 1 },
+  bgBase: { ...StyleSheet.absoluteFillObject },
   glow: {
     position: 'absolute',
     top: SH * 0.1,
@@ -339,7 +338,6 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: 140,
-    backgroundColor: 'rgba(45,212,191,0.07)',
   },
 
   // ── Phone shell ────────────────────────────────────────────────────────────
@@ -357,9 +355,7 @@ const styles = StyleSheet.create({
     width: PHONE_W,
     height: PHONE_H,
     borderRadius: 36,
-    backgroundColor: C.bgCard,
     borderWidth: 1.5,
-    borderColor: C.bgCardBorder,
     overflow: 'hidden',
   },
 
@@ -372,37 +368,25 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 3,
   },
-  phoneTime: { color: C.whiteHigh, fontSize: 13, fontWeight: '600' },
+  phoneTime: { fontSize: 13, fontWeight: '600' },
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(34,197,94,0.15)',
     borderRadius: 10,
     paddingHorizontal: 7,
     paddingVertical: 3,
     gap: 4,
   },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.liveGreen },
-  liveText: { color: C.liveGreen, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  liveDot: { width: 6, height: 6, borderRadius: 3 },
+  liveText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
 
   // ── Mock map ────────────────────────────────────────────────────────────────
   mapContainer: {
     flex: 1,
-    backgroundColor: '#0a1929',
     margin: 12,
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative' as const,
-  },
-  gridLine: { position: 'absolute' as const, backgroundColor: 'rgba(255,255,255,0.04)' },
-  road: {
-    position: 'absolute' as const,
-    top: SH * 0.15,
-    left: 0,
-    right: 0,
-    height: 6,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    transform: [{ rotate: '-12deg' }, { scaleX: 1.5 }],
   },
   pinWrap: { position: 'absolute' as const, alignItems: 'center' },
   pinBubble: {
@@ -418,31 +402,26 @@ const styles = StyleSheet.create({
   phoneTabBar: {
     flexDirection: 'row',
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255,255,255,0.08)',
     paddingVertical: 12,
     paddingHorizontal: 20,
     justifyContent: 'space-around',
-    backgroundColor: 'rgba(10,20,40,0.6)',
   },
   tabItem: { alignItems: 'center', justifyContent: 'center' },
   tabIcon: {
     width: 22,
     height: 22,
     borderRadius: 5,
-    backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  tabIconActive: { backgroundColor: C.accent },
 
   // ── Friends list ────────────────────────────────────────────────────────────
   friendsHeader: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
-  friendsLabel: { color: C.whiteLow, fontSize: 10, letterSpacing: 1.2, fontWeight: '600' },
-  friendsCount: { color: C.whiteHigh, fontSize: 20, fontWeight: '700', marginTop: 2 },
+  friendsLabel: { fontSize: 10, letterSpacing: 1.2, fontWeight: '600' },
+  friendsCount: { fontSize: 20, fontWeight: '700', marginTop: 2 },
   friendRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   friendAvatar: {
     width: 36,
@@ -452,7 +431,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   friendInitial: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  friendName: { color: C.whiteHigh, fontSize: 13, fontWeight: '600' },
+  friendName: { fontSize: 13, fontWeight: '600' },
   friendSub: { fontSize: 11, marginTop: 1 },
   sharingDot: {
     width: 9,
@@ -468,9 +447,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(45,212,191,0.15)',
     borderWidth: 1.5,
-    borderColor: C.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -478,33 +455,28 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: C.accent,
     opacity: 0.6,
   },
-  authTitle: { color: C.whiteHigh, fontSize: 18, fontWeight: '700' },
-  authSub: { color: C.whiteMid, fontSize: 12, marginTop: 3, marginBottom: 16 },
+  authTitle: { fontSize: 18, fontWeight: '700' },
+  authSub: { fontSize: 12, marginTop: 3, marginBottom: 16 },
   inputField: { marginBottom: 16 },
-  inputLabel: { color: C.whiteLow, fontSize: 11, marginBottom: 6 },
+  inputLabel: { fontSize: 11, marginBottom: 6 },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  inputValue: { color: C.whiteHigh, fontSize: 14 },
-  cursor: { width: 1.5, height: 16, backgroundColor: C.accent, marginLeft: 2 },
+  inputValue: { fontSize: 14 },
+  cursor: { width: 1.5, height: 16, marginLeft: 2 },
   biometricRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(45,212,191,0.07)',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(45,212,191,0.2)',
   },
   biometricIcon: {
     width: 36,
@@ -518,22 +490,19 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     borderWidth: 1.5,
-    borderColor: C.accent,
   },
   biometricCenter: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: C.accent,
     opacity: 0.5,
   },
-  bioTitle: { color: C.whiteHigh, fontSize: 13, fontWeight: '600' },
-  bioSub: { color: C.whiteMid, fontSize: 11, marginTop: 2 },
+  bioTitle: { fontSize: 13, fontWeight: '600' },
+  bioSub: { fontSize: 11, marginTop: 2 },
   toggle: {
     width: 38,
     height: 22,
     borderRadius: 11,
-    backgroundColor: C.accent,
     justifyContent: 'center',
     paddingHorizontal: 2,
     alignItems: 'flex-end',
@@ -564,18 +533,15 @@ const styles = StyleSheet.create({
     width: 22,
     height: 3,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  pillActive: { width: 40, backgroundColor: C.accent },
+  pillActive: { width: 40 },
   heading: {
-    color: C.whiteHigh,
     fontSize: 28,
     fontWeight: '700',
     lineHeight: 36,
     marginBottom: 10,
   },
   subheading: {
-    color: C.whiteMid,
     fontSize: 14,
     lineHeight: 21,
     marginBottom: 20,
@@ -586,37 +552,24 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   tabLabel: {
-    color: C.whiteLow,
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.8,
     paddingBottom: 3,
   },
   tabLabelActive: {
-    color: C.whiteHigh,
     borderBottomWidth: 1.5,
-    borderBottomColor: C.accent,
   },
   joinBtn: {
-    backgroundColor: C.accent,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  joinBtnSecondary: {
-    backgroundColor: 'rgba(45,212,191,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(45,212,191,0.35)',
-  },
   joinBtnText: {
-    color: '#07111f',
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.3,
   },
-  joinBtnTextSecondary: {
-    color: C.accent,
-  },
   tapHint: { alignItems: 'center', paddingVertical: 8 },
-  tapHintText: { color: C.whiteLow, fontSize: 12, letterSpacing: 0.5 },
+  tapHintText: { fontSize: 12, letterSpacing: 0.5 },
 });

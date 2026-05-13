@@ -2,8 +2,8 @@
  * GlassButton — Reusable glassmorphism button component
  *
  * Frosted-glass button with scale animation on press,
- * multiple colour variants, and size presets. Matches the
- * deep-navy (#07111f) Connekta theme.
+ * multiple colour variants, and size presets. Automatically
+ * adapts to light/dark mode via useAppTheme().
  */
 
 import React, { useRef } from 'react';
@@ -16,22 +16,7 @@ import {
   TextStyle,
   View,
 } from 'react-native';
-
-// ─── Theme tokens ────────────────────────────────────────────────────────────
-const C = {
-  accent: '#2dd4bf',
-  accentDark: '#07111f',
-  white: '#ffffff',
-  whiteHigh: 'rgba(255,255,255,0.92)',
-  whiteMid: 'rgba(255,255,255,0.55)',
-  whiteLow: 'rgba(255,255,255,0.25)',
-  glassBg: 'rgba(255,255,255,0.08)',
-  glassBorder: 'rgba(255,255,255,0.15)',
-  tealGlass: 'rgba(45,212,191,0.12)',
-  tealBorder: 'rgba(45,212,191,0.35)',
-  purpleGlass: 'rgba(167,139,250,0.12)',
-  purpleBorder: 'rgba(167,139,250,0.35)',
-};
+import { useAppTheme } from '@/context/ThemeContext';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
@@ -73,6 +58,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const { colors, accent } = useAppTheme();
   const scale = useRef(new Animated.Value(1)).current;
 
   const pressIn = () => {
@@ -93,34 +79,34 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
     }).start();
   };
 
-  // Variant-based styles
+  // Variant-based styles (from theme)
   const variantStyles: Record<ButtonVariant, ViewStyle> = {
     primary: {
-      backgroundColor: C.accent,
+      backgroundColor: accent.teal,
       borderWidth: 0,
     },
     secondary: {
-      backgroundColor: C.tealGlass,
+      backgroundColor: colors.tealGlass,
       borderWidth: 1,
-      borderColor: C.tealBorder,
+      borderColor: colors.tealBorder,
     },
     outline: {
       backgroundColor: 'transparent',
       borderWidth: 1.5,
-      borderColor: C.glassBorder,
+      borderColor: colors.glassBorderMedium,
     },
     ghost: {
-      backgroundColor: C.glassBg,
+      backgroundColor: colors.glassBgLight,
       borderWidth: 1,
-      borderColor: C.glassBorder,
+      borderColor: colors.glassBorderMedium,
     },
   };
 
   const variantTextStyles: Record<ButtonVariant, TextStyle> = {
-    primary: { color: C.accentDark, fontWeight: '800' },
-    secondary: { color: C.accent, fontWeight: '700' },
-    outline: { color: C.whiteHigh, fontWeight: '600' },
-    ghost: { color: C.whiteHigh, fontWeight: '600' },
+    primary: { color: colors.bg, fontWeight: '800' },
+    secondary: { color: accent.teal, fontWeight: '700' },
+    outline: { color: colors.textPrimary, fontWeight: '600' },
+    ghost: { color: colors.textPrimary, fontWeight: '600' },
   };
 
   // Size-based styles
@@ -160,7 +146,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
       >
         {/* Inner top highlight */}
         {variant !== 'primary' && (
-          <View style={styles.innerHighlight} />
+          <View style={[styles.innerHighlight, { backgroundColor: colors.glassHighlight }]} />
         )}
 
         <View style={styles.content}>
@@ -188,7 +174,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    // Shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
@@ -213,7 +198,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.10)',
   },
   disabled: {
     opacity: 0.45,

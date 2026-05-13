@@ -5,7 +5,7 @@
  * upward, and fade out in a continuous loop. Purely
  * decorative — pointerEvents="none".
  *
- * Based on the AnimatedBg reference design.
+ * Adapts text colour to device light/dark mode via useAppTheme().
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -15,6 +15,7 @@ import {
   Dimensions,
   StyleSheet,
 } from 'react-native';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -63,6 +64,7 @@ function createWord(text: string): FloatingWord {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function FloatingWords() {
+  const { colors } = useAppTheme();
   const words = useRef<FloatingWord[]>(
     WORDS.map((w) => createWord(w))
   ).current;
@@ -114,7 +116,7 @@ export default function FloatingWords() {
             top: word.y,
             opacity: word.opacity,
             transform: [{ translateY: word.translateY }],
-            color: '#ffffff',
+            color: colors.textPrimary,
             fontSize: word.fontSize,
             fontStyle: word.italic ? 'italic' : 'normal',
             fontWeight: '300',

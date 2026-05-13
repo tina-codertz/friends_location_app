@@ -2,8 +2,8 @@
  * GlassInput — Reusable glassmorphism text input component
  *
  * Frosted-glass input field with animated focus glow,
- * optional label, error state, and secure-text visibility toggle.
- * Designed for Connekta's deep-navy (#07111f) theme.
+ * optional label, error state, and secure-text toggle.
+ * Automatically adapts to light/dark mode via useAppTheme().
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -17,21 +17,7 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
-
-// ─── Theme tokens ────────────────────────────────────────────────────────────
-const C = {
-  accent: '#2dd4bf',
-  whiteHigh: 'rgba(255,255,255,0.92)',
-  whiteMid: 'rgba(255,255,255,0.50)',
-  whiteLow: 'rgba(255,255,255,0.25)',
-  glassBg: 'rgba(255,255,255,0.06)',
-  glassBgFocus: 'rgba(255,255,255,0.10)',
-  glassBorder: 'rgba(255,255,255,0.12)',
-  glassBorderFocus: 'rgba(45,212,191,0.45)',
-  errorBorder: 'rgba(248,113,113,0.6)',
-  errorBg: 'rgba(248,113,113,0.08)',
-  errorText: '#f87171',
-};
+import { useAppTheme } from '@/context/ThemeContext';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface GlassInputProps extends TextInputProps {
@@ -57,6 +43,7 @@ export const GlassInput: React.FC<GlassInputProps> = ({
   secureTextEntry,
   ...rest
 }) => {
+  const { colors, accent } = useAppTheme();
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(secureTextEntry ?? false);
   const borderAnim = useRef(new Animated.Value(0)).current;
@@ -70,21 +57,25 @@ export const GlassInput: React.FC<GlassInputProps> = ({
   }, [focused]);
 
   const borderColor = error
-    ? C.errorBorder
+    ? colors.errorBorder
     : borderAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [C.glassBorder, C.glassBorderFocus],
+        outputRange: [colors.inputBorder, colors.inputBorderFocus],
       });
 
   const backgroundColor = error
-    ? C.errorBg
+    ? colors.errorBg
     : focused
-      ? C.glassBgFocus
-      : C.glassBg;
+      ? colors.inputBgFocus
+      : colors.inputBg;
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, { color: colors.textTertiary }]}>
+          {label}
+        </Text>
+      )}
 
       <Animated.View
         style={[
@@ -96,7 +87,7 @@ export const GlassInput: React.FC<GlassInputProps> = ({
         ]}
       >
         {/* Inner highlight */}
-        <View style={styles.innerHighlight} />
+        <View style={[styles.innerHighlight, { backgroundColor: colors.glassHighlight }]} />
 
         {icon && <View style={styles.iconWrap}>{icon}</View>}
 
@@ -111,9 +102,9 @@ export const GlassInput: React.FC<GlassInputProps> = ({
             setFocused(false);
             rest.onBlur?.(e);
           }}
-          style={[styles.input, rest.style]}
-          placeholderTextColor={C.whiteMid}
-          selectionColor={C.accent}
+          style={[styles.input, { color: colors.textPrimary }, rest.style]}
+          placeholderTextColor={colors.inputPlaceholder}
+          selectionColor={accent.teal}
         />
 
         {showSecureToggle && (
@@ -129,7 +120,11 @@ export const GlassInput: React.FC<GlassInputProps> = ({
         )}
       </Animated.View>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <Text style={[styles.errorText, { color: accent.error }]}>
+          {error}
+        </Text>
+      )}
     </View>
   );
 };
@@ -140,7 +135,6 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   label: {
-    color: C.whiteLow,
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.6,
@@ -154,7 +148,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 14,
     overflow: 'hidden',
-    // Shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -167,7 +160,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   iconWrap: {
     marginRight: 10,
@@ -175,7 +167,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: C.whiteHigh,
     paddingVertical: 14,
   },
   toggleBtn: {
@@ -185,7 +176,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   errorText: {
-    color: C.errorText,
     fontSize: 12,
     marginTop: 6,
     marginLeft: 4,
