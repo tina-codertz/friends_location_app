@@ -34,39 +34,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Get or create device ID
   const getDeviceId = useCallback(async (): Promise<string> => {
     try {
-      // Try to get from Device first (more reliable)
-      let deviceId = Device.deviceId;
-      
+      // First: try to get from SecureStore (most reliable for persistence)
+      let deviceId = await SecureStore.getItemAsync('device_id');
       if (deviceId) {
-        // Try to persist to AsyncStorage for consistency
-        try {
-          await AsyncStorage.setItem('device_id', deviceId);
-        } catch (storageErr) {
-          console.warn('Failed to persist device ID to storage:', storageErr);
-          // Continue anyway, we have the device ID
-        }
+        console.log('[AUTH] Using device ID from SecureStore:', deviceId);
         return deviceId;
       }
 
-      // Fallback: try AsyncStorage
-      try {
-        deviceId = await AsyncStorage.getItem('device_id');
-        if (deviceId) return deviceId;
-      } catch (storageErr) {
-        console.warn('AsyncStorage not available:', storageErr);
+      // Second: try Device.deviceId (native UUID)
+      deviceId = Device.deviceId;
+      if (deviceId) {
+        console.log('[AUTH] Using device ID from expo-device:', deviceId);
+        await SecureStore.setItemAsync('device_id', deviceId);
+        return deviceId;
       }
 
-      // Final fallback: generate ID
-      deviceId = `device-${Date.now()}`;
+      // Third: try AsyncStorage
       try {
-        await AsyncStorage.setItem('device_id', deviceId);
+        deviceId = await AsyncStorage.getItem('device_id');
+        if (deviceId) {
+          console.log('[AUTH] Using device ID from AsyncStorage:', deviceId);
+          await SecureStore.setItemAsync('device_id', deviceId);
+          return deviceId;
+        }
       } catch (storageErr) {
-        console.warn('Failed to persist generated device ID:', storageErr);
+        console.warn('[AUTH] AsyncStorage not available:', storageErr);
       }
+
+      // Final: generate and persist new ID
+      deviceId = `device-${Date.now()}`;
+      console.log('[AUTH] Generated new device ID:', deviceId);
+      await SecureStore.setItemAsync('device_id', deviceId);
       
       return deviceId;
     } catch (err) {
-      console.error('Failed to get device ID:', err);
+      console.error('[AUTH] Failed to get device ID:', err);
       return `device-${Date.now()}`;
     }
   }, []);

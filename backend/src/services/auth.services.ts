@@ -4,6 +4,7 @@
 
 import { generateOTP } from '../utils/otp';
 import { sign } from 'hono/jwt';
+import { EmailService } from './email.service';
 
 // Local D1Database interface
 interface D1Database {
@@ -22,10 +23,12 @@ interface User {
 export class AuthService {
   private db: D1Database;
   private jwtSecret: string;
+  private emailService: EmailService;
 
-  constructor(db: D1Database, jwtSecret: string) {
+  constructor(db: D1Database, jwtSecret: string, resendApiKey: string) {
     this.db = db;
     this.jwtSecret = jwtSecret;
+    this.emailService = new EmailService(resendApiKey);
   }
 
   /**
@@ -68,9 +71,12 @@ export class AuthService {
         .bind(email, otp, expiresAt)
         .run();
 
-      // TODO: Send OTP to email (using SendGrid, Mailgun, etc.)
-      console.log(`OTP for ${email}: ${otp}`);
-
+      // Send OTP to email
+      const emailResult = await this.emailService.sendOTP(email, otp);
+      if (!emailResult.success) {
+        console.warn('Failed to send OTP email:', emailResult.message);
+        // Don't fail registration, user can try again
+      }
       return {
         success: true,
         message: 'Registration initiated. OTP sent to your email.',
@@ -159,6 +165,7 @@ export class AuthService {
       }
 
       // Check device_id matches
+      console.log(`[LOGIN] Device check: stored="${user.device_id}" vs sent="${device_id}"`);
       if (user.device_id !== device_id) {
         return {
           success: false,
