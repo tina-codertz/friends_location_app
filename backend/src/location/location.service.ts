@@ -13,7 +13,7 @@ export class LocationService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} location`;
+    return `This is the  action returns a #${id} location`;
   }
 
   update(id: number, updateLocationDto: UpdateLocationDto) {
