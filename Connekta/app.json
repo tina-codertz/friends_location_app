@@ -4,7 +4,7 @@
     "slug": "Connekta",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/location.png",
     "scheme": "connekta",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
