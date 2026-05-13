@@ -34,11 +34,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Get or create device ID
   const getDeviceId = useCallback(async (): Promise<string> => {
     try {
-      let deviceId = await AsyncStorage.getItem('device_id');
-      if (!deviceId) {
-        deviceId = Device.deviceId || `device-${Date.now()}`;
-        await AsyncStorage.setItem('device_id', deviceId);
+      // Try to get from Device first (more reliable)
+      let deviceId = Device.deviceId;
+      
+      if (deviceId) {
+        // Try to persist to AsyncStorage for consistency
+        try {
+          await AsyncStorage.setItem('device_id', deviceId);
+        } catch (storageErr) {
+          console.warn('Failed to persist device ID to storage:', storageErr);
+          // Continue anyway, we have the device ID
+        }
+        return deviceId;
       }
+
+      // Fallback: try AsyncStorage
+      try {
+        deviceId = await AsyncStorage.getItem('device_id');
+        if (deviceId) return deviceId;
+      } catch (storageErr) {
+        console.warn('AsyncStorage not available:', storageErr);
+      }
+
+      // Final fallback: generate ID
+      deviceId = `device-${Date.now()}`;
+      try {
+        await AsyncStorage.setItem('device_id', deviceId);
+      } catch (storageErr) {
+        console.warn('Failed to persist generated device ID:', storageErr);
+      }
+      
       return deviceId;
     } catch (err) {
       console.error('Failed to get device ID:', err);
@@ -84,7 +109,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         // Store email temporarily for OTP verification
-        await AsyncStorage.setItem('temp_email', email);
+        try {
+          await AsyncStorage.setItem('temp_email', email);
+        } catch (storageErr) {
+          console.warn('Failed to store temp email:', storageErr);
+          // Continue anyway, user can re-enter email on OTP screen
+        }
       } catch (err: any) {
         const errorMsg = err.message || 'Registration failed';
         setError(errorMsg);
@@ -108,7 +138,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Clear temp email
-      await AsyncStorage.removeItem('temp_email');
+      try {
+        await AsyncStorage.removeItem('temp_email');
+      } catch (storageErr) {
+        console.warn('Failed to remove temp email:', storageErr);
+      }
     } catch (err: any) {
       const errorMsg = err.message || 'OTP verification failed';
       setError(errorMsg);
@@ -154,15 +188,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     try {
       await Promise.all([
-        SecureStore.deleteItemAsync('auth_token'),
-        SecureStore.deleteItemAsync('user_data'),
-        AsyncStorage.removeItem('temp_email'),
+        SecureStore.deleteItemAsync('auth_token').catch(err => console.warn('Failed to delete auth token:', err)),
+        SecureStore.deleteItemAsync('user_data').catch(err => console.warn('Failed to delete user data:', err)),
+        AsyncStorage.removeItem('temp_email').catch(err => console.warn('Failed to remove temp email:', err)),
       ]);
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
       setToken(null);
       setUser(null);
       setError(null);
-    } catch (err) {
-      console.error('Logout error:', err);
     }
   }, []);
 

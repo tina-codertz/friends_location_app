@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
+import { AuthProvider } from '@/context/AuthContext';
 
 export const unstable_settings = {
   anchor: '(landing)',
@@ -73,7 +74,9 @@ function InnerRootLayout() {
 export default function RootLayout() {
   return (
     <AppThemeProvider>
-      <InnerRootLayout />
+      <AuthProvider>
+        <InnerRootLayout />
+      </AuthProvider>
     </AppThemeProvider>
   );
 }

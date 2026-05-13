@@ -20,7 +20,7 @@ export const register = async (c: Context) => {
       );
     }
 
-    const authService = new AuthService(c.env.DB, c.env.JWT_SECRET);
+    const authService = new AuthService(c.env.database, c.env.JWT_SECRET);
     const result = await authService.register(email, username, device_id);
 
     return c.json(result, result.success ? 201 : 400);
@@ -51,7 +51,7 @@ export const verifyOTP = async (c: Context) => {
       );
     }
 
-    const authService = new AuthService(c.env.DB, c.env.JWT_SECRET);
+    const authService = new AuthService(c.env.database, c.env.JWT_SECRET);
     const result = await authService.verifyOTP(email, code);
 
     return c.json(result, result.success ? 200 : 400);
@@ -82,7 +82,7 @@ export const login = async (c: Context) => {
       );
     }
 
-    const authService = new AuthService(c.env.DB, c.env.JWT_SECRET);
+    const authService = new AuthService(c.env.database, c.env.JWT_SECRET);
     const result = await authService.login(username, device_id);
 
     return c.json(result, result.success ? 200 : 401);

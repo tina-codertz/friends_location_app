@@ -9,8 +9,9 @@ import auth from './routes/auth.routes';
 
 // Environment types
 interface Env {
-  DB: D1Database;
+  database: D1Database;
   JWT_SECRET: string;
+  RESEND_API_KEY: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
