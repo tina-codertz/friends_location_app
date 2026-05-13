@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 18,
     paddingTop: 14,
-    paddingBottom: 8,
+    paddingBottom: 3,
   },
   phoneTime: { color: C.whiteHigh, fontSize: 13, fontWeight: '600' },
   liveBadge: {
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 28,
-    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 24,
   },
   pillRow: {
     flexDirection: 'row',

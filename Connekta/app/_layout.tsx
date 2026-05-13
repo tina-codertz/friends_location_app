@@ -21,13 +21,21 @@ export default function RootLayout() {
         {/* Landing Page */}
         <Stack.Screen name="(landing)" />
 
+        {/* Auth Screens */}
+        <Stack.Screen
+          name="auth/AuthScreen"
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+
         {/* Main App Tabs */}
         <Stack.Screen name="(tabs)" />
 
         {/* Modal */}
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </ThemeProvider>
   );
 }
