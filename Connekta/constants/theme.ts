@@ -72,7 +72,7 @@ const dark = {
   mapBg: '#0a1929',
 
   // StatusBar
-  statusBarStyle: 'light' as const,
+  statusBarStyle: 'light' as 'light' | 'dark',
 
   // Navigation theme overrides
   navBackground: '#07111f',
@@ -133,7 +133,7 @@ const light = {
   mapBg: '#e8f0fe',
 
   // StatusBar
-  statusBarStyle: 'dark' as const,
+  statusBarStyle: 'dark' as 'light' | 'dark',
 
   // Navigation theme overrides
   navBackground: '#f0f4f8',

@@ -46,6 +46,7 @@ function InnerRootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
+          contentStyle: { backgroundColor: colors.bg },
         }}>
         {/* Landing Page */}
         <Stack.Screen name="(landing)" />
