@@ -1,32 +1,32 @@
 /**
- * Icon Symbol Component - Placeholder for SF Symbols
+ * Icon Symbol Component - Uses Ionicons for consistent vector icons
  */
 
 import React from 'react';
-import { Text, TextProps } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-interface IconSymbolProps extends TextProps {
+interface IconSymbolProps {
   name: string;
   size?: number;
   color?: string;
   weight?: 'light' | 'regular' | 'semibold' | 'bold' | 'heavy';
 }
 
-// Map common icon names to Unicode symbols or emojis
-const ICON_MAP: Record<string, string> = {
-  'house.fill': '🏠',
-  'map.fill': '🗺️',
-  'person.2.fill': '👥',
-  'cross.case.fill': '🛟',
-  'gearshape.fill': '⚙️',
-  'paperplane.fill': '✈️',
-  'heart.fill': '❤️',
-  'person.fill': '👤',
-  'gear': '⚙️',
-  'plus': '+',
-  'xmark': '✕',
-  'fingerprint': '🫆',
-  'fingerprint.fill': '🫆',
+// Map SF Symbol names to Ionicons names
+const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
+  'house.fill': 'home',
+  'map.fill': 'map',
+  'person.2.fill': 'people',
+  'cross.case.fill': 'warning',
+  'gearshape.fill': 'settings',
+  'paperplane.fill': 'send',
+  'heart.fill': 'heart',
+  'person.fill': 'person',
+  'gear': 'settings',
+  'plus': 'add',
+  'xmark': 'close',
+  'fingerprint': 'finger-print',
+  'fingerprint.fill': 'finger-print',
 };
 
 export const IconSymbol: React.FC<IconSymbolProps> = ({
@@ -34,22 +34,14 @@ export const IconSymbol: React.FC<IconSymbolProps> = ({
   size = 24,
   color = '#000',
   weight = 'regular',
-  ...props
 }) => {
-  const iconSymbol = ICON_MAP[name] || '◆';
+  const ioniconsName = ICON_MAP[name] || 'help-circle';
 
   return (
-    <Text
-      {...props}
-      style={[
-        {
-          fontSize: size,
-          color,
-          fontWeight: weight === 'light' ? '300' : weight === 'semibold' ? '600' : weight === 'bold' ? '700' : weight === 'heavy' ? '900' : '400',
-        },
-        props.style,
-      ]}>
-      {iconSymbol}
-    </Text>
+    <Ionicons
+      name={ioniconsName}
+      size={size}
+      color={color}
+    />
   );
 };
