@@ -86,7 +86,10 @@ export class AuthService {
   /**
    * Verify OTP and mark user as verified
    */
-  async verifyOTP(email: string, code: string): Promise<{ success: boolean; message: string }> {
+  async verifyOTP(
+    email: string,
+    code: string
+  ): Promise<{ success: boolean; message: string; user?: User; token?: string }> {
     try {
       // Find valid OTP
       const otp = await this.db
@@ -115,9 +118,26 @@ export class AuthService {
         .bind(email)
         .run();
 
+      const user = (await this.db
+        .prepare('SELECT * FROM users WHERE email = ?')
+        .bind(email)
+        .first()) as User | undefined;
+
+      if (!user) {
+        return { success: false, message: 'User not found after verification' };
+      }
+
+      const token = await this.generateJWT({
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+      });
+
       return {
         success: true,
         message: 'Email verified successfully',
+        user,
+        token,
       };
     } catch (error) {
       console.error('Verify OTP error:', error);
@@ -129,8 +149,7 @@ export class AuthService {
   }
 
   /**
-   * Login with username and device_id
-   * Device must be the same as registered
+   * Login with username and device_id (device_id is re-linked on each login)
    */
   async login(
     username: string,
@@ -157,13 +176,14 @@ export class AuthService {
         };
       }
 
-      // Check device_id matches
-      console.log(`[LOGIN] Device check: stored="${user.device_id}" vs sent="${device_id}"`);
+      // Re-link device on login (handles reinstall / SecureStore reset)
       if (user.device_id !== device_id) {
-        return {
-          success: false,
-          message: 'Device not registered for this account',
-        };
+        console.log(`[LOGIN] Updating device_id for user ${user.id} (reinstall or new device)`);
+        await this.db
+          .prepare('UPDATE users SET device_id = ? WHERE id = ?')
+          .bind(device_id, user.id)
+          .run();
+        user.device_id = device_id;
       }
 
       // Generate JWT token

@@ -6,6 +6,9 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import auth from './routes/auth.routes';
+import friends from './routes/friends.routes';
+import location from './routes/location.routes';
+import emergency from './routes/emergency.routes';
 
 // Environment types
 interface Env {
@@ -29,6 +32,9 @@ app.get('/', (c) => {
 
 // Routes
 app.route('/auth', auth);
+app.route('/friends', friends);
+app.route('/location', location);
+app.route('/emergency', emergency);
 
 // 404 handler
 app.notFound((c) => {

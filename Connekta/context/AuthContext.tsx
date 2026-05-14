@@ -139,6 +139,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(response.message || 'OTP verification failed');
       }
 
+      if (response.token && response.user) {
+        await Promise.all([
+          SecureStore.setItemAsync('auth_token', response.token),
+          SecureStore.setItemAsync('user_data', JSON.stringify(response.user)),
+          SecureStore.setItemAsync('needs_biometric_enrollment', '1'),
+        ]);
+        setToken(response.token);
+        setUser(response.user);
+      }
+
       // Clear temp email
       try {
         await AsyncStorage.removeItem('temp_email');
@@ -171,6 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await Promise.all([
           SecureStore.setItemAsync('auth_token', response.token),
           SecureStore.setItemAsync('user_data', JSON.stringify(response.user)),
+          SecureStore.setItemAsync('needs_biometric_enrollment', '1'),
         ]);
 
         setToken(response.token);
@@ -192,6 +203,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await Promise.all([
         SecureStore.deleteItemAsync('auth_token').catch(err => console.warn('Failed to delete auth token:', err)),
         SecureStore.deleteItemAsync('user_data').catch(err => console.warn('Failed to delete user data:', err)),
+        SecureStore.deleteItemAsync('needs_biometric_enrollment').catch(() => undefined),
+        SecureStore.deleteItemAsync('biometric_unlock_enabled').catch(() => undefined),
         AsyncStorage.removeItem('temp_email').catch(err => console.warn('Failed to remove temp email:', err)),
       ]);
     } catch (err) {
