@@ -18,6 +18,18 @@ const getAPIBaseURL = (): string => {
 const API_BASE_URL = getAPIBaseURL();
 console.log('[API] Using base URL:', API_BASE_URL);
 
+/** WebSocket URL for Durable Object realtime hub (JWT as query param). */
+export function getRealtimeWebSocketUrl(token: string): string {
+  const override = process.env.EXPO_PUBLIC_WS_URL;
+  if (override) {
+    const u = new URL(override);
+    u.searchParams.set('token', token);
+    return u.toString();
+  }
+  const wsBase = getAPIBaseURL().replace(/^https:\/\//i, 'wss://').replace(/^http:\/\//i, 'ws://');
+  return `${wsBase.replace(/\/$/, '')}/realtime/ws?token=${encodeURIComponent(token)}`;
+}
+
 // Create axios instance
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
