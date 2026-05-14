@@ -1,7 +1,3 @@
-/**
- * Auth Controller - Request handlers
- */
-
 import { Context } from 'hono';
 import { AuthService } from '../services/auth.services';
 

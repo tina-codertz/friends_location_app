@@ -1,6 +1,3 @@
-/**
- * Auth Services - Business logic for authentication
- */
 
 import { generateOTP } from '../utils/otp';
 import { sign } from 'hono/jwt';
@@ -31,10 +28,6 @@ export class AuthService {
     this.emailService = new EmailService(resendApiKey);
   }
 
-  /**
-   * Register a new user
-   * Creates user record and sends OTP to email
-   */
   async register(
     email: string,
     username: string,
