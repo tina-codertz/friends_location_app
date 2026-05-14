@@ -1,4 +1,6 @@
 import type { Context } from 'hono';
+import type { RealtimeEvent } from '../realtime/notify';
+import { realtimeBroadcast } from '../realtime/notify';
 import { FriendsService } from '../services/friends.service';
 
 export const searchUsers = async (c: Context) => {
@@ -21,6 +23,11 @@ export const sendFriendRequest = async (c: Context) => {
   }
   const friends = new FriendsService(c.env.database);
   const result = await friends.sendRequest(userId, toId);
+  if (result.success && 'notify' in result) {
+    c.executionCtx.waitUntil(
+      realtimeBroadcast(c.env, result.notify.targets, result.notify.event as RealtimeEvent, result.notify.data)
+    );
+  }
   return c.json(result, result.success ? 200 : 400);
 };
 
@@ -33,6 +40,11 @@ export const acceptFriendRequest = async (c: Context) => {
   }
   const friends = new FriendsService(c.env.database);
   const result = await friends.acceptRequest(userId, fromId);
+  if (result.success && 'notify' in result) {
+    c.executionCtx.waitUntil(
+      realtimeBroadcast(c.env, result.notify.targets, result.notify.event as RealtimeEvent, result.notify.data)
+    );
+  }
   return c.json(result, result.success ? 200 : 400);
 };
 

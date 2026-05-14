@@ -1,4 +1,6 @@
 import type { Context } from 'hono';
+import { realtimeBroadcast } from '../realtime/notify';
+import { FriendsService } from '../services/friends.service';
 import { LocationService } from '../services/location.service';
 
 export const setLocationSharing = async (c: Context) => {
@@ -22,6 +24,25 @@ export const pingLocation = async (c: Context) => {
   }
   const loc = new LocationService(c.env.database);
   const result = await loc.ping(userId, la, ln);
+  if (result.success) {
+    const friends = new FriendsService(c.env.database);
+    const targets = await friends.listFriendUserIds(userId);
+    const row = (await c.env.database
+      .prepare('SELECT username FROM users WHERE id = ?')
+      .bind(userId)
+      .first()) as { username: string } | null;
+    const username = row?.username ?? 'friend';
+    const updated_at = new Date().toISOString();
+    c.executionCtx.waitUntil(
+      realtimeBroadcast(c.env, targets, 'location_update', {
+        id: userId,
+        username,
+        lat: la,
+        lng: ln,
+        updated_at,
+      })
+    );
+  }
   return c.json(result, result.success ? 200 : 403);
 };
 

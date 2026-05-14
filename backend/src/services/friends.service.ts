@@ -2,6 +2,10 @@ interface D1Database {
   prepare(sql: string): any;
 }
 
+export type FriendRealtimeNotify =
+  | { event: 'friend_request'; targets: number[]; data: { from_user_id: number } }
+  | { event: 'friend_accepted'; targets: number[]; data: Record<string, never> };
+
 export class FriendsService {
   constructor(private db: D1Database) {}
 
@@ -28,7 +32,13 @@ export class FriendsService {
     return results as { id: number; username: string }[];
   }
 
-  async sendRequest(fromUserId: number, toUserId: number) {
+  async sendRequest(
+    fromUserId: number,
+    toUserId: number
+  ): Promise<
+    | { success: false; message: string }
+    | { success: true; message: string; notify: FriendRealtimeNotify }
+  > {
     if (fromUserId === toUserId) {
       return { success: false as const, message: 'Cannot add yourself' };
     }
@@ -47,7 +57,15 @@ export class FriendsService {
     if (existing) {
       if (existing.status === 'pending') {
         if (existing.from_user_id === toUserId && existing.to_user_id === fromUserId) {
-          return await this.acceptRequest(fromUserId, existing.from_user_id);
+          const ar = await this.acceptRequest(fromUserId, existing.from_user_id);
+          if (!ar.success) {
+            return ar;
+          }
+          return {
+            success: true,
+            message: ar.message,
+            notify: ar.notify,
+          };
         }
         return { success: false as const, message: 'Request already pending' };
       }
@@ -69,7 +87,15 @@ export class FriendsService {
         )
         .bind(fromUserId, toUserId)
         .run();
-      return { success: true as const, message: 'Friend request sent' };
+      return {
+        success: true,
+        message: 'Friend request sent',
+        notify: {
+          event: 'friend_request',
+          targets: [toUserId],
+          data: { from_user_id: fromUserId },
+        },
+      };
     } catch (e: unknown) {
       const msg = String((e as { message?: string })?.message ?? e);
       if (msg.includes('UNIQUE')) {
@@ -79,7 +105,13 @@ export class FriendsService {
     }
   }
 
-  async acceptRequest(currentUserId: number, fromUserId: number) {
+  async acceptRequest(
+    currentUserId: number,
+    fromUserId: number
+  ): Promise<
+    | { success: false; message: string }
+    | { success: true; message: string; notify: FriendRealtimeNotify }
+  > {
     const row = (await this.db
       .prepare(
         `SELECT id FROM friend_requests
@@ -106,7 +138,15 @@ export class FriendsService {
       .bind(low, high)
       .run();
 
-    return { success: true as const, message: 'Friend request accepted' };
+    return {
+      success: true,
+      message: 'Friend request accepted',
+      notify: {
+        event: 'friend_accepted',
+        targets: [fromUserId, currentUserId],
+        data: {},
+      },
+    };
   }
 
   async rejectRequest(currentUserId: number, fromUserId: number) {
@@ -133,6 +173,11 @@ export class FriendsService {
       .bind(userId, userId, userId)
       .all();
     return results as { id: number; username: string }[];
+  }
+
+  async listFriendUserIds(userId: number): Promise<number[]> {
+    const rows = await this.listFriends(userId);
+    return rows.map((r) => r.id);
   }
 
   async listIncomingPending(userId: number) {

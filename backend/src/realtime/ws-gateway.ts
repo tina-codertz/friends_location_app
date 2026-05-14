@@ -40,5 +40,5 @@ export async function handlePublicWebSocket(request: Request, env: WorkerEnv): P
 
   const id = env.REALTIME_HUB.idFromName('connekta-hub');
   const stub = env.REALTIME_HUB.get(id);
-  return stub.fetch(new Request('https://internal/ws', { headers }));
+  return stub.fetch(new Request('https://internal/ws', { method: 'GET', headers }));
 }
