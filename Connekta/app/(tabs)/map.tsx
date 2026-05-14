@@ -7,10 +7,11 @@ import {
   Switch,
   Platform,
 } from 'react-native';
-import MapView, { Circle, Marker, Region } from 'react-native-maps';
+import MapView, { Circle, Marker, Region,} from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
 import { locationAPI } from '@/services/api';
@@ -33,6 +34,7 @@ function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 
 export default function MapTabScreen() {
   const insets = useSafeAreaInsets();
+  const { token } = useAuth();
   const { colors, accent } = useAppTheme();
   const [permission, setPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
   const [sharing, setSharing] = useState(false);
@@ -42,7 +44,7 @@ export default function MapTabScreen() {
   const lastSent = useRef<{ lat: number; lng: number } | null>(null);
   const mapRef = useRef<MapView>(null);
 
-  const { locations, refresh } = useLiveFriendLocations(sharing);
+  const { locations, refresh } = useLiveFriendLocations(sharing, token);
 
   const region: Region | null = useMemo(() => {
     if (!me) return null;
@@ -168,15 +170,15 @@ export default function MapTabScreen() {
         showsMyLocationButton={Platform.OS === 'android'}
         showsCompass
         loadingEnabled
-        mapType="mutedStandard"
+        mapType="standard"
         onMapReady={() => mapRef.current?.animateToRegion(region, 400)}
       >
         {sharing && me ? (
           <Circle
             center={{ latitude: me.lat, longitude: me.lng }}
             radius={90}
-            strokeColor="rgba(30,144,255,0.45)"
-            fillColor="rgba(30,144,255,0.12)"
+            strokeColor={accent.electricBlue}
+            fillColor={`${accent.electricBlue}1F`}
           />
         ) : null}
         {locations.map((f) => (
@@ -192,7 +194,7 @@ export default function MapTabScreen() {
 
       <View
         pointerEvents="box-none"
-        style={[styles.overlay, { paddingTop: insets.top + 12, paddingHorizontal: 20 }]}
+        style={[styles.overlay, { paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: insets.bottom + 8 }]}
       >
         <GlassCard intensity="medium" borderRadius={22} style={{ paddingVertical: 16 }}>
           <View style={styles.row}>
@@ -220,7 +222,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   overlay: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
   },

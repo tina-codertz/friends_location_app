@@ -8,9 +8,12 @@ import {
   Share,
   Alert,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import * as Linking from 'expo-linking';
+import * as Contacts from 'expo-contacts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -39,20 +42,49 @@ export default function EmergencyTabScreen() {
     void load();
   }, [load]);
 
+  const pickContact = async () => {
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Allow access to contacts to pick a contact.');
+        return;
+      }
+      const contact = await Contacts.presentContactPickerAsync();
+      if (contact) {
+        setName(contact.name || '');
+        if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
+          const cleanPhone = contact.phoneNumbers[0].number?.replace(/\D/g, '') || '';
+          setPhone(cleanPhone);
+        }
+      }
+    } catch (err) {
+      console.error('Error picking contact:', err);
+    }
+  };
+
   const add = async () => {
     if (!name.trim() || !phone.trim()) {
       Alert.alert('Missing info', 'Add a name and phone number.');
       return;
     }
-    await emergencyAPI.add(name.trim(), phone.trim());
-    setName('');
-    setPhone('');
-    void load();
+    try {
+      await emergencyAPI.add(name.trim(), phone.trim());
+      setName('');
+      setPhone('');
+      void load();
+      Alert.alert('Success', 'Contact added.');
+    } catch (err) {
+      Alert.alert('Error', 'Failed to add contact.');
+    }
   };
 
   const remove = async (id: number) => {
-    await emergencyAPI.remove(id);
-    void load();
+    try {
+      await emergencyAPI.remove(id);
+      void load();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to remove contact.');
+    }
   };
 
   const shareLiveLink = async () => {
@@ -73,7 +105,7 @@ export default function EmergencyTabScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 16,
           paddingHorizontal: 20,
-          paddingBottom: insets.bottom + 100,
+          paddingBottom: insets.bottom + 120,
           gap: 12,
         }}
         ListHeaderComponent={
@@ -115,13 +147,29 @@ export default function EmergencyTabScreen() {
                   { color: colors.textPrimary, borderColor: colors.inputBorder, fontFamily: Font.regular, marginTop: 10 },
                 ]}
               />
-              <View style={{ height: 14 }} />
-              <GlassButton title="Save contact" onPress={add} variant="secondary" fullWidth />
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+                <GlassButton title="Save contact" onPress={add} variant="secondary" fullWidth flex={1} />
+                <TouchableOpacity
+                  onPress={pickContact}
+                  style={{
+                    flex: 1,
+                    backgroundColor: colors.inputBg,
+                    borderWidth: 1,
+                    borderColor: colors.inputBorder,
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 12,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Ionicons name="contacts" size={20} color={accent.electricBlue} />
+                </TouchableOpacity>
+              </View>
             </GlassCard>
 
             <Text style={[Type.caption, { color: colors.textMuted }]}>
               Signed in as <Text style={{ fontFamily: Font.semibold, color: colors.textSecondary }}>{user?.username}</Text>
-              {Platform.OS === 'web' ? '' : ''}
             </Text>
           </View>
         }

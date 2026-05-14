@@ -8,8 +8,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Share,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Contacts from 'expo-contacts';
+import * as Linking from 'expo-linking';
+import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -58,6 +63,28 @@ export default function FriendsTabScreen() {
     }
   }, [q]);
 
+  const shareToContact = async () => {
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Allow access to contacts to share an invite.');
+        return;
+      }
+      const contact = await Contacts.presentContactPickerAsync();
+      if (contact && contact.phoneNumbers && contact.phoneNumbers.length > 0) {
+        const url = Linking.createURL('/friends', { scheme: 'connekta' });
+        const message = `Hey! Let's connect on Connekta and share our locations. Join: ${url}`;
+        try {
+          await Share.share({ message, title: 'Connekta Invite' });
+        } catch {
+          /* cancelled */
+        }
+      }
+    } catch (err) {
+      console.error('Error sharing to contact:', err);
+    }
+  };
+
   const send = async (id: number) => {
     const res = await friendsAPI.sendRequest(id);
     if (res.success) {
@@ -96,6 +123,7 @@ export default function FriendsTabScreen() {
                   borderColor: colors.inputBorder,
                   backgroundColor: colors.inputBg,
                   fontFamily: Font.regular,
+                  flex: 1,
                 },
               ]}
               autoCapitalize="none"
@@ -103,6 +131,21 @@ export default function FriendsTabScreen() {
               returnKeyType="search"
             />
             <GlassButton title="Go" onPress={onSearch} variant="secondary" size="small" />
+            <TouchableOpacity
+              onPress={shareToContact}
+              style={{
+                backgroundColor: colors.inputBg,
+                borderWidth: 1,
+                borderColor: colors.inputBorder,
+                borderRadius: 12,
+                paddingHorizontal: 10,
+                paddingVertical: 10,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Ionicons name="share-social" size={20} color={accent.electricBlue} />
+            </TouchableOpacity>
           </View>
           {searching ? (
             <ActivityIndicator style={{ marginTop: 12 }} color={accent.electricBlue} />
@@ -151,6 +194,75 @@ export default function FriendsTabScreen() {
       </View>
     );
   }
+
+  return (
+    <View style={[styles.fill, { backgroundColor: colors.bg }]}>
+      <FlatList
+        data={friends}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={{
+          paddingTop: insets.top + 16,
+          paddingHorizontal: 20,
+          paddingBottom: insets.bottom + 120,
+          gap: 12,
+        }}
+        ListHeaderComponent={renderHeader}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void loadLists();
+            }}
+            tintColor={accent.electricBlue}
+          />
+        }
+        renderItem={({ item }) => (
+          <GlassCard borderRadius={22} intensity="light" animated animationDelay={50} style={{ paddingVertical: 14 }}>
+            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>{item.username}</Text>
+            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>Mutual friend</Text>
+          </GlassCard>
+        )}
+        ListEmptyComponent={
+          <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', marginTop: 8 }]}>
+            No friends yet. Discover people above.
+          </Text>
+        }
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  input: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  reqRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+  },
+});
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>

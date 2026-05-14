@@ -18,7 +18,15 @@ export type WorkerEnv = {
 
 const app = new Hono<{ Bindings: WorkerEnv }>();
 
-app.use('*', cors());
+// Enable CORS for all origins in development
+app.use('*', cors({
+  origin: '*',
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: ['Content-Type'],
+  maxAge: 600,
+  credentials: true,
+}));
 
 app.get('/', (c) => {
   return c.json({

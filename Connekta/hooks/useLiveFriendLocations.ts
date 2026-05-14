@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { FriendLocation, getRealtimeWebSocketUrl, locationAPI } from '@/services/api';
 
-const POLL_MS_FAST = 7000;
-const POLL_MS_SLOW = 45000;
-const WS_RECONNECT_BASE_MS = 1200;
-const WS_RECONNECT_MAX_MS = 30000;
+/** Backup sync when WebSocket is unavailable */
+const POLL_MS_NO_WS = 8000;
+/** Infrequent REST catch-up while WebSocket is healthy */
+const POLL_MS_WITH_WS = 40000;
 
 type WsPayload = {
   event: string;
@@ -28,12 +28,12 @@ export function useLiveFriendLocations(enabled: boolean, authToken: string | nul
   const [locations, setLocations] = useState<FriendLocation[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const appState = useRef(AppState.currentState);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectAttempt = useRef(0);
-  const pingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const shouldConnect = enabled && !!authToken;
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const attemptRef = useRef(0);
+  const appState = useRef(AppState.currentState);
 
   const fetchOnce = useCallback(async () => {
     if (!enabled) return;
@@ -67,30 +67,18 @@ export function useLiveFriendLocations(enabled: boolean, authToken: string | nul
     }
   }, []);
 
-  const clearTimers = useCallback(() => {
-    if (timer.current) {
-      clearInterval(timer.current);
-      timer.current = null;
+  const clearReconnect = () => {
+    if (reconnectRef.current) {
+      clearTimeout(reconnectRef.current);
+      reconnectRef.current = null;
     }
-    if (pingTimer.current) {
-      clearInterval(pingTimer.current);
-      pingTimer.current = null;
-    }
-  }, []);
+  };
 
-  const schedulePolling = useCallback(
-    (intervalMs: number) => {
-      clearTimers();
-      void fetchOnce();
-      timer.current = setInterval(fetchOnce, intervalMs);
-    },
-    [clearTimers, fetchOnce]
-  );
-
-  const teardownWs = useCallback(() => {
-    if (pingTimer.current) {
-      clearInterval(pingTimer.current);
-      pingTimer.current = null;
+  const stopWs = useCallback(() => {
+    clearReconnect();
+    if (pingRef.current) {
+      clearInterval(pingRef.current);
+      pingRef.current = null;
     }
     if (wsRef.current) {
       try {
@@ -103,100 +91,92 @@ export function useLiveFriendLocations(enabled: boolean, authToken: string | nul
     setWsConnected(false);
   }, []);
 
-  const connectWs = useCallback(() => {
-    if (!authToken || !enabled) return;
-    teardownWs();
+  const startWs = useCallback(() => {
+    if (!enabled || !authToken) return;
+    stopWs();
+    attemptRef.current = 0;
 
-    const url = getRealtimeWebSocketUrl(authToken);
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
+    const open = () => {
+      const url = getRealtimeWebSocketUrl(authToken);
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
 
-    ws.onopen = () => {
-      setWsConnected(true);
-      reconnectAttempt.current = 0;
-      void fetchOnce();
-      pingTimer.current = setInterval(() => {
-        try {
-          if (ws.readyState === WebSocket.OPEN) ws.send('ping');
-        } catch {
-          /* ignore */
+      ws.onopen = () => {
+        setWsConnected(true);
+        attemptRef.current = 0;
+        void fetchOnce();
+        pingRef.current = setInterval(() => {
+          try {
+            if (ws.readyState === WebSocket.OPEN) ws.send('ping');
+          } catch {
+            /* ignore */
+          }
+        }, 25000);
+      };
+
+      ws.onmessage = (ev) => {
+        if (typeof ev.data === 'string') applyWsMessage(ev.data);
+      };
+
+      ws.onerror = () => {
+        setError('Realtime connection error');
+      };
+
+      ws.onclose = () => {
+        setWsConnected(false);
+        if (pingRef.current) {
+          clearInterval(pingRef.current);
+          pingRef.current = null;
         }
-      }, 25000);
+        wsRef.current = null;
+        if (!enabled || !authToken) return;
+        const n = ++attemptRef.current;
+        const delay = Math.min(1500 * 2 ** Math.min(n, 6), 28000);
+        reconnectRef.current = setTimeout(open, delay);
+      };
     };
 
-    ws.onmessage = (ev) => {
-      if (typeof ev.data === 'string') applyWsMessage(ev.data);
-    };
-
-    ws.onerror = () => {
-      setError('Realtime connection error');
-    };
-
-    ws.onclose = () => {
-      setWsConnected(false);
-      if (pingTimer.current) {
-        clearInterval(pingTimer.current);
-        pingTimer.current = null;
-      }
-      if (!shouldConnect) return;
-      const attempt = ++reconnectAttempt.current;
-      const delay = Math.min(WS_RECONNECT_BASE_MS * 2 ** Math.min(attempt, 8), WS_RECONNECT_MAX_MS);
-      setTimeout(() => {
-        if (shouldConnect && !wsRef.current) connectWs();
-      }, delay);
-    };
-  }, [authToken, enabled, applyWsMessage, fetchOnce, shouldConnect, teardownWs]);
+    open();
+  }, [enabled, authToken, applyWsMessage, fetchOnce, stopWs]);
 
   useEffect(() => {
     if (!enabled) {
-      teardownWs();
-      clearTimers();
+      stopWs();
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = null;
       setLocations([]);
       return;
     }
 
     void fetchOnce();
 
-    if (shouldConnect) {
-      schedulePolling(POLL_MS_SLOW);
-      connectWs();
+    if (pollRef.current) clearInterval(pollRef.current);
+    const pollMs = authToken ? POLL_MS_WITH_WS : POLL_MS_NO_WS;
+    pollRef.current = setInterval(fetchOnce, pollMs);
+
+    if (authToken) {
+      startWs();
     } else {
-      schedulePolling(POLL_MS_FAST);
+      stopWs();
     }
 
     return () => {
-      teardownWs();
-      clearTimers();
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = null;
+      stopWs();
     };
-  }, [enabled, shouldConnect, connectWs, clearTimers, fetchOnce, schedulePolling, teardownWs]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    if (wsConnected) {
-      if (timer.current) {
-        clearInterval(timer.current);
-        timer.current = null;
-      }
-      schedulePolling(POLL_MS_SLOW);
-    } else if (shouldConnect) {
-      schedulePolling(POLL_MS_SLOW);
-    } else {
-      schedulePolling(POLL_MS_FAST);
-    }
-  }, [enabled, wsConnected, shouldConnect, schedulePolling]);
+  }, [enabled, authToken, fetchOnce, startWs, stopWs]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
       if (appState.current.match(/inactive|background/) && next === 'active' && enabled) {
         void fetchOnce();
-        if (shouldConnect && (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN)) {
-          connectWs();
-        }
+        if (authToken) startWs();
       }
       appState.current = next;
     });
     return () => sub.remove();
-  }, [enabled, fetchOnce, shouldConnect, connectWs]);
+  }, [enabled, authToken, fetchOnce, startWs]);
 
   return { locations, error, refresh: fetchOnce, wsConnected };
 }

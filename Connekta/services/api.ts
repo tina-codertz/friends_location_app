@@ -66,12 +66,21 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError<any>) => {
-    console.error('[API] Response error:', {
+    const errorInfo = {
       status: error.response?.status,
       message: error.message,
       url: error.config?.url,
       data: error.response?.data,
-    });
+      code: error.code,
+    };
+    
+    console.error('[API] Response error:', errorInfo);
+    
+    // Check if it's a network error
+    if (!error.response) {
+      console.error('[API] Network error - no response from server. Check if backend is running and reachable.');
+      console.error('[API] Current API URL:', API_BASE_URL);
+    }
     
     if (error.response?.status === 401) {
       // Unauthorized - clear token from secure storage
@@ -186,7 +195,7 @@ export const friendsAPI = {
     return res.data;
   },
   async list(): Promise<{ success: boolean; friends: FriendUser[] }> {
-    const res = await apiClient.get('/friends/');
+    const res = await apiClient.get('/friends');
     return res.data;
   },
   async incoming(): Promise<{ success: boolean; incoming: FriendUser[] }> {
@@ -229,11 +238,11 @@ export interface EmergencyContact {
 
 export const emergencyAPI = {
   async list(): Promise<{ success: boolean; contacts: EmergencyContact[] }> {
-    const res = await apiClient.get('/emergency/');
+    const res = await apiClient.get('/emergency');
     return res.data;
   },
   async add(name: string, phone: string): Promise<{ success: boolean }> {
-    const res = await apiClient.post('/emergency/', { name, phone });
+    const res = await apiClient.post('/emergency', { name, phone });
     return res.data;
   },
   async remove(id: number): Promise<{ success: boolean }> {

@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BiometricGate } from '@/components/security/BiometricGate';
 import { HapticTab } from '@/components/ui/haptic-tab';
@@ -13,6 +14,7 @@ export const unstable_settings = {
 const TabBarButton = (props: any) => <HapticTab {...props} />;
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
 
   return (
@@ -23,12 +25,13 @@ export default function TabLayout() {
           tabBarInactiveTintColor: colors.textTertiary,
           tabBarStyle: {
             backgroundColor: colors.navCard,
-            borderTopColor: colors.divider,
-            height: 64,
-            paddingBottom: 10,
+            borderTopColor: colors.navBorder,
+            borderTopWidth: 1,
+            height: 64 + insets.bottom,
+            paddingBottom: insets.bottom + 8,
             paddingTop: 8,
           },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
+          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3, marginTop: 4 },
           headerShown: false,
           tabBarButton: TabBarButton,
         }}>
