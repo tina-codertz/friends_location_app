@@ -51,10 +51,24 @@ export default function EmergencyTabScreen() {
       }
       const contact = await Contacts.presentContactPickerAsync();
       if (contact) {
-        setName(contact.name || '');
+        const contactName = contact.name || '';
+        let contactPhone = '';
         if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
-          const cleanPhone = contact.phoneNumbers[0].number?.replace(/\D/g, '') || '';
-          setPhone(cleanPhone);
+          contactPhone = contact.phoneNumbers[0].number?.replace(/\D/g, '') || '';
+        }
+
+        if (!contactName.trim() || !contactPhone.trim()) {
+          Alert.alert('Invalid contact', 'Contact must have a name and phone number.');
+          return;
+        }
+
+        // Automatically add the selected contact to emergency contacts
+        try {
+          await emergencyAPI.add(contactName.trim(), contactPhone.trim());
+          void load();
+          Alert.alert('Success', `${contactName} added to emergency contacts.`);
+        } catch (err) {
+          Alert.alert('Error', 'Failed to add contact.');
         }
       }
     } catch (err) {
