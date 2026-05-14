@@ -40,7 +40,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   children,
   intensity = 'medium',
   glowAccent = false,
-  borderRadius = 20,
+  borderRadius = 22,
   style,
   animated = false,
   animationDelay = 0,
@@ -86,14 +86,14 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
   const cardStyle: ViewStyle = {
     backgroundColor: bgColor,
-    borderRadius,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor,
     shadowColor: colors.glassShadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 22,
+    elevation: 10,
     padding: 20,
     overflow: 'hidden',
   };

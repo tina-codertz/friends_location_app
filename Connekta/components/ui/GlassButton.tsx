@@ -82,7 +82,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   // Variant-based styles (from theme)
   const variantStyles: Record<ButtonVariant, ViewStyle> = {
     primary: {
-      backgroundColor: accent.teal,
+      backgroundColor: accent.electricBlue,
       borderWidth: 0,
     },
     secondary: {
@@ -103,8 +103,8 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   };
 
   const variantTextStyles: Record<ButtonVariant, TextStyle> = {
-    primary: { color: colors.bg, fontWeight: '800' },
-    secondary: { color: accent.teal, fontWeight: '700' },
+    primary: { color: '#FFFFFF', fontWeight: '700' },
+    secondary: { color: accent.electricBlue, fontWeight: '700' },
     outline: { color: colors.textPrimary, fontWeight: '600' },
     ghost: { color: colors.textPrimary, fontWeight: '600' },
   };

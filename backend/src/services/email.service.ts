@@ -1,6 +1,3 @@
-/**
- * Email Service - Send emails via Resend API
- */
 
 export interface EmailServiceConfig {
   apiKey: string;
@@ -50,8 +47,8 @@ export class EmailService {
         };
       }
 
-      const data = await response.json();
-      console.log(`[EMAIL] OTP sent to ${email}, Message ID:`, data.id);
+      const data = (await response.json()) as { id?: string };
+      console.log(`[EMAIL] OTP sent to ${email}, Message ID:`, data.id ?? 'N/A');
 
       return {
         success: true,
@@ -95,7 +92,7 @@ export class EmailService {
               <p>This code will expire in 10 minutes.</p>
               <p>If you didn't request this code, please ignore this email.</p>
               <div class="footer">
-                <p>© 2026 Connekta. All rights reserved.</p>
+                <p>© ${new Date().getFullYear()} Connekta. All rights reserved.</p>
               </div>
             </div>
           </div>

@@ -18,6 +18,18 @@ const getAPIBaseURL = (): string => {
 const API_BASE_URL = getAPIBaseURL();
 console.log('[API] Using base URL:', API_BASE_URL);
 
+/** WebSocket URL for Durable Object realtime hub (JWT as query param). */
+export function getRealtimeWebSocketUrl(token: string): string {
+  const override = process.env.EXPO_PUBLIC_WS_URL;
+  if (override) {
+    const u = new URL(override);
+    u.searchParams.set('token', token);
+    return u.toString();
+  }
+  const wsBase = getAPIBaseURL().replace(/^https:\/\//i, 'wss://').replace(/^http:\/\//i, 'ws://');
+  return `${wsBase.replace(/\/$/, '')}/realtime/ws?token=${encodeURIComponent(token)}`;
+}
+
 // Create axios instance
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -54,12 +66,21 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError<any>) => {
-    console.error('[API] Response error:', {
+    const errorInfo = {
       status: error.response?.status,
       message: error.message,
       url: error.config?.url,
       data: error.response?.data,
-    });
+      code: error.code,
+    };
+    
+    console.error('[API] Response error:', errorInfo);
+    
+    // Check if it's a network error
+    if (!error.response) {
+      console.error('[API] Network error - no response from server. Check if backend is running and reachable.');
+      console.error('[API] Current API URL:', API_BASE_URL);
+    }
     
     if (error.response?.status === 401) {
       // Unauthorized - clear token from secure storage
@@ -123,7 +144,7 @@ export const authAPI = {
   },
 
   /**
-   * Verify OTP
+   * Verify OTP (returns session token when successful)
    */
   async verifyOTP(email: string, code: string): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>('/auth/verify-otp', {
@@ -142,6 +163,91 @@ export const authAPI = {
       device_id,
     });
     return response.data;
+  },
+};
+
+export interface FriendUser {
+  id: number;
+  username: string;
+}
+
+export interface FriendLocation extends FriendUser {
+  lat: number;
+  lng: number;
+  updated_at: string;
+}
+
+export const friendsAPI = {
+  async search(q: string): Promise<{ success: boolean; users: FriendUser[] }> {
+    const res = await apiClient.get('/friends/search', { params: { q } });
+    return res.data;
+  },
+  async sendRequest(to_user_id: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.post('/friends/request', { to_user_id });
+    return res.data;
+  },
+  async accept(from_user_id: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.post('/friends/accept', { from_user_id });
+    return res.data;
+  },
+  async reject(from_user_id: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.post('/friends/reject', { from_user_id });
+    return res.data;
+  },
+  async list(): Promise<{ success: boolean; friends: FriendUser[] }> {
+    const res = await apiClient.get('/friends');
+    return res.data;
+  },
+  async incoming(): Promise<{ success: boolean; incoming: FriendUser[] }> {
+    const res = await apiClient.get('/friends/incoming');
+    return res.data;
+  },
+};
+
+export const locationAPI = {
+  async setSharing(enabled: boolean): Promise<{ success: boolean; sharing: boolean }> {
+    const res = await apiClient.post('/location/sharing', { enabled });
+    return res.data;
+  },
+  async ping(lat: number, lng: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.post('/location/ping', { lat, lng });
+    return res.data;
+  },
+  async friendsLocations(): Promise<{ success: boolean; locations: FriendLocation[] }> {
+    const res = await apiClient.get('/location/friends');
+    return res.data;
+  },
+  async myState(): Promise<{
+    success: boolean;
+    sharing: boolean;
+    lat: number | null;
+    lng: number | null;
+    updated_at: string | null;
+  }> {
+    const res = await apiClient.get('/location/me');
+    return res.data;
+  },
+};
+
+export interface EmergencyContact {
+  id: number;
+  name: string;
+  phone: string;
+  sort_order: number;
+}
+
+export const emergencyAPI = {
+  async list(): Promise<{ success: boolean; contacts: EmergencyContact[] }> {
+    const res = await apiClient.get('/emergency');
+    return res.data;
+  },
+  async add(name: string, phone: string): Promise<{ success: boolean }> {
+    const res = await apiClient.post('/emergency', { name, phone });
+    return res.data;
+  },
+  async remove(id: number): Promise<{ success: boolean }> {
+    const res = await apiClient.delete(`/emergency/${id}`);
+    return res.data;
   },
 };
 

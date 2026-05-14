@@ -1,34 +1,69 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BiometricGate } from '@/components/security/BiometricGate';
 import { HapticTab } from '@/components/ui/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAppTheme } from '@/context/ThemeContext';
 
+export const unstable_settings = {
+  initialRouteName: 'map',
+};
+
 const TabBarButton = (props: any) => <HapticTab {...props} />;
 
 export default function TabLayout() {
-  const { colors, accent, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const { colors, accent } = useAppTheme();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: isDark ? accent.teal : accent.tealDark,
-        tabBarInactiveTintColor: colors.textTertiary,
-        tabBarStyle: {
-          backgroundColor: colors.bgCard,
-          borderTopColor: colors.divider,
-        },
-        headerShown: false,
-        tabBarButton: TabBarButton,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+    <BiometricGate>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: accent.electricBlue,
+          tabBarInactiveTintColor: colors.textTertiary,
+          tabBarStyle: {
+            backgroundColor: colors.navCard,
+            borderTopColor: colors.navBorder,
+            borderTopWidth: 1,
+            height: 64 + insets.bottom,
+            paddingBottom: insets.bottom + 8,
+            paddingTop: 8,
+          },
+          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3, marginTop: 4 },
+          headerShown: false,
+          tabBarButton: TabBarButton,
+        }}>
+        <Tabs.Screen
+          name="map"
+          options={{
+            title: 'Map',
+            tabBarIcon: ({ color }) => <IconSymbol size={26} name="map.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="friends"
+          options={{
+            title: 'Friends',
+            tabBarIcon: ({ color }) => <IconSymbol size={26} name="person.2.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="emergency"
+          options={{
+            title: 'Emergency',
+            tabBarIcon: ({ color }) => <IconSymbol size={26} name="cross.case.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: 'Settings',
+            tabBarIcon: ({ color }) => <IconSymbol size={26} name="gearshape.fill" color={color} />,
+          }}
+        />
+      </Tabs>
+    </BiometricGate>
   );
 }

@@ -96,7 +96,7 @@ export default function AuthScreen() {
 
     try {
       await login(username.trim());
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/map');
     } catch (err) {
       console.error('Login error:', err);
     }
@@ -136,7 +136,7 @@ export default function AuthScreen() {
       setOTP('');
       setEmail('');
       setUsername('');
-      Alert.alert('Success', 'Email verified! You can now login.');
+      router.replace('/(tabs)/map');
     } catch (err) {
       console.error('OTP verification error:', err);
     }

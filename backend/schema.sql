@@ -13,3 +13,6 @@ CREATE TABLE otp_codes (
   code TEXT NOT NULL,
   expires_at DATETIME NOT NULL
 );
+
+-- Social + live location (run migrations/0001_friends_location.sql on D1):
+-- friend_requests, friendships, location_state, emergency_contacts
