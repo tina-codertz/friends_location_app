@@ -3,7 +3,7 @@ import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_7
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
@@ -76,12 +76,35 @@ function InnerRootLayout() {
   );
 }
 
+function FontBootstrap({ children }: { children: React.ReactNode }) {
+  const [loaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  useEffect(() => {
+    if (loaded) {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [loaded]);
+
+  if (!loaded) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
 export default function RootLayout() {
   return (
-    <AppThemeProvider>
-      <AuthProvider>
-        <InnerRootLayout />
-      </AuthProvider>
-    </AppThemeProvider>
+    <FontBootstrap>
+      <AppThemeProvider>
+        <AuthProvider>
+          <InnerRootLayout />
+        </AuthProvider>
+      </AppThemeProvider>
+    </FontBootstrap>
   );
 }

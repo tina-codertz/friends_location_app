@@ -136,7 +136,7 @@ export default function AuthScreen() {
       setOTP('');
       setEmail('');
       setUsername('');
-      Alert.alert('Success', 'Email verified! You can now login.');
+      router.replace('/(tabs)');
     } catch (err) {
       console.error('OTP verification error:', err);
     }

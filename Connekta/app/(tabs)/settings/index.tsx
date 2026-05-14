@@ -95,7 +95,10 @@ export default function SettingsHomeScreen() {
               {
                 text: 'Sign out',
                 style: 'destructive',
-                onPress: () => void logout(),
+                onPress: async () => {
+                  await logout();
+                  router.replace('/(landing)');
+                },
               },
             ]);
           }}
