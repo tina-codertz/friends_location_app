@@ -22,7 +22,7 @@ export class RealtimeHub extends DurableObject {
       const payload = JSON.stringify({ event: body.event, data: body.data });
       for (const uid of body.targets ?? []) {
         const ws = this.sockets.get(uid);
-        if (ws && ws.readyState === WebSocket.OPEN) {
+        if (ws && ws.readyState === 1) {
           try {
             ws.send(payload);
           } catch (e) {

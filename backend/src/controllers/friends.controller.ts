@@ -27,6 +27,8 @@ export const sendFriendRequest = async (c: Context) => {
     c.executionCtx.waitUntil(
       realtimeBroadcast(c.env, result.notify.targets, result.notify.event as RealtimeEvent, result.notify.data)
     );
+    const { notify: _n, ...publicBody } = result;
+    return c.json(publicBody, 200);
   }
   return c.json(result, result.success ? 200 : 400);
 };
@@ -44,6 +46,8 @@ export const acceptFriendRequest = async (c: Context) => {
     c.executionCtx.waitUntil(
       realtimeBroadcast(c.env, result.notify.targets, result.notify.event as RealtimeEvent, result.notify.data)
     );
+    const { notify: _n, ...publicBody } = result;
+    return c.json(publicBody, 200);
   }
   return c.json(result, result.success ? 200 : 400);
 };
