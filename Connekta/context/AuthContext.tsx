@@ -5,7 +5,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import * as Device from 'expo-device';
 import { authAPI, User } from '@/services/api';
 
 export interface AuthContextType {
@@ -41,15 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return deviceId;
       }
 
-      // Second: try Device.deviceId (native UUID)
-      deviceId = Device.deviceId;
-      if (deviceId) {
-        console.log('[AUTH] Using device ID from expo-device:', deviceId);
-        await SecureStore.setItemAsync('device_id', deviceId);
-        return deviceId;
-      }
-
-      // Third: try AsyncStorage
+      // Legacy: expo-device no longer exposes deviceId; prefer persisted SecureStore id.
       try {
         deviceId = await AsyncStorage.getItem('device_id');
         if (deviceId) {

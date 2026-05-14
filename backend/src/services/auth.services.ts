@@ -217,7 +217,8 @@ export class AuthService {
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 days
       },
-      this.jwtSecret
+      this.jwtSecret,
+      'HS256'
     );
     return token;
   }

@@ -13,7 +13,7 @@ export const unstable_settings = {
 const TabBarButton = (props: any) => <HapticTab {...props} />;
 
 export default function TabLayout() {
-  const { colors, accent, isDark } = useAppTheme();
+  const { colors, accent } = useAppTheme();
 
   return (
     <BiometricGate>

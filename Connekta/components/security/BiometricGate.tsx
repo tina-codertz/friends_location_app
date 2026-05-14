@@ -12,7 +12,7 @@ import * as SecureStore from 'expo-secure-store';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Font, Type } from '@/constants/typography';
+import { Type } from '@/constants/typography';
 
 const BIO_ENABLED_KEY = 'biometric_unlock_enabled';
 const NEEDS_ENROLL_KEY = 'needs_biometric_enrollment';
