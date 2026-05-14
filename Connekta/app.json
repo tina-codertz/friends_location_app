@@ -9,17 +9,16 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Connekta uses your location to show you on the map and optionally share with friends you approve.",
+        "NSFaceIDUsageDescription": "Connekta uses Face ID to unlock the app and protect your session."
+      }
     },
     "android": {
-        "android": {
-         "permissions": [
-           "ACCESS_FINE_LOCATION",
-           "ACCESS_COARSE_LOCATION"
-      ]
-    },
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "USE_BIOMETRIC", "USE_FINGERPRINT"],
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#121212",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -41,8 +40,14 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#121212"
           }
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Connekta to use Face ID to unlock the app."
         }
       ]
     ],
