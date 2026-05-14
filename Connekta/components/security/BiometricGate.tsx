@@ -148,7 +148,6 @@ export function BiometricGate({ children }: Props) {
             variant="primary"
             fullWidth
             size="large"
-            icon={<Text style={{ color: colors.bg, fontFamily: Font.bold }}>●</Text>}
           />
           <View style={{ height: 12 }} />
           <GlassButton
