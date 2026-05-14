@@ -12,8 +12,11 @@ import { Platform } from 'react-native';
 
 // ─── Shared accent colours (same in both modes) ──────────────────────────────
 const ACCENT = {
-  teal: '#2dd4bf',
-  tealDark: '#14b8a6',
+  electricBlue: '#1E90FF',
+  electricBlueDeep: '#187bcd',
+  coral: '#FF6F61',
+  teal: '#1E90FF',
+  tealDark: '#187bcd',
   purple: '#a78bfa',
   orange: '#fb923c',
   green: '#22c55e',
