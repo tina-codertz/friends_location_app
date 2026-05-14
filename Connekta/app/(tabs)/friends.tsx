@@ -76,8 +76,7 @@ export default function FriendsTabScreen() {
     if (res.success) void loadLists();
   };
 
-  const header = useMemo(
-    () => (
+  const renderHeader = () => (
       <View style={{ gap: 16, marginBottom: 8 }}>
         <Text style={[Type.hero, { color: colors.textPrimary, paddingHorizontal: 4 }]}>Friends</Text>
 
@@ -143,9 +142,7 @@ export default function FriendsTabScreen() {
 
         <Text style={[Type.section, { color: colors.textPrimary, paddingHorizontal: 4 }]}>Your circle</Text>
       </View>
-    ),
-    [colors, accent, q, results, incoming, searching, onSearch]
-  );
+    );
 
   if (loading) {
     return (
@@ -166,7 +163,7 @@ export default function FriendsTabScreen() {
           paddingBottom: insets.bottom + 100,
           gap: 12,
         }}
-        ListHeaderComponent={header}
+        ListHeaderComponent={renderHeader}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

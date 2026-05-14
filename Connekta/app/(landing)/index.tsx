@@ -204,7 +204,7 @@ export default function LandingPage() {
 
   const isLast = slide === SLIDES.length - 1;
 
-  const slideComponents = [<Slide0 />, <Slide1 />, <Slide2 />];
+  const slideComponents = [<Slide0 key="0" />, <Slide1 key="1" />, <Slide2 key="2" />];
 
   const headings = [
     { title: 'See your friends,\nright now.',    sub: 'Live location on a shared map. Always opt-in, always private.' },
