@@ -123,7 +123,7 @@ export const authAPI = {
   },
 
   /**
-   * Verify OTP
+   * Verify OTP (returns session token when successful)
    */
   async verifyOTP(email: string, code: string): Promise<AuthResponse> {
     const response = await apiClient.post<AuthResponse>('/auth/verify-otp', {
@@ -142,6 +142,91 @@ export const authAPI = {
       device_id,
     });
     return response.data;
+  },
+};
+
+export interface FriendUser {
+  id: number;
+  username: string;
+}
+
+export interface FriendLocation extends FriendUser {
+  lat: number;
+  lng: number;
+  updated_at: string;
+}
+
+export const friendsAPI = {
+  async search(q: string): Promise<{ success: boolean; users: FriendUser[] }> {
+    const res = await apiClient.get('/friends/search', { params: { q } });
+    return res.data;
+  },
+  async sendRequest(to_user_id: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.post('/friends/request', { to_user_id });
+    return res.data;
+  },
+  async accept(from_user_id: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.post('/friends/accept', { from_user_id });
+    return res.data;
+  },
+  async reject(from_user_id: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.post('/friends/reject', { from_user_id });
+    return res.data;
+  },
+  async list(): Promise<{ success: boolean; friends: FriendUser[] }> {
+    const res = await apiClient.get('/friends/');
+    return res.data;
+  },
+  async incoming(): Promise<{ success: boolean; incoming: FriendUser[] }> {
+    const res = await apiClient.get('/friends/incoming');
+    return res.data;
+  },
+};
+
+export const locationAPI = {
+  async setSharing(enabled: boolean): Promise<{ success: boolean; sharing: boolean }> {
+    const res = await apiClient.post('/location/sharing', { enabled });
+    return res.data;
+  },
+  async ping(lat: number, lng: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.post('/location/ping', { lat, lng });
+    return res.data;
+  },
+  async friendsLocations(): Promise<{ success: boolean; locations: FriendLocation[] }> {
+    const res = await apiClient.get('/location/friends');
+    return res.data;
+  },
+  async myState(): Promise<{
+    success: boolean;
+    sharing: boolean;
+    lat: number | null;
+    lng: number | null;
+    updated_at: string | null;
+  }> {
+    const res = await apiClient.get('/location/me');
+    return res.data;
+  },
+};
+
+export interface EmergencyContact {
+  id: number;
+  name: string;
+  phone: string;
+  sort_order: number;
+}
+
+export const emergencyAPI = {
+  async list(): Promise<{ success: boolean; contacts: EmergencyContact[] }> {
+    const res = await apiClient.get('/emergency/');
+    return res.data;
+  },
+  async add(name: string, phone: string): Promise<{ success: boolean }> {
+    const res = await apiClient.post('/emergency/', { name, phone });
+    return res.data;
+  },
+  async remove(id: number): Promise<{ success: boolean }> {
+    const res = await apiClient.delete(`/emergency/${id}`);
+    return res.data;
   },
 };
 

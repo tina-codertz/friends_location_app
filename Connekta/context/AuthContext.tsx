@@ -181,7 +181,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await Promise.all([
           SecureStore.setItemAsync('auth_token', response.token),
           SecureStore.setItemAsync('user_data', JSON.stringify(response.user)),
-          SecureStore.setItemAsync('needs_biometric_enrollment', '1'),
         ]);
 
         setToken(response.token);
