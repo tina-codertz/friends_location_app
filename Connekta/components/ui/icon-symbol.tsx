@@ -15,6 +15,10 @@ interface IconSymbolProps extends TextProps {
 // Map common icon names to Unicode symbols or emojis
 const ICON_MAP: Record<string, string> = {
   'house.fill': '🏠',
+  'map.fill': '🗺️',
+  'person.2.fill': '👥',
+  'cross.case.fill': '🛟',
+  'gearshape.fill': '⚙️',
   'paperplane.fill': '✈️',
   'heart.fill': '❤️',
   'person.fill': '👤',

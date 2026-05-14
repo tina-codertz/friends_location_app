@@ -1,10 +1,15 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
+import { useCallback, useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
+
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export const unstable_settings = {
   anchor: '(landing)',
