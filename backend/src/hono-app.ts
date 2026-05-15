@@ -1,7 +1,3 @@
-/**
- * HTTP API (Hono). Imported by the Worker entrypoint alongside WebSocket routing.
- */
-
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import auth from './routes/auth.routes';
@@ -9,6 +5,8 @@ import friends from './routes/friends.routes';
 import location from './routes/location.routes';
 import emergency from './routes/emergency.routes';
 
+
+//this defines the enviroment variables and cloudflare bindings available inside your worker 
 export type WorkerEnv = {
   database: D1Database;
   JWT_SECRET: string;
