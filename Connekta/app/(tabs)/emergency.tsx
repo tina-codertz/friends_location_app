@@ -13,6 +13,7 @@ import {
 import * as Linking from 'expo-linking';
 import * as Contacts from 'expo-contacts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
@@ -22,6 +23,7 @@ import { Font, Type } from '@/constants/typography';
 import { useAuth } from '@/context/AuthContext';
 
 export default function EmergencyTabScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
   const { user } = useAuth();
@@ -101,6 +103,25 @@ export default function EmergencyTabScreen() {
     }
   };
 
+  const acceptContact = async (id: number) => {
+    try {
+      await emergencyAPI.accept(id);
+      void load();
+      Alert.alert('Success', 'Emergency contact accepted.');
+    } catch (err) {
+      Alert.alert('Error', 'Failed to accept contact.');
+    }
+  };
+
+  const rejectContact = async (id: number) => {
+    try {
+      await emergencyAPI.reject(id);
+      void load();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to reject contact.');
+    }
+  };
+
   const shareLiveLink = async () => {
     const url = Linking.createURL('/map', { scheme: 'connekta' });
     const message = `If you need me, I use Connekta for live location with trusted friends. Invite: ${url}`;
@@ -124,10 +145,9 @@ export default function EmergencyTabScreen() {
         }}
         ListHeaderComponent={
           <View style={{ gap: 16, marginBottom: 8 }}>
-            <Text style={[Type.hero, { color: colors.textPrimary }]}>Emergency</Text>
+            <Text style={[Type.hero, { color: colors.textPrimary }]}>Safety</Text>
             <Text style={[Type.body, { color: colors.textMuted }]}>
-              Coral accents keep SOS feeling urgent yet modern. Location sharing stays in the Map tab and is always
-              opt-in.
+              Add trusted emergency contacts and share your location link with them for your safety.
             </Text>
 
             <GlassCard borderRadius={22} intensity="medium" style={{ borderColor: `${accent.coral}44`, borderWidth: 1 }}>
@@ -139,7 +159,7 @@ export default function EmergencyTabScreen() {
             </GlassCard>
 
             <GlassCard borderRadius={22} intensity="heavy">
-              <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 12 }]}>Emergency contacts</Text>
+              <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 12 }]}>Safety Contacts</Text>
               <TextInput
                 placeholder="Name"
                 placeholderTextColor={colors.inputPlaceholder}
@@ -179,6 +199,14 @@ export default function EmergencyTabScreen() {
                   <Ionicons name="person-add-outline" size={22} color="#fff" />
                 </TouchableOpacity>
               </View>
+              <View style={{ marginTop: 12 }}>
+                <GlassButton 
+                  title="Add from form" 
+                  onPress={() => router.push('/emergency/EmergencyForm')} 
+                  variant="ghost" 
+                  fullWidth 
+                />
+              </View>
             </GlassCard>
 
             <Text style={[Type.caption, { color: colors.textMuted }]}>
@@ -186,19 +214,102 @@ export default function EmergencyTabScreen() {
             </Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <GlassCard borderRadius={22} intensity="light" style={{ paddingVertical: 14 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ flex: 1 }}>
-                <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>{item.name}</Text>
-                <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>{item.phone}</Text>
+        renderItem={({ item }) => {
+          const isPending = item.status === 'pending';
+          return (
+            <GlassCard 
+              borderRadius={22} 
+              intensity={isPending ? 'light' : 'medium'} 
+              style={{ 
+                paddingVertical: 14, 
+                borderColor: isPending ? `${accent.orange}44` : undefined,
+                borderWidth: isPending ? 1 : 0,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    backgroundColor: isPending ? `${accent.orange}22` : `${accent.electricBlue}22`,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Ionicons 
+                    name={isPending ? 'hourglass' : 'checkmark-circle'} 
+                    size={20} 
+                    color={isPending ? accent.orange : accent.electricBlue} 
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+                      {item.name}
+                    </Text>
+                    {isPending && (
+                      <View style={{ backgroundColor: accent.orange, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={[Type.caption, { color: '#fff', fontFamily: Font.medium }]}>Pending</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>{item.phone}</Text>
+                </View>
+                {isPending ? (
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    <TouchableOpacity
+                      onPress={() => acceptContact(item.id)}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        backgroundColor: `${accent.green}22`,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Ionicons name="checkmark" size={18} color={accent.green} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => rejectContact(item.id)}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        backgroundColor: 'rgba(255,67,54,0.15)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Ionicons name="close" size={18} color="#FF4336" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => remove(item.id)}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 8,
+                      backgroundColor: 'rgba(255,67,54,0.15)',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Ionicons name="close" size={18} color="#FF4336" />
+                  </TouchableOpacity>
+                )}
               </View>
-              <GlassButton title="Remove" onPress={() => remove(item.id)} variant="ghost" size="small" />
-            </View>
-          </GlassCard>
-        )}
+            </GlassCard>
+          );
+        }}
         ListEmptyComponent={
-          <Text style={[Type.body, { color: colors.textMuted }]}>No contacts yet. Add people you trust.</Text>
+          <View style={{ alignItems: 'center', gap: 8 }}>
+            <Ionicons name="alert-circle-outline" size={40} color={colors.textMuted} />
+            <Text style={[Type.body, { color: colors.textMuted }]}>No contacts yet</Text>
+            <Text style={[Type.caption, { color: colors.textMuted }]}>Add people you trust for emergencies</Text>
+          </View>
         }
       />
     </View>

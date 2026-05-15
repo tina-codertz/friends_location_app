@@ -68,6 +68,22 @@ function InnerRootLayout() {
         {/* Main App Tabs */}
         <Stack.Screen name="(tabs)" />
 
+        {/* Emergency Screens */}
+        <Stack.Screen 
+          name="emergency/EmergencyContactsDetails"
+          options={{ 
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }} 
+        />
+        <Stack.Screen 
+          name="emergency/EmergencyForm"
+          options={{ 
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }} 
+        />
+
         {/* Modal */}
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
