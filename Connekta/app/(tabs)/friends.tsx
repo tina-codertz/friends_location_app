@@ -105,7 +105,7 @@ export default function FriendsTabScreen() {
 
   const renderHeader = () => (
       <View style={{ gap: 16, marginBottom: 8 }}>
-        <Text style={[Type.hero, { color: colors.textPrimary, paddingHorizontal: 4 }]}>Friends</Text>
+        <Text style={[Type.hero, { color: colors.textPrimary, paddingHorizontal: 4 }]}>My Circle</Text>
 
         <GlassCard borderRadius={22} style={{ paddingVertical: 14 }} intensity="medium">
           <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 8 }]}>Discover</Text>

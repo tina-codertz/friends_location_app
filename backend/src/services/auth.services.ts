@@ -1,4 +1,3 @@
-
 import { generateOTP } from '../utils/otp';
 import { sign } from 'hono/jwt';
 import { EmailService } from './email.service';

@@ -6,10 +6,15 @@ import {
   ActivityIndicator,
   Switch,
   Platform,
+  TouchableOpacity,
+  Animated,
+  Modal,
 } from 'react-native';
 import MapView, { Circle, Marker, Region,} from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -33,6 +38,7 @@ function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 }
 
 export default function MapTabScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { token } = useAuth();
   const { colors, accent } = useAppTheme();
@@ -40,6 +46,7 @@ export default function MapTabScreen() {
   const [sharing, setSharing] = useState(false);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const lastPing = useRef(0);
   const lastSent = useRef<{ lat: number; lng: number } | null>(null);
   const mapRef = useRef<MapView>(null);
@@ -196,6 +203,24 @@ export default function MapTabScreen() {
         pointerEvents="box-none"
         style={[styles.overlay, { paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: insets.bottom + 8 }]}
       >
+        {/* Hamburger Menu Button */}
+        <TouchableOpacity
+          onPress={() => setMenuOpen(true)}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            backgroundColor: colors.navCard,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginBottom: 12,
+            borderWidth: 1,
+            borderColor: colors.navBorder,
+          }}
+        >
+          <Ionicons name="menu" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+
         <GlassCard intensity="medium" borderRadius={22} style={{ paddingVertical: 16 }}>
           <View style={styles.row}>
             <View style={{ flex: 1, paddingRight: 12 }}>
@@ -213,6 +238,84 @@ export default function MapTabScreen() {
           </View>
         </GlassCard>
       </View>
+
+      {/* Menu Modal */}
+      <Modal
+        visible={menuOpen}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <TouchableOpacity
+            onPress={() => setMenuOpen(false)}
+            style={{ flex: 1 }}
+            activeOpacity={1}
+          />
+          <View
+            style={{
+              backgroundColor: colors.navCard,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingTop: 20,
+              paddingHorizontal: 20,
+              paddingBottom: insets.bottom + 20,
+            }}
+          >
+            {/* Menu Title */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <Text style={[Type.section, { color: colors.textPrimary }]}>Menu</Text>
+              <TouchableOpacity onPress={() => setMenuOpen(false)}>
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Menu Items */}
+            <TouchableOpacity
+              onPress={() => {
+                setMenuOpen(false);
+                // MyPlaces is at the same level, but we can navigate via router
+                router.push('/(tabs)/MyPlaces' as any);
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomColor: colors.divider, borderBottomWidth: 1 }}
+            >
+              <Ionicons name="location" size={24} color={accent.electricBlue} />
+              <View>
+                <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>My Places</Text>
+                <Text style={[Type.caption, { color: colors.textMuted }]}>Save favorite locations</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setMenuOpen(false);
+                router.push('/(tabs)/ShareLocation' as any);
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomColor: colors.divider, borderBottomWidth: 1 }}
+            >
+              <Ionicons name="share-social" size={24} color={accent.teal} />
+              <View>
+                <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>Share Location</Text>
+                <Text style={[Type.caption, { color: colors.textMuted }]}>Quick share your location</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setMenuOpen(false);
+                router.push('/(tabs)/SOSScreen' as any);
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 }}
+            >
+              <Ionicons name="alert-circle" size={24} color={accent.coral} />
+              <View>
+                <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>Emergency SOS</Text>
+                <Text style={[Type.caption, { color: colors.textMuted }]}>Send emergency alert</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

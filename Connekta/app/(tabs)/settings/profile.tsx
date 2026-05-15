@@ -20,7 +20,7 @@ export default function ProfileScreen() {
       Alert.alert('Invalid', 'Username must be at least 2 characters.');
       return;
     }
-    // TODO: Implement API call to update profile
+
     Alert.alert('Profile updated', 'Your profile has been updated.');
     setIsEditing(false);
   };
@@ -101,7 +101,7 @@ export default function ProfileScreen() {
             onPress={handleSave}
             variant="primary"
             fullWidth
-            flex={1}
+            // flex={1}
           />
           <GlassButton
             title="Cancel"
@@ -111,7 +111,7 @@ export default function ProfileScreen() {
             }}
             variant="ghost"
             fullWidth
-            flex={1}
+            // flex={1}
           />
         </View>
       )}

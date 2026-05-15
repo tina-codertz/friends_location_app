@@ -7,9 +7,7 @@ type JwtPayload = {
   exp: number;
 };
 
-/**
- * Browser / RN clients open a WebSocket here. JWT is passed as ?token= (WS stacks rarely send auth headers).
- */
+
 export async function handlePublicWebSocket(request: Request, env: WorkerEnv): Promise<Response> {
   if (request.headers.get('Upgrade') !== 'websocket') {
     return new Response('Expected WebSocket', { status: 426 });

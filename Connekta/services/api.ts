@@ -233,6 +233,7 @@ export interface EmergencyContact {
   id: number;
   name: string;
   phone: string;
+  status: 'pending' | 'accepted';
   sort_order: number;
 }
 
@@ -241,12 +242,24 @@ export const emergencyAPI = {
     const res = await apiClient.get('/emergency');
     return res.data;
   },
-  async add(name: string, phone: string): Promise<{ success: boolean }> {
-    const res = await apiClient.post('/emergency', { name, phone });
+  async add(name: string, phone: string): Promise<{ success: boolean; contact?: EmergencyContact }> {
+    const res = await apiClient.post('/emergency', { name, phone, status: 'pending' });
+    return res.data;
+  },
+  async accept(id: number): Promise<{ success: boolean }> {
+    const res = await apiClient.post(`/emergency/${id}/accept`);
+    return res.data;
+  },
+  async reject(id: number): Promise<{ success: boolean }> {
+    const res = await apiClient.post(`/emergency/${id}/reject`);
     return res.data;
   },
   async remove(id: number): Promise<{ success: boolean }> {
     const res = await apiClient.delete(`/emergency/${id}`);
+    return res.data;
+  },
+  async triggerSOS(lat: number, lng: number): Promise<{ success: boolean; notified: number }> {
+    const res = await apiClient.post('/emergency/sos', { lat, lng });
     return res.data;
   },
 };

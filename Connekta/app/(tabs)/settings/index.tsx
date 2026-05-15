@@ -54,13 +54,27 @@ export default function SettingsHomeScreen() {
         gap: 16,
       }}
     >
-      <Text style={[Type.hero, { color: colors.textPrimary }]}>Settings</Text>
-      <Text style={[Type.body, { color: colors.textMuted }]}>Glass surfaces, soft depth, and calm spacing.</Text>
+      <Text style={[Type.hero, { color: colors.textPrimary }]}>Profile</Text>
+      <Text style={[Type.body, { color: colors.textMuted }]}>Manage your account, security, and preferences.</Text>
 
       <TouchableOpacity onPress={() => router.push('/(tabs)/settings/profile')} activeOpacity={0.85}>
         <GlassCard borderRadius={22} intensity="medium" glowAccent style={{ paddingVertical: 18 }}>
           <Text style={[Type.section, { color: colors.textPrimary }]}>Profile</Text>
           <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>View account details</Text>
+        </GlassCard>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => router.push('/(tabs)/settings/CircleManagement')} activeOpacity={0.85}>
+        <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 18 }}>
+          <Text style={[Type.section, { color: colors.textPrimary }]}>Your Circle</Text>
+          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>Manage friends and sharing</Text>
+        </GlassCard>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => router.push('/(tabs)/settings/LocationHistory')} activeOpacity={0.85}>
+        <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 18 }}>
+          <Text style={[Type.section, { color: colors.textPrimary }]}>Location History</Text>
+          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>View your location records</Text>
         </GlassCard>
       </TouchableOpacity>
 
