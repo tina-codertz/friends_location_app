@@ -207,7 +207,7 @@ export const friendsAPI = {
     return res.data;
   },
   async list(): Promise<{ success: boolean; friends: FriendUser[] }> {
-    const res = await apiClient.get('/friends/');
+    const res = await apiClient.get('/friends');
     return res.data;
   },
   async incoming(): Promise<{ success: boolean; incoming: FriendUser[] }> {
@@ -251,11 +251,11 @@ export interface EmergencyContact {
 
 export const emergencyAPI = {
   async list(): Promise<{ success: boolean; contacts: EmergencyContact[] }> {
-    const res = await apiClient.get('/emergency/');
+    const res = await apiClient.get('/emergency');
     return res.data;
   },
   async add(name: string, phone: string): Promise<{ success: boolean }> {
-    const res = await apiClient.post('/emergency/', { name, phone });
+    const res = await apiClient.post('/emergency', { name, phone });
     return res.data;
   },
   async remove(id: number): Promise<{ success: boolean }> {

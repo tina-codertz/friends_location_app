@@ -8,6 +8,7 @@ import {
   listFriends,
   listIncoming,
 } from '../controllers/friends.controller';
+import { getMyInvite, generateInvite, joinWithCode } from '../controllers/invite.controller';
 
 const friends = new Hono();
 
@@ -17,6 +18,7 @@ friends.post('/request', sendFriendRequest);
 friends.post('/accept', acceptFriendRequest);
 friends.post('/reject', rejectFriendRequest);
 friends.get('/', listFriends);
+friends.get('', listFriends);
 friends.get('/incoming', listIncoming);
 
 export default friends;

@@ -121,6 +121,41 @@ export class FriendsService {
       .first()) as { id: number } | undefined;
 
     if (!row) {
+      if (await this.areFriends(fromUserId, currentUserId)) {
+        return {
+          success: true,
+          message: 'Already in your circle',
+          notify: {
+            event: 'friend_accepted',
+            targets: [fromUserId, currentUserId],
+            data: {},
+          },
+        };
+      }
+      const stale = (await this.db
+        .prepare(
+          `SELECT id FROM friend_requests
+           WHERE from_user_id = ? AND to_user_id = ? AND status = 'accepted'`
+        )
+        .bind(fromUserId, currentUserId)
+        .first()) as { id: number } | undefined;
+      if (stale) {
+        const low = Math.min(fromUserId, currentUserId);
+        const high = Math.max(fromUserId, currentUserId);
+        await this.db
+          .prepare(`INSERT OR IGNORE INTO friendships (user_low, user_high) VALUES (?, ?)`)
+          .bind(low, high)
+          .run();
+        return {
+          success: true,
+          message: 'Already in your circle',
+          notify: {
+            event: 'friend_accepted',
+            targets: [fromUserId, currentUserId],
+            data: {},
+          },
+        };
+      }
       return { success: false as const, message: 'No pending request' };
     }
 
