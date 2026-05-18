@@ -64,6 +64,18 @@ CREATE TABLE IF NOT EXISTS emergency_contacts (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Saved places (visible to circle); see migrations/0003_saved_places.sql
+CREATE TABLE IF NOT EXISTS saved_places (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_saved_places_user ON saved_places(user_id);
+
 --indexes to optimize friend request queries by to_user_id and from_user_id, especially when filtering by status
 CREATE INDEX IF NOT EXISTS idx_friend_requests_to ON friend_requests(to_user_id, status);
 CREATE INDEX IF NOT EXISTS idx_friend_requests_from ON friend_requests(from_user_id, status);
