@@ -235,6 +235,35 @@ export const friendsAPI = {
   },
 };
 
+export interface SavedPlace {
+  id: number;
+  user_id: number;
+  username: string;
+  name: string;
+  lat: number;
+  lng: number;
+  created_at: string;
+}
+
+export const placesAPI = {
+  async mine(): Promise<{ success: boolean; places: SavedPlace[] }> {
+    const res = await apiClient.get('/places/mine');
+    return res.data;
+  },
+  async circle(): Promise<{ success: boolean; places: SavedPlace[] }> {
+    const res = await apiClient.get('/places/circle');
+    return res.data;
+  },
+  async create(name: string, lat: number, lng: number): Promise<{ success: boolean; place?: SavedPlace; message?: string }> {
+    const res = await apiClient.post('/places', { name, lat, lng });
+    return res.data;
+  },
+  async remove(id: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.delete(`/places/${id}`);
+    return res.data;
+  },
+};
+
 export const locationAPI = {
   async setSharing(enabled: boolean): Promise<{ success: boolean; sharing: boolean }> {
     const res = await apiClient.post('/location/sharing', { enabled });
