@@ -1,5 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  FlatList,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  Share,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -8,6 +19,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
 import { friendsAPI, type FriendUser } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+import { buildCircleInviteLink, formatInviteMessage } from '@/utils/invite';
 
 export default function CircleManagement() {
   const insets = useSafeAreaInsets();
@@ -15,67 +27,127 @@ export default function CircleManagement() {
   const { user } = useAuth();
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [inviteExpiry, setInviteExpiry] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [joining, setJoining] = useState(false);
 
-  useEffect(() => {
-    loadFriends();
-  }, [user?.id]);
-
-  const loadFriends = async () => {
+  const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      if (user?.id) {
-        const data = await friendsAPI.list();
-        if (data.success) {
-          setFriends(data.friends);
-        }
+      const [friendsRes, inviteRes] = await Promise.all([friendsAPI.list(), friendsAPI.getInvite()]);
+      if (friendsRes.success) setFriends(friendsRes.friends);
+      if (inviteRes.success && inviteRes.invite) {
+        setInviteCode(inviteRes.invite.code);
+        setInviteExpiry(inviteRes.invite.expires_at);
       }
-    } catch (err) {
-      Alert.alert('Error', 'Failed to load friends.');
-      console.error('Error loading friends:', err);
+    } catch {
+      Alert.alert('Error', 'Failed to load circle.');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  React.useEffect(() => {
+    void loadAll();
+  }, [loadAll]);
+
+  const generateCode = async () => {
+    setGenerating(true);
+    try {
+      const res = await friendsAPI.generateInvite();
+      if (res.success && res.code) {
+        setInviteCode(res.code);
+        setInviteExpiry(res.expires_at ?? null);
+        Alert.alert('Invite code ready', `Your code is ${res.code}`);
+      } else {
+        Alert.alert('Error', res.message ?? 'Could not generate code');
+      }
+    } catch {
+      Alert.alert('Error', 'Could not generate invite code.');
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const handleRemoveFriend = async (friendId: number) => {
-    // Note: The API doesn't have a remove friend endpoint yet
-    // This is a placeholder for future implementation
-    Alert.alert('Remove Friend', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            // await friendsAPI.removeFriend(friendId);
-            setFriends(friends.filter(f => f.id !== friendId));
-            Alert.alert('Success', 'Friend removed.');
-          } catch (err) {
-            Alert.alert('Error', 'Failed to remove friend.');
-          }
-        },
-      },
-    ]);
+  const shareInvite = async () => {
+    if (!inviteCode || !user?.username) {
+      Alert.alert('Generate a code first', 'Tap Generate code to create your circle invite.');
+      return;
+    }
+    try {
+      await Share.share({
+        message: formatInviteMessage(inviteCode, user.username),
+        title: 'Join my Connekta circle',
+      });
+    } catch {
+      /* cancelled */
+    }
+  };
+
+  const copyCode = async () => {
+    if (!inviteCode) return;
+    try {
+      await Share.share({ message: inviteCode });
+    } catch {
+      /* cancelled */
+    }
+  };
+
+  const joinCircle = async () => {
+    const code = joinCode.trim();
+    if (code.length < 6) {
+      Alert.alert('Invalid code', 'Enter the 6–8 character invite code.');
+      return;
+    }
+    setJoining(true);
+    try {
+      const res = await friendsAPI.joinWithCode(code);
+      if (res.success) {
+        setJoinCode('');
+        void loadAll();
+        Alert.alert(
+          'Request sent',
+          res.circle_owner
+            ? `Friend request sent to ${res.circle_owner.username}. They can accept you in My Circle.`
+            : 'Friend request sent.'
+        );
+      } else {
+        Alert.alert('Could not join', res.message ?? 'Invalid or expired code');
+      }
+    } catch (e: unknown) {
+      const msg =
+        e && typeof e === 'object' && 'response' in e
+          ? (e as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      Alert.alert('Could not join', msg ?? 'Check the code and try again.');
+    } finally {
+      setJoining(false);
+    }
   };
 
   const renderFriendItem = ({ item }: { item: FriendUser }) => (
-    <GlassCard borderRadius={16} intensity="light" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-      <View>
+    <GlassCard
+      borderRadius={16}
+      intensity="light"
+      style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: `${accent.electricBlue}22`,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="person" size={18} color={accent.electricBlue} />
+        </View>
         <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.medium }]}>{item.username}</Text>
       </View>
-      <TouchableOpacity
-        onPress={() => handleRemoveFriend(item.id)}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 8,
-          backgroundColor: 'rgba(255,67,54,0.1)',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <Ionicons name="close" size={20} color="#FF4336" />
-      </TouchableOpacity>
     </GlassCard>
   );
 
@@ -86,41 +158,131 @@ export default function CircleManagement() {
         padding: 20,
         paddingTop: insets.top + 12,
         paddingBottom: insets.bottom + 40,
+        gap: 16,
       }}
     >
-      <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 8 }]}>Your Circle</Text>
-      <Text style={[Type.body, { color: colors.textMuted, marginBottom: 20 }]}>
-        Manage your friends and location sharing circle.
+      <Text style={[Type.hero, { color: colors.textPrimary }]}>Your Circle</Text>
+      <Text style={[Type.body, { color: colors.textMuted }]}>
+        Generate an invite code or link so friends can join your circle. Location sharing stays opt-in on the Map tab.
       </Text>
 
+      <GlassCard borderRadius={22} intensity="heavy" glowAccent>
+        <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Your invite code</Text>
+        <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 14 }]}>
+          Friends enter this code in My Circle to send you a friend request.
+        </Text>
+
+        {inviteCode ? (
+          <TouchableOpacity onPress={copyCode} activeOpacity={0.8}>
+            <View
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                paddingVertical: 16,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: colors.tealBorder,
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: Font.bold,
+                  fontSize: 28,
+                  letterSpacing: 6,
+                  color: accent.electricBlue,
+                }}
+              >
+                {inviteCode}
+              </Text>
+              <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>Tap to share code</Text>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <Text style={[Type.body, { color: colors.textMuted, marginBottom: 12 }]}>No active code yet.</Text>
+        )}
+
+        {inviteExpiry ? (
+          <Text style={[Type.caption, { color: colors.textTertiary, marginBottom: 12 }]}>
+            Expires {new Date(inviteExpiry).toLocaleDateString()}
+          </Text>
+        ) : null}
+
+        <View style={{ gap: 10 }}>
+          <GlassButton
+            title={generating ? 'Generating…' : inviteCode ? 'Refresh code' : 'Generate code'}
+            onPress={generateCode}
+            variant="primary"
+            fullWidth
+            disabled={generating}
+          />
+          <GlassButton title="Share invite link" onPress={shareInvite} variant="secondary" fullWidth disabled={!inviteCode} />
+        </View>
+
+        {inviteCode ? (
+          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 12 }]} numberOfLines={2}>
+            Link: {buildCircleInviteLink(inviteCode)}
+          </Text>
+        ) : null}
+      </GlassCard>
+
+      <GlassCard borderRadius={22} intensity="medium">
+        <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Join a circle</Text>
+        <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 12 }]}>
+          Enter a friend&apos;s invite code to request joining their circle.
+        </Text>
+        <TextInput
+          placeholder="INVITE CODE"
+          placeholderTextColor={colors.inputPlaceholder}
+          value={joinCode}
+          onChangeText={(t) => setJoinCode(t.toUpperCase())}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          maxLength={8}
+          style={[
+            styles.codeInput,
+            {
+              color: colors.textPrimary,
+              borderColor: colors.inputBorder,
+              backgroundColor: colors.inputBg,
+              fontFamily: Font.semibold,
+            },
+          ]}
+        />
+        <View style={{ height: 12 }} />
+        <GlassButton
+          title={joining ? 'Joining…' : 'Join with code'}
+          onPress={joinCircle}
+          variant="secondary"
+          fullWidth
+          disabled={joining}
+        />
+      </GlassCard>
+
+      <Text style={[Type.section, { color: colors.textPrimary }]}>Members ({friends.length})</Text>
+
       {loading ? (
-        <GlassCard borderRadius={16} intensity="light" style={{ padding: 20, alignItems: 'center' }}>
-          <Text style={[Type.body, { color: colors.textMuted }]}>Loading...</Text>
-        </GlassCard>
+        <ActivityIndicator color={accent.electricBlue} />
       ) : friends.length === 0 ? (
         <GlassCard borderRadius={16} intensity="light" style={{ padding: 20, alignItems: 'center' }}>
-          <Ionicons name="people" size={40} color={colors.textMuted} style={{ marginBottom: 12 }} />
-          <Text style={[Type.body, { color: colors.textMuted }]}>No friends yet</Text>
-          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>Add friends to share locations</Text>
+          <Ionicons name="people-outline" size={40} color={colors.textMuted} />
+          <Text style={[Type.body, { color: colors.textMuted, marginTop: 8 }]}>No friends in your circle yet</Text>
         </GlassCard>
       ) : (
-        <FlatList
-          data={friends}
-          renderItem={renderFriendItem}
-          keyExtractor={item => String(item.id)}
-          scrollEnabled={false}
-        />
+        <FlatList data={friends} renderItem={renderFriendItem} keyExtractor={(item) => String(item.id)} scrollEnabled={false} />
       )}
-
-      <GlassButton
-        title="Invite Friends"
-        onPress={() => Alert.alert('Share', 'Share your invite code with friends to add them to your circle.')}
-        variant="secondary"
-        fullWidth
-        style={{ marginTop: 20 }}
-      />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  codeInput: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 20,
+    letterSpacing: 4,
+    textAlign: 'center',
+  },
+});

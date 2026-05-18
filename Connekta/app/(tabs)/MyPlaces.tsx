@@ -1,151 +1,342 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   FlatList,
   TouchableOpacity,
   Alert,
   StyleSheet,
+  TextInput,
+  Modal,
+  ActivityIndicator,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
+import MapView, { Marker, Region } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
+import { placesAPI, type SavedPlace } from '@/services/api';
 
-interface Place {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  icon: string;
-}
-
-const SAMPLE_PLACES: Place[] = [
-  { id: '1', name: 'Home', latitude: 37.7749, longitude: -122.4194, icon: 'home' },
-  { id: '2', name: 'Work', latitude: 37.3382, longitude: -121.8863, icon: 'briefcase' },
-  { id: '3', name: 'Gym', latitude: 37.7749, longitude: -122.4094, icon: 'fitness' },
-];
+const DEFAULT_REGION: Region = {
+  latitude: 37.7749,
+  longitude: -122.4194,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
 
 export default function MyPlacesScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { colors, accent } = useAppTheme();
-  const [places, setPlaces] = useState<Place[]>(SAMPLE_PLACES);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const mapRef = useRef<MapView>(null);
 
-  const handleDelete = useCallback((id: string) => {
-    Alert.alert('Delete Place', 'Remove this saved place?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => setPlaces(places.filter(p => p.id !== id)),
-      },
-    ]);
-  }, [places]);
+  const [places, setPlaces] = useState<SavedPlace[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addOpen, setAddOpen] = useState(false);
+  const [placeName, setPlaceName] = useState('');
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [region, setRegion] = useState<Region>(DEFAULT_REGION);
+  const [saving, setSaving] = useState(false);
 
-  const handleAddPlace = useCallback(() => {
-    Alert.prompt(
-      'Add Place',
-      'Enter place name',
-      [
+  const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
+
+  const loadPlaces = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await placesAPI.mine();
+      if (res.success) setPlaces(res.places);
+    } catch {
+      Alert.alert('Error', 'Could not load your places.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadPlaces();
+  }, [loadPlaces]);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const r: Region = {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        latitudeDelta: 0.04,
+        longitudeDelta: 0.04,
+      };
+      setRegion(r);
+      if (!pin) setPin({ lat: r.latitude, lng: r.longitude });
+    })();
+  }, []);
+
+  const openAdd = () => {
+    setPlaceName('');
+    setPin((p) => p ?? { lat: region.latitude, lng: region.longitude });
+    setAddOpen(true);
+  };
+
+  const savePlace = async () => {
+    const name = placeName.trim();
+    if (!name) {
+      Alert.alert('Name required', 'Give this place a name your circle will recognize.');
+      return;
+    }
+    if (!pin) {
+      Alert.alert('Pick a spot', 'Tap the map to set the location.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await placesAPI.create(name, pin.lat, pin.lng);
+      if (res.success && res.place) {
+        setPlaces((prev) => [res.place!, ...prev]);
+        setAddOpen(false);
+        Alert.alert('Saved', `"${name}" is visible to your circle on the map.`);
+      } else {
+        Alert.alert('Error', res.message ?? 'Could not save place');
+      }
+    } catch {
+      Alert.alert('Error', 'Could not save place');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = useCallback(
+    (place: SavedPlace) => {
+      Alert.alert('Delete place', `Remove "${place.name}"?`, [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Add',
-          onPress: (name?: string) => {
-            if (name?.trim()) {
-              setPlaces([
-                ...places,
-                {
-                  id: String(places.length + 1),
-                  name: name.trim(),
-                  latitude: 37.7749,
-                  longitude: -122.4194,
-                  icon: 'location',
-                },
-              ]);
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await placesAPI.remove(place.id);
+              if (res.success) setPlaces((prev) => prev.filter((p) => p.id !== place.id));
+            } catch {
+              Alert.alert('Error', 'Could not delete place');
             }
           },
         },
-      ]
-    );
-  }, [places]);
+      ]);
+    },
+    []
+  );
 
-  const renderPlaceItem = ({ item }: { item: Place }) => (
-    <GlassCard borderRadius={16} intensity="light" style={{ marginBottom: 12, paddingVertical: 14 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <View
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            backgroundColor: accent.electricBlue,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Ionicons name={item.icon as any} size={24} color="#fff" />
+  const focusPlace = (place: SavedPlace) => {
+    mapRef.current?.animateToRegion(
+      {
+        latitude: place.lat,
+        longitude: place.lng,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      },
+      400
+    );
+  };
+
+  const previewMarkers = useMemo(
+    () =>
+      places.map((p) => (
+        <PlaceLabelMarker
+          key={`mine-${p.id}`}
+          id={`mine-${p.id}`}
+          latitude={p.lat}
+          longitude={p.lng}
+          label={p.name}
+          accentColor={accent.electricBlue}
+          backgroundColor={colors.glassBgHeavy}
+          textColor={colors.textPrimary}
+          borderColor={accent.electricBlue}
+        />
+      )),
+    [places, accent.electricBlue, colors]
+  );
+
+  const renderPlaceItem = ({ item }: { item: SavedPlace }) => (
+    <TouchableOpacity onPress={() => focusPlace(item)} activeOpacity={0.85}>
+      <GlassCard borderRadius={16} intensity="light" style={{ marginBottom: 12, paddingVertical: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: `${accent.electricBlue}22`,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Ionicons name="location" size={22} color={accent.electricBlue} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>{item.name}</Text>
+            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
+              {item.lat.toFixed(4)}, {item.lng.toFixed(4)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => handleDelete(item)}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(255,67,54,0.12)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Ionicons name="trash-outline" size={20} color="#FF4336" />
+          </TouchableOpacity>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
-            {item.name}
-          </Text>
-          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-            {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => handleDelete(item.id)}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 8,
-            backgroundColor: 'rgba(255,67,54,0.1)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Ionicons name="close" size={20} color="#FF4336" />
-        </TouchableOpacity>
-      </View>
-    </GlassCard>
+      </GlassCard>
+    </TouchableOpacity>
   );
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        padding: 20,
-        paddingTop: insets.top + 12,
-        paddingBottom: insets.bottom + 40,
-      }}
-    >
-      <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 8 }]}>My Places</Text>
-      <Text style={[Type.body, { color: colors.textMuted, marginBottom: 20 }]}>
-        Save and manage your favorite locations.
-      </Text>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={styles.mapWrap}>
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFill}
+          initialRegion={region}
+          showsUserLocation
+          {...mapTypeProps}
+          onPress={(e) => {
+            if (addOpen) {
+              setPin({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude });
+            }
+          }}
+        >
+          {previewMarkers}
+          {addOpen && pin ? (
+            <Marker coordinate={{ latitude: pin.lat, longitude: pin.lng }} pinColor={accent.coral} />
+          ) : null}
+        </MapView>
 
-      {places.length === 0 ? (
-        <GlassCard borderRadius={16} intensity="light" style={{ padding: 20, alignItems: 'center' }}>
-          <Ionicons name="location" size={40} color={colors.textMuted} style={{ marginBottom: 12 }} />
-          <Text style={[Type.body, { color: colors.textMuted }]}>No places saved</Text>
-          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>Add your first place below</Text>
-        </GlassCard>
-      ) : (
-        <FlatList data={places} renderItem={renderPlaceItem} keyExtractor={item => item.id} scrollEnabled={false} />
-      )}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={[styles.backBtn, { top: insets.top + 8, backgroundColor: colors.glassBgMedium, borderColor: colors.glassBorderMedium }]}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+      </View>
 
-      <GlassButton
-        title="Add New Place"
-        onPress={handleAddPlace}
-        variant="secondary"
-        fullWidth
-        style={{ marginTop: 20 }}
-      />
-    </ScrollView>
+      <View style={[styles.sheet, { backgroundColor: colors.bg, paddingBottom: insets.bottom + 16 }]}>
+        <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 4 }]}>My Places</Text>
+        <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 12 }]}>
+          Saved spots appear on the live map for everyone in your circle.
+        </Text>
+
+        {loading ? (
+          <ActivityIndicator color={accent.electricBlue} style={{ marginVertical: 16 }} />
+        ) : places.length === 0 ? (
+          <Text style={[Type.body, { color: colors.textMuted, marginBottom: 12 }]}>No places yet — add one below.</Text>
+        ) : (
+          <FlatList
+            data={places}
+            renderItem={renderPlaceItem}
+            keyExtractor={(item) => String(item.id)}
+            style={{ maxHeight: 200 }}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        <GlassButton title="Add place on map" onPress={openAdd} variant="primary" fullWidth style={{ marginTop: 8 }} />
+      </View>
+
+      <Modal visible={addOpen} animationType="slide" transparent onRequestClose={() => setAddOpen(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}
+        >
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setAddOpen(false)} activeOpacity={1} />
+          <GlassCard
+            borderRadius={24}
+            intensity="heavy"
+            style={{
+              borderBottomLeftRadius: 0,
+              borderBottomRightRadius: 0,
+              padding: 20,
+              paddingBottom: insets.bottom + 20,
+            }}
+          >
+            <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>New place</Text>
+            <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 12 }]}>
+              Tap the map above to move the pin, then name this spot.
+            </Text>
+            <TextInput
+              placeholder="e.g. Home, Office, Gym"
+              placeholderTextColor={colors.inputPlaceholder}
+              value={placeName}
+              onChangeText={setPlaceName}
+              style={[
+                styles.nameInput,
+                {
+                  color: colors.textPrimary,
+                  borderColor: colors.inputBorder,
+                  backgroundColor: colors.inputBg,
+                  fontFamily: Font.regular,
+                },
+              ]}
+            />
+            {pin ? (
+              <Text style={[Type.caption, { color: colors.textMuted, marginTop: 8 }]}>
+                Pin: {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
+              </Text>
+            ) : null}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+              <GlassButton title="Cancel" onPress={() => setAddOpen(false)} variant="secondary" style={{ flex: 1 }} />
+              <GlassButton
+                title={saving ? 'Saving…' : 'Save place'}
+                onPress={savePlace}
+                variant="primary"
+                style={{ flex: 1 }}
+                disabled={saving}
+              />
+            </View>
+          </GlassCard>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  mapWrap: { height: '42%' },
+  backBtn: {
+    position: 'absolute',
+    left: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheet: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -12,
+  },
+  nameInput: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+});

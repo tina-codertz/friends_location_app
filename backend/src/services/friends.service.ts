@@ -43,7 +43,15 @@ export class FriendsService {
       return { success: false as const, message: 'Cannot add yourself' };
     }
     if (await this.areFriends(fromUserId, toUserId)) {
-      return { success: false as const, message: 'Already friends' };
+      return {
+        success: true as const,
+        message: 'Already in your circle',
+        notify: {
+          event: 'friend_accepted',
+          targets: [fromUserId, toUserId],
+          data: {},
+        },
+      };
     }
 
     const existing = (await this.db

@@ -20,5 +20,8 @@ friends.post('/reject', rejectFriendRequest);
 friends.get('/', listFriends);
 friends.get('', listFriends);
 friends.get('/incoming', listIncoming);
+friends.get('/invite', getMyInvite);
+friends.post('/invite/generate', generateInvite);
+friends.post('/invite/join', joinWithCode);
 
 export default friends;

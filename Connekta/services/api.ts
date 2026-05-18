@@ -214,6 +214,54 @@ export const friendsAPI = {
     const res = await apiClient.get('/friends/incoming');
     return res.data;
   },
+  async getInvite(): Promise<{
+    success: boolean;
+    invite: { code: string; expires_at: string | null; created_at: string } | null;
+  }> {
+    const res = await apiClient.get('/friends/invite');
+    return res.data;
+  },
+  async generateInvite(): Promise<{ success: boolean; code?: string; expires_at?: string; message?: string }> {
+    const res = await apiClient.post('/friends/invite/generate');
+    return res.data;
+  },
+  async joinWithCode(code: string): Promise<{
+    success: boolean;
+    message?: string;
+    circle_owner?: FriendUser;
+  }> {
+    const res = await apiClient.post('/friends/invite/join', { code: code.trim().toUpperCase() });
+    return res.data;
+  },
+};
+
+export interface SavedPlace {
+  id: number;
+  user_id: number;
+  username: string;
+  name: string;
+  lat: number;
+  lng: number;
+  created_at: string;
+}
+
+export const placesAPI = {
+  async mine(): Promise<{ success: boolean; places: SavedPlace[] }> {
+    const res = await apiClient.get('/places/mine');
+    return res.data;
+  },
+  async circle(): Promise<{ success: boolean; places: SavedPlace[] }> {
+    const res = await apiClient.get('/places/circle');
+    return res.data;
+  },
+  async create(name: string, lat: number, lng: number): Promise<{ success: boolean; place?: SavedPlace; message?: string }> {
+    const res = await apiClient.post('/places', { name, lat, lng });
+    return res.data;
+  },
+  async remove(id: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.delete(`/places/${id}`);
+    return res.data;
+  },
 };
 
 export const locationAPI = {

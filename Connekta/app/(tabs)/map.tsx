@@ -10,15 +10,17 @@ import {
   Animated,
   Modal,
 } from 'react-native';
-import MapView, { Circle, Marker, Region } from 'react-native-maps';
+import MapView, { Circle, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
+import { useCirclePlaces } from '@/hooks/useCirclePlaces';
+import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 import { locationAPI } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 
@@ -40,7 +42,7 @@ function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 export default function MapTabScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { colors, accent } = useAppTheme();
   const [permission, setPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
   const [sharing, setSharing] = useState(false);
@@ -53,6 +55,13 @@ export default function MapTabScreen() {
   const overlayShift = useRef(new Animated.Value(0)).current;
 
   const { locations, refresh } = useLiveFriendLocations(sharing, token);
+  const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(token);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshPlaces();
+    }, [refreshPlaces])
+  );
 
   /** Android AirMap throws when mapType updates to an invalid native value — omit on Android. */
   const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
@@ -116,6 +125,7 @@ export default function MapTabScreen() {
             try {
               await locationAPI.ping(next.lat, next.lng);
               void refresh();
+              void refreshPlaces();
             } catch {
               /* ignore transient errors */
             }
@@ -141,6 +151,7 @@ export default function MapTabScreen() {
         lastSent.current = null;
         await locationAPI.ping(me.lat, me.lng);
         void refresh();
+        void refreshPlaces();
       }
     } catch {
       setSharing(!value);
@@ -209,14 +220,36 @@ export default function MapTabScreen() {
           />
         ) : null}
         {locations.map((f) => (
-          <Marker
-            key={String(f.id)}
-            coordinate={{ latitude: f.lat, longitude: f.lng }}
-            title={f.username}
-            description="Friend (live)"
-            {...(Platform.OS === 'ios' ? { pinColor: accent.coral } : {})}
+          <PlaceLabelMarker
+            key={`live-${f.id}`}
+            id={`live-${f.id}`}
+            latitude={f.lat}
+            longitude={f.lng}
+            label={f.username}
+            subtitle="Live"
+            accentColor={accent.coral}
+            backgroundColor={colors.glassBgHeavy}
+            textColor={colors.textPrimary}
+            borderColor={accent.coral}
           />
         ))}
+        {circlePlaces.map((p) => {
+          const isMine = user?.id === p.user_id;
+          return (
+            <PlaceLabelMarker
+              key={`place-${p.id}`}
+              id={`place-${p.id}`}
+              latitude={p.lat}
+              longitude={p.lng}
+              label={p.name}
+              subtitle={isMine ? 'Your place' : p.username}
+              accentColor={isMine ? accent.electricBlue : accent.teal}
+              backgroundColor={colors.glassBgMedium}
+              textColor={colors.textPrimary}
+              borderColor={isMine ? accent.electricBlue : colors.glassBorderMedium}
+            />
+          );
+        })}
       </MapView>
 
       <Animated.View

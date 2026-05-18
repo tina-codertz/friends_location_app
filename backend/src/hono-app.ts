@@ -4,6 +4,7 @@ import auth from './routes/auth.routes';
 import friends from './routes/friends.routes';
 import location from './routes/location.routes';
 import emergency from './routes/emergency.routes';
+import places from './routes/places.routes';
 import { handlePublicWebSocket } from './realtime/ws-gateway';
 
 
@@ -41,6 +42,7 @@ app.route('/auth', auth);
 app.route('/friends', friends);
 app.route('/location', location);
 app.route('/emergency', emergency);
+app.route('/places', places);
 
 app.notFound((c) => {
   return c.json({ success: false, message: 'Route not found' }, 404);
