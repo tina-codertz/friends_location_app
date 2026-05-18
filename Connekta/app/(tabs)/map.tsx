@@ -10,7 +10,7 @@ import {
   Animated,
   Modal,
 } from 'react-native';
-import MapView, { Circle, Marker, Region,} from 'react-native-maps';
+import MapView, { Circle, Marker, Region, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -50,8 +50,12 @@ export default function MapTabScreen() {
   const lastPing = useRef(0);
   const lastSent = useRef<{ lat: number; lng: number } | null>(null);
   const mapRef = useRef<MapView>(null);
+  const overlayShift = useRef(new Animated.Value(0)).current;
 
   const { locations, refresh } = useLiveFriendLocations(sharing, token);
+
+  /** Android AirMap throws when mapType updates to an invalid native value — omit on Android. */
+  const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
 
   const region: Region | null = useMemo(() => {
     if (!me) return null;
@@ -172,53 +176,84 @@ export default function MapTabScreen() {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         initialRegion={region}
         showsUserLocation
         showsMyLocationButton={Platform.OS === 'android'}
         showsCompass
-        loadingEnabled
-        mapType="standard"
+        loadingEnabled={Platform.OS === 'ios'}
+        {...mapTypeProps}
         onMapReady={() => mapRef.current?.animateToRegion(region, 400)}
+        onRegionChange={() => {
+          Animated.spring(overlayShift, {
+            toValue: 6,
+            tension: 80,
+            friction: 12,
+            useNativeDriver: true,
+          }).start();
+        }}
+        onRegionChangeComplete={() => {
+          Animated.spring(overlayShift, {
+            toValue: 0,
+            tension: 80,
+            friction: 12,
+            useNativeDriver: true,
+          }).start();
+        }}
       >
         {sharing && me ? (
           <Circle
             center={{ latitude: me.lat, longitude: me.lng }}
             radius={90}
-            strokeColor={accent.electricBlue}
-            fillColor={`${accent.electricBlue}1F`}
+            strokeColor="rgba(30, 144, 255, 0.55)"
+            fillColor="rgba(30, 144, 255, 0.12)"
           />
         ) : null}
         {locations.map((f) => (
           <Marker
-            key={f.id}
+            key={String(f.id)}
             coordinate={{ latitude: f.lat, longitude: f.lng }}
             title={f.username}
             description="Friend (live)"
-            pinColor={accent.coral}
+            {...(Platform.OS === 'ios' ? { pinColor: accent.coral } : {})}
           />
         ))}
       </MapView>
 
-      <View
+      <Animated.View
         pointerEvents="box-none"
-        style={[styles.overlay, { paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: insets.bottom + 8 }]}
+        style={[
+          styles.overlay,
+          {
+            paddingTop: insets.top + 12,
+            paddingHorizontal: 20,
+            paddingBottom: insets.bottom + 8,
+            transform: [{ translateY: overlayShift }],
+          },
+        ]}
       >
         {/* Hamburger Menu Button */}
         <TouchableOpacity
           onPress={() => setMenuOpen(true)}
+          activeOpacity={0.85}
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            backgroundColor: colors.navCard,
+            width: 48,
+            height: 48,
+            borderRadius: 22,
+            backgroundColor: colors.glassBgMedium,
             justifyContent: 'center',
             alignItems: 'center',
-            marginBottom: 12,
+            marginBottom: 14,
             borderWidth: 1,
-            borderColor: colors.navBorder,
+            borderColor: colors.glassBorderMedium,
+            shadowColor: colors.glassShadow,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.28,
+            shadowRadius: 16,
+            elevation: 8,
           }}
         >
-          <Ionicons name="menu" size={24} color={colors.textPrimary} />
+          <Ionicons name="menu-outline" size={26} color={colors.textPrimary} />
         </TouchableOpacity>
 
         <GlassCard intensity="medium" borderRadius={22} style={{ paddingVertical: 16 }}>
@@ -237,7 +272,7 @@ export default function MapTabScreen() {
             />
           </View>
         </GlassCard>
-      </View>
+      </Animated.View>
 
       {/* Menu Modal */}
       <Modal
@@ -246,17 +281,19 @@ export default function MapTabScreen() {
         transparent
         onRequestClose={() => setMenuOpen(false)}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
           <TouchableOpacity
             onPress={() => setMenuOpen(false)}
-            style={{ flex: 1 }}
+            style={StyleSheet.absoluteFill}
             activeOpacity={1}
           />
-          <View
+          <GlassCard
+            borderRadius={24}
+            intensity="heavy"
+            blur
             style={{
-              backgroundColor: colors.navCard,
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
+              borderBottomLeftRadius: 0,
+              borderBottomRightRadius: 0,
               paddingTop: 20,
               paddingHorizontal: 20,
               paddingBottom: insets.bottom + 20,
@@ -313,7 +350,7 @@ export default function MapTabScreen() {
                 <Text style={[Type.caption, { color: colors.textMuted }]}>Send emergency alert</Text>
               </View>
             </TouchableOpacity>
-          </View>
+          </GlassCard>
         </View>
       </Modal>
     </View>
