@@ -149,7 +149,11 @@ export default function MapTabScreen() {
       if (value && me) {
         lastPing.current = 0;
         lastSent.current = null;
-        await locationAPI.ping(me.lat, me.lng);
+        try {
+          await locationAPI.ping(me.lat, me.lng);
+        } catch {
+          /* ngrok/wrangler blip — location watcher will retry */
+        }
         void refresh();
         void refreshPlaces();
       }
