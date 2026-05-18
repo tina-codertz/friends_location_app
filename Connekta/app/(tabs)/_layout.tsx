@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import { BiometricGate } from '@/components/security/BiometricGate';
 import { HapticTab } from '@/components/ui/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -18,7 +19,8 @@ export default function TabLayout() {
   const { colors, accent } = useAppTheme();
 
   return (
-    <BiometricGate>
+    <AuthGuard>
+      <BiometricGate>
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: accent.electricBlue,
@@ -68,6 +70,7 @@ export default function TabLayout() {
         <Tabs.Screen name="SOSScreen" options={{ href: null }} />
         <Tabs.Screen name="ShareLocation" options={{ href: null }} />
       </Tabs>
-    </BiometricGate>
+      </BiometricGate>
+    </AuthGuard>
   );
 }

@@ -50,12 +50,15 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
+      let token = getApiAuthToken();
+      if (!token) {
+        token = await SecureStore.getItemAsync('auth_token');
+      }
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (err) {
-      console.warn('[API] Failed to get token from secure store:', err);
+      console.warn('[API] Failed to get token:', err);
     }
     console.log('[API] Making request:', config.method?.toUpperCase(), config.url);
     return config;
@@ -90,13 +93,14 @@ apiClient.interceptors.response.use(
     }
     
     if (error.response?.status === 401) {
-      // Unauthorized - clear token from secure storage
+      setApiAuthToken(null);
       try {
-        SecureStore.deleteItemAsync('auth_token');
-        SecureStore.deleteItemAsync('user_data');
+        await SecureStore.deleteItemAsync('auth_token');
+        await SecureStore.deleteItemAsync('user_data');
       } catch (err) {
         console.warn('[API] Failed to clear secure store:', err);
       }
+      notifyUnauthorized();
     }
     return Promise.reject(error);
   }
@@ -202,7 +206,7 @@ export const friendsAPI = {
     return res.data;
   },
   async list(): Promise<{ success: boolean; friends: FriendUser[] }> {
-    const res = await apiClient.get('/friends');
+    const res = await apiClient.get('/friends/');
     return res.data;
   },
   async incoming(): Promise<{ success: boolean; incoming: FriendUser[] }> {
@@ -236,37 +240,25 @@ export const locationAPI = {
   },
 };
 
+/** Matches emergency_contacts table (no status column). */
 export interface EmergencyContact {
   id: number;
   name: string;
   phone: string;
-  status: 'pending' | 'accepted';
   sort_order: number;
 }
 
 export const emergencyAPI = {
   async list(): Promise<{ success: boolean; contacts: EmergencyContact[] }> {
-    const res = await apiClient.get('/emergency');
+    const res = await apiClient.get('/emergency/');
     return res.data;
   },
-  async add(name: string, phone: string): Promise<{ success: boolean; contact?: EmergencyContact }> {
-    const res = await apiClient.post('/emergency', { name, phone, status: 'pending' });
-    return res.data;
-  },
-  async accept(id: number): Promise<{ success: boolean }> {
-    const res = await apiClient.post(`/emergency/${id}/accept`);
-    return res.data;
-  },
-  async reject(id: number): Promise<{ success: boolean }> {
-    const res = await apiClient.post(`/emergency/${id}/reject`);
+  async add(name: string, phone: string): Promise<{ success: boolean }> {
+    const res = await apiClient.post('/emergency/', { name, phone });
     return res.data;
   },
   async remove(id: number): Promise<{ success: boolean }> {
     const res = await apiClient.delete(`/emergency/${id}`);
-    return res.data;
-  },
-  async triggerSOS(lat: number, lng: number): Promise<{ success: boolean; notified: number }> {
-    const res = await apiClient.post('/emergency/sos', { lat, lng });
     return res.data;
   },
 };
