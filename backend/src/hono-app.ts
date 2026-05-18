@@ -36,7 +36,7 @@ app.get('/', (c) => {
   });
 });
 
-app.all('/realtime/ws', (c) => handlePublicWebSocket(c.req.raw, c.env));
+app.all('/realtime/ws', async (c) => handlePublicWebSocket(c.req.raw, c.env));
 
 app.route('/auth', auth);
 app.route('/friends', friends);

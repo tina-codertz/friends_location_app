@@ -77,20 +77,34 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError<any>) => {
+    const status = error.response?.status;
+    const url = error.config?.url ?? '';
+    const rawData = error.response?.data;
+    const isHtmlGateway =
+      typeof rawData === 'string' &&
+      (rawData.includes('ngrok') || rawData.includes('<!DOCTYPE html>'));
+    const isGatewayOutage = status === 502 || status === 503 || status === 504 || isHtmlGateway;
+
     const errorInfo = {
-      status: error.response?.status,
+      status,
       message: error.message,
-      url: error.config?.url,
-      data: error.response?.data,
+      url,
+      data: isHtmlGateway ? '(ngrok/gateway HTML — backend unreachable)' : rawData,
       code: error.code,
     };
-    
-    console.error('[API] Response error:', errorInfo);
-    
-    // Check if it's a network error
+
+    if (isGatewayOutage) {
+      console.warn(
+        '[API] Gateway/backend unavailable for',
+        url,
+        '— ensure `npx wrangler dev` is running and ngrok points to port 8787'
+      );
+    } else {
+      console.error('[API] Response error:', errorInfo);
+    }
+
     if (!error.response) {
-      console.error('[API] Network error - no response from server. Check if backend is running and reachable.');
-      console.error('[API] Current API URL:', API_BASE_URL);
+      console.warn('[API] Network error — no response. API URL:', API_BASE_URL);
     }
     
     if (error.response?.status === 401) {
