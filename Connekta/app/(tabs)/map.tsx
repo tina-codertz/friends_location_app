@@ -10,7 +10,7 @@ import {
   Animated,
   Modal,
 } from 'react-native';
-import MapView, { Circle, Marker, Region, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Circle, Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -176,7 +176,6 @@ export default function MapTabScreen() {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         initialRegion={region}
         showsUserLocation
         showsMyLocationButton={Platform.OS === 'android'}

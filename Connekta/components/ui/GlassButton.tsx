@@ -11,7 +11,6 @@ import {
   ViewStyle,
   TextStyle,
   View,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -99,21 +98,6 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
         ? accent.electricBlue
         : colors.textPrimary;
 
-  const content = (
-    <View style={[styles.content, sizeStyles[size], { paddingVertical: undefined, paddingHorizontal: undefined }]}>
-      {icon && <View style={styles.iconWrap}>{icon}</View>}
-      <Text
-        style={[
-          styles.text,
-          { color: labelColor, fontSize: sizeText[size], fontFamily: Font.semibold },
-          textStyle,
-        ]}
-      >
-        {loading ? 'Loading…' : title}
-      </Text>
-    </View>
-  );
-
   return (
     <Animated.View style={[{ transform: [{ scale }] }, fullWidth && { width: '100%' }]}>
       <TouchableOpacity
@@ -135,7 +119,18 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
         {variant !== 'primary' && (
           <View style={[styles.innerHighlight, { backgroundColor: colors.glassHighlight }]} />
         )}
-        {content}
+        <View style={styles.content}>
+          {icon && <View style={styles.iconWrap}>{icon}</View>}
+          <Text
+            style={[
+              styles.text,
+              { color: labelColor, fontSize: sizeText[size], fontFamily: Font.semibold },
+              textStyle,
+            ]}
+          >
+            {loading ? 'Loading…' : title}
+          </Text>
+        </View>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -147,8 +142,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 28,
   },
   iconWrap: { marginRight: 2 },
   text: { letterSpacing: 0.35 },
