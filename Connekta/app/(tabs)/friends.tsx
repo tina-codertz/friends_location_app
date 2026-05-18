@@ -184,11 +184,21 @@ export default function FriendsTabScreen() {
       if (res.success) {
         setResults((prev) => prev.filter((u) => u.id !== id));
         void loadLists();
+        if (res.message?.toLowerCase().includes('already')) {
+          Alert.alert('Already connected', res.message);
+        }
       } else {
         Alert.alert('Request failed', res.message ?? 'Could not send request');
       }
     } catch (e) {
-      Alert.alert('Request failed', apiErrorMessage(e, 'Could not send request'));
+      const msg = apiErrorMessage(e, 'Could not send request');
+      if (msg.toLowerCase().includes('already')) {
+        setResults((prev) => prev.filter((u) => u.id !== id));
+        void loadLists();
+        Alert.alert('Already connected', msg);
+        return;
+      }
+      Alert.alert('Request failed', msg);
     }
   };
 

@@ -13,7 +13,7 @@ import {
 import MapView, { Circle, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useAuth } from '@/context/AuthContext';
@@ -56,6 +56,12 @@ export default function MapTabScreen() {
 
   const { locations, refresh } = useLiveFriendLocations(sharing, token);
   const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(token);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshPlaces();
+    }, [refreshPlaces])
+  );
 
   /** Android AirMap throws when mapType updates to an invalid native value — omit on Android. */
   const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
