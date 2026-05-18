@@ -195,7 +195,7 @@ export default function CircleManagement() {
               >
                 {inviteCode}
               </Text>
-              <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>Tap to copy</Text>
+              <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>Tap to share code</Text>
             </View>
           </TouchableOpacity>
         ) : (
