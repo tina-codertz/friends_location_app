@@ -1,27 +1,27 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   FlatList,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Share,
   Alert,
+  Platform,
 } from 'react-native';
+import MapView, { Region } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Contacts from 'expo-contacts';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { friendsAPI, type FriendUser } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 import { useAuth } from '@/context/AuthContext';
-import { formatInviteMessage } from '@/utils/invite';
+import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
+import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 
 function apiErrorMessage(e: unknown, fallback: string): string {
   if (e && typeof e === 'object' && 'response' in e) {
@@ -35,31 +35,36 @@ export default function FriendsTabScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { invite: inviteParam } = useLocalSearchParams<{ invite?: string }>();
-  const { user } = useAuth();
+  const { token } = useAuth();
   const { colors, accent } = useAppTheme();
-  const [q, setQ] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [results, setResults] = useState<FriendUser[]>([]);
+  const mapRef = useRef<MapView>(null);
+
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [incoming, setIncoming] = useState<FriendUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [myInviteCode, setMyInviteCode] = useState<string | null>(null);
-  const [joinCode, setJoinCode] = useState('');
-  const [joining, setJoining] = useState(false);
-  const [generatingInvite, setGeneratingInvite] = useState(false);
-  const deepLinkHandled = useRef(false);
+  const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+
+  const { locations: friendLocations, refresh: refreshLocations } = useLiveFriendLocations(true, token);
+
+  const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
+
+  const region: Region | null = useMemo(() => {
+    if (!me) return null;
+    return {
+      latitude: me.lat,
+      longitude: me.lng,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    };
+  }, [me]);
 
   const loadLists = useCallback(async () => {
     try {
-      const [f, inc, inv] = await Promise.all([
-        friendsAPI.list(),
-        friendsAPI.incoming(),
-        friendsAPI.getInvite(),
-      ]);
+      const [f, inc] = await Promise.all([friendsAPI.list(), friendsAPI.incoming()]);
       if (f.success) setFriends(f.friends);
       if (inc.success) setIncoming(inc.incoming);
-      if (inv.success && inv.invite) setMyInviteCode(inv.invite.code);
     } catch {
       /* network */
     } finally {
@@ -68,139 +73,43 @@ export default function FriendsTabScreen() {
     }
   }, []);
 
-  React.useEffect(() => {
+  const loadMyLocation = useCallback(async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
     void loadLists();
-  }, [loadLists]);
+    void loadMyLocation();
+  }, [loadLists, loadMyLocation]);
 
-  React.useEffect(() => {
-    if (typeof inviteParam === 'string' && inviteParam.trim() && !deepLinkHandled.current) {
-      deepLinkHandled.current = true;
-      setJoinCode(inviteParam.trim().toUpperCase());
-    }
-  }, [inviteParam]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadMyLocation();
+      void refreshLocations();
+    }, [loadMyLocation, refreshLocations])
+  );
 
-  const onSearch = useCallback(async () => {
-    if (q.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    setSearching(true);
-    try {
-      const res = await friendsAPI.search(q.trim());
-      if (res.success) setResults(res.users);
-    } finally {
-      setSearching(false);
-    }
-  }, [q]);
-
-  const ensureInviteCode = async (): Promise<string | null> => {
-    if (myInviteCode) return myInviteCode;
-    setGeneratingInvite(true);
-    try {
-      const res = await friendsAPI.generateInvite();
-      if (res.success && res.code) {
-        setMyInviteCode(res.code);
-        return res.code;
-      }
-      Alert.alert('Error', res.message ?? 'Could not create invite code');
-      return null;
-    } catch {
-      Alert.alert('Error', 'Could not create invite code');
-      return null;
-    } finally {
-      setGeneratingInvite(false);
-    }
-  };
-
-  const shareInvite = async () => {
-    const code = await ensureInviteCode();
-    if (!code || !user?.username) return;
-    try {
-      await Share.share({
-        message: formatInviteMessage(code, user.username),
-        title: 'Join my Connekta circle',
+  useEffect(() => {
+    if (typeof inviteParam === 'string' && inviteParam.trim()) {
+      router.replace({
+        pathname: '/(tabs)/settings/CircleManagement',
+        params: { invite: inviteParam.trim().toUpperCase() },
       });
-    } catch {
-      /* cancelled */
     }
-  };
+  }, [inviteParam, router]);
 
-  const shareToContact = async () => {
-    const code = await ensureInviteCode();
-    if (!code || !user?.username) return;
-    try {
-      const { status } = await Contacts.requestPermissionsAsync();
-      if (status !== 'granted') {
-        await shareInvite();
-        return;
-      }
-      const contact = await Contacts.presentContactPickerAsync();
-      if (contact) {
-        try {
-          await Share.share({
-            message: formatInviteMessage(code, user.username),
-            title: 'Connekta Invite',
-          });
-        } catch {
-          /* cancelled */
-        }
-      }
-    } catch {
-      await shareInvite();
+  useEffect(() => {
+    if (mapReady && region && mapRef.current) {
+      mapRef.current.animateToRegion(region, 500);
     }
-  };
-
-  const joinWithCode = async (codeOverride?: string) => {
-    const code = (codeOverride ?? joinCode).trim().toUpperCase();
-    if (code.length < 6) {
-      Alert.alert('Invalid code', 'Enter the invite code from your friend.');
-      return;
-    }
-    setJoining(true);
-    try {
-      const res = await friendsAPI.joinWithCode(code);
-      if (res.success) {
-        setJoinCode('');
-        void loadLists();
-        Alert.alert(
-          'Request sent',
-          res.circle_owner
-            ? `Friend request sent to ${res.circle_owner.username}.`
-            : 'Friend request sent.'
-        );
-      } else {
-        Alert.alert('Could not join', res.message ?? 'Invalid or expired code');
-      }
-    } catch (e) {
-      Alert.alert('Could not join', apiErrorMessage(e, 'Check the code and try again.'));
-    } finally {
-      setJoining(false);
-    }
-  };
-
-  const send = async (id: number) => {
-    try {
-      const res = await friendsAPI.sendRequest(id);
-      if (res.success) {
-        setResults((prev) => prev.filter((u) => u.id !== id));
-        void loadLists();
-        if (res.message?.toLowerCase().includes('already')) {
-          Alert.alert('Already connected', res.message);
-        }
-      } else {
-        Alert.alert('Request failed', res.message ?? 'Could not send request');
-      }
-    } catch (e) {
-      const msg = apiErrorMessage(e, 'Could not send request');
-      if (msg.toLowerCase().includes('already')) {
-        setResults((prev) => prev.filter((u) => u.id !== id));
-        void loadLists();
-        Alert.alert('Already connected', msg);
-        return;
-      }
-      Alert.alert('Request failed', msg);
-    }
-  };
+  }, [mapReady, region]);
 
   const accept = async (id: number) => {
     try {
@@ -208,184 +117,122 @@ export default function FriendsTabScreen() {
       if (res.success) {
         setIncoming((prev) => prev.filter((u) => u.id !== id));
         void loadLists();
+        void refreshLocations();
       } else {
         Alert.alert('Accept failed', res.message ?? 'No pending request');
         void loadLists();
       }
     } catch (e) {
-      const msg = apiErrorMessage(e, 'Could not accept request');
-      if (msg.toLowerCase().includes('pending')) {
-        void loadLists();
-        return;
-      }
-      Alert.alert('Accept failed', msg);
+      Alert.alert('Accept failed', apiErrorMessage(e, 'Could not accept request'));
     }
   };
 
   const reject = async (id: number) => {
     try {
       const res = await friendsAPI.reject(id);
-      if (res.success) {
-        setIncoming((prev) => prev.filter((u) => u.id !== id));
-      }
+      if (res.success) setIncoming((prev) => prev.filter((u) => u.id !== id));
     } catch {
       Alert.alert('Error', 'Could not decline request');
     }
   };
 
+  const focusFriend = (username: string) => {
+    const loc = friendLocations.find((f) => f.username === username);
+    if (loc && mapRef.current) {
+      mapRef.current.animateToRegion(
+        { latitude: loc.lat, longitude: loc.lng, latitudeDelta: 0.02, longitudeDelta: 0.02 },
+        400
+      );
+    }
+  };
+
   const renderHeader = () => (
-      <View style={{ gap: 16, marginBottom: 8 }}>
-        <Text style={[Type.hero, { color: colors.textPrimary, paddingHorizontal: 4 }]}>My Circle</Text>
-
-        <GlassCard borderRadius={22} intensity="heavy" glowAccent style={{ paddingVertical: 14 }}>
-          <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 6 }]}>Invite to your circle</Text>
-          <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 12 }]}>
-            Share a code or link. Friends join by entering the code below or opening your link.
-          </Text>
-          {myInviteCode ? (
-            <Text
-              style={{
-                fontFamily: Font.bold,
-                fontSize: 24,
-                letterSpacing: 4,
-                color: accent.electricBlue,
-                textAlign: 'center',
-                marginBottom: 12,
-              }}
-            >
-              {myInviteCode}
-            </Text>
-          ) : null}
-          <View style={{ gap: 10 }}>
-            <GlassButton
-              title={generatingInvite ? 'Preparing…' : myInviteCode ? 'Share invite link' : 'Get invite code & share'}
-              onPress={shareInvite}
-              variant="primary"
-              fullWidth
-              disabled={generatingInvite}
-            />
-            <GlassButton
-              title="Manage circle"
-              onPress={() => router.push('/(tabs)/settings/CircleManagement')}
-              variant="secondary"
-              fullWidth
-            />
-          </View>
-        </GlassCard>
-
-        <GlassCard borderRadius={22} style={{ paddingVertical: 14 }} intensity="medium">
-          <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 8 }]}>Join with invite code</Text>
-          <View style={styles.searchRow}>
-            <TextInput
-              placeholder="CODE"
-              placeholderTextColor={colors.inputPlaceholder}
-              value={joinCode}
-              onChangeText={(t) => setJoinCode(t.toUpperCase())}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              maxLength={8}
-              style={[
-                styles.input,
-                {
-                  color: colors.textPrimary,
-                  borderColor: colors.inputBorder,
-                  backgroundColor: colors.inputBg,
-                  fontFamily: Font.semibold,
-                  flex: 1,
-                  letterSpacing: 3,
-                  textAlign: 'center',
-                },
-              ]}
-            />
-            <GlassButton
-              title={joining ? '…' : 'Join'}
-              onPress={() => joinWithCode()}
-              variant="primary"
-              size="small"
-              disabled={joining}
-            />
-          </View>
-        </GlassCard>
-
-        <GlassCard borderRadius={22} style={{ paddingVertical: 14 }} intensity="medium">
-          <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 8 }]}>Discover</Text>
-          <View style={styles.searchRow}>
-            <TextInput
-              placeholder="Search username"
-              placeholderTextColor={colors.inputPlaceholder}
-              value={q}
-              onChangeText={setQ}
-              onSubmitEditing={onSearch}
-              style={[
-                styles.input,
-                {
-                  color: colors.textPrimary,
-                  borderColor: colors.inputBorder,
-                  backgroundColor: colors.inputBg,
-                  fontFamily: Font.regular,
-                  flex: 1,
-                },
-              ]}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-            />
-            <GlassButton title="Go" onPress={onSearch} variant="secondary" size="small" />
-            <TouchableOpacity
-              onPress={shareToContact}
-              style={{
-                backgroundColor: colors.inputBg,
-                borderWidth: 1,
-                borderColor: colors.inputBorder,
-                borderRadius: 12,
-                paddingHorizontal: 10,
-                paddingVertical: 10,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <Ionicons name="share-social" size={20} color={accent.electricBlue} />
-            </TouchableOpacity>
-          </View>
-          {searching ? (
-            <ActivityIndicator style={{ marginTop: 12 }} color={accent.electricBlue} />
-          ) : (
-            <View style={{ marginTop: 12, gap: 8 }}>
-              {results.map((u) => (
-                <View key={u.id} style={[styles.userRow, { borderColor: colors.divider }]}>
-                  <Text style={[Type.bodyMedium, { color: colors.textPrimary, flex: 1 }]}>{u.username}</Text>
-                  <GlassButton title="Add" onPress={() => send(u.id)} variant="primary" size="small" />
-                </View>
-              ))}
-              {q.length >= 2 && !searching && results.length === 0 ? (
-                <Text style={[Type.caption, { color: colors.textMuted }]}>No matches</Text>
-              ) : null}
-            </View>
-          )}
-        </GlassCard>
-
-        {incoming.length > 0 ? (
-          <GlassCard borderRadius={22} intensity="heavy" glowAccent style={{ paddingVertical: 14 }}>
-            <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 10 }]}>Requests</Text>
-            {incoming.map((u) => (
-              <View key={u.id} style={[styles.reqRow, { borderColor: colors.divider }]}>
-                <Text style={[Type.body, { color: colors.textPrimary, flex: 1, fontFamily: Font.medium }]}>
-                  {u.username}
-                </Text>
-                <TouchableOpacity onPress={() => accept(u.id)} style={[styles.chip, { backgroundColor: accent.electricBlue }]}>
-                  <Text style={{ color: '#fff', fontFamily: Font.semibold }}>Accept</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => reject(u.id)} style={[styles.chip, { borderWidth: 1, borderColor: colors.glassBorderMedium }]}>
-                  <Text style={{ color: colors.textSecondary, fontFamily: Font.medium }}>Decline</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </GlassCard>
-        ) : null}
-
-        <Text style={[Type.section, { color: colors.textPrimary, paddingHorizontal: 4 }]}>Your circle</Text>
+    <View style={{ gap: 14, marginBottom: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 }}>
+        <Text style={[Type.hero, { color: colors.textPrimary }]}>My Circle</Text>
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/settings/CircleManagement')}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: colors.glassBorderMedium,
+          }}
+        >
+          <Ionicons name="people" size={16} color={accent.electricBlue} />
+          <Text style={[Type.caption, { color: accent.electricBlue, fontFamily: Font.semibold }]}>Manage</Text>
+        </TouchableOpacity>
       </View>
-    );
+
+      <View style={[styles.mapBox, { borderColor: colors.glassBorderMedium }]}>
+        {!region ? (
+          <View style={[styles.mapPlaceholder, { backgroundColor: colors.surface }]}>
+            <ActivityIndicator color={accent.electricBlue} />
+            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 8 }]}>Getting your location…</Text>
+          </View>
+        ) : (
+          <MapView
+            ref={mapRef}
+            style={StyleSheet.absoluteFill}
+            initialRegion={region}
+            showsUserLocation
+            showsMyLocationButton={Platform.OS === 'android'}
+            {...mapTypeProps}
+            onMapReady={() => setMapReady(true)}
+          >
+            {friendLocations.map((f) => (
+              <PlaceLabelMarker
+                key={`friend-${f.id}`}
+                id={`friend-${f.id}`}
+                latitude={f.lat}
+                longitude={f.lng}
+                label={f.username}
+                subtitle="Live"
+                accentColor={accent.coral}
+                backgroundColor={colors.glassBgHeavy}
+                textColor={colors.textPrimary}
+                borderColor={accent.coral}
+              />
+            ))}
+          </MapView>
+        )}
+      </View>
+
+      <Text style={[Type.caption, { color: colors.textMuted, paddingHorizontal: 4 }]}>
+        Map centers on you. Friends appear when they have live sharing on.
+      </Text>
+
+      {incoming.length > 0 ? (
+        <GlassCard borderRadius={22} intensity="heavy" glowAccent style={{ paddingVertical: 14 }}>
+          <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 10 }]}>Pending requests</Text>
+          {incoming.map((u) => (
+            <View key={u.id} style={[styles.reqRow, { borderColor: colors.divider }]}>
+              <Text style={[Type.body, { color: colors.textPrimary, flex: 1, fontFamily: Font.medium }]}>
+                {u.username}
+              </Text>
+              <TouchableOpacity onPress={() => accept(u.id)} style={[styles.chip, { backgroundColor: accent.electricBlue }]}>
+                <Text style={{ color: '#fff', fontFamily: Font.semibold }}>Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => reject(u.id)}
+                style={[styles.chip, { borderWidth: 1, borderColor: colors.glassBorderMedium }]}
+              >
+                <Text style={{ color: colors.textSecondary, fontFamily: Font.medium }}>Decline</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </GlassCard>
+      ) : null}
+
+      <Text style={[Type.section, { color: colors.textPrimary, paddingHorizontal: 4 }]}>
+        Friends ({friends.length})
+      </Text>
+    </View>
+  );
 
   if (loading) {
     return (
@@ -401,10 +248,10 @@ export default function FriendsTabScreen() {
         data={friends}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={{
-          paddingTop: insets.top + 16,
+          paddingTop: insets.top + 12,
           paddingHorizontal: 20,
           paddingBottom: insets.bottom + 120,
-          gap: 12,
+          gap: 10,
         }}
         ListHeaderComponent={renderHeader}
         refreshControl={
@@ -413,20 +260,53 @@ export default function FriendsTabScreen() {
             onRefresh={() => {
               setRefreshing(true);
               void loadLists();
+              void loadMyLocation();
+              void refreshLocations();
             }}
             tintColor={accent.electricBlue}
           />
         }
-        renderItem={({ item }) => (
-          <GlassCard borderRadius={22} intensity="light" animated animationDelay={50} style={{ paddingVertical: 14 }}>
-            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>{item.username}</Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>Mutual friend</Text>
-          </GlassCard>
-        )}
+        renderItem={({ item }) => {
+          const isLive = friendLocations.some((f) => f.id === item.id);
+          return (
+            <TouchableOpacity onPress={() => focusFriend(item.username)} activeOpacity={0.85}>
+              <GlassCard borderRadius={20} intensity="light" style={{ paddingVertical: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: isLive ? `${accent.coral}22` : `${accent.electricBlue}18`,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name="person" size={20} color={isLive ? accent.coral : accent.electricBlue} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+                      {item.username}
+                    </Text>
+                    <Text style={[Type.caption, { color: colors.textMuted, marginTop: 2 }]}>
+                      {isLive ? 'Sharing location' : 'Not sharing live location'}
+                    </Text>
+                  </View>
+                  {isLive ? (
+                    <View style={[styles.liveDot, { backgroundColor: accent.coral }]} />
+                  ) : null}
+                </View>
+              </GlassCard>
+            </TouchableOpacity>
+          );
+        }}
         ListEmptyComponent={
-          <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', marginTop: 8 }]}>
-            No friends yet. Discover people above.
-          </Text>
+          <GlassCard borderRadius={16} intensity="light" style={{ padding: 20, alignItems: 'center' }}>
+            <Ionicons name="people-outline" size={36} color={colors.textMuted} />
+            <Text style={[Type.body, { color: colors.textMuted, marginTop: 10, textAlign: 'center' }]}>
+              No friends yet. Open Manage to invite or join a circle.
+            </Text>
+          </GlassCard>
         }
       />
     </View>
@@ -436,19 +316,16 @@ export default function FriendsTabScreen() {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  input: {
+  mapBox: {
+    height: 220,
+    borderRadius: 20,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
   },
-  userRow: {
-    flexDirection: 'row',
+  mapPlaceholder: {
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
   },
   reqRow: {
     flexDirection: 'row',
@@ -461,5 +338,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 14,
+  },
+  liveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });

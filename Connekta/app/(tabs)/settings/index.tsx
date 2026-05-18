@@ -66,8 +66,8 @@ export default function SettingsHomeScreen() {
 
       <TouchableOpacity onPress={() => router.push('/(tabs)/settings/CircleManagement')} activeOpacity={0.85}>
         <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 18 }}>
-          <Text style={[Type.section, { color: colors.textPrimary }]}>Your Circle</Text>
-          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>Manage friends and sharing</Text>
+          <Text style={[Type.section, { color: colors.textPrimary }]}>Circle management</Text>
+          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>Invite codes, share link, join with code</Text>
         </GlassCard>
       </TouchableOpacity>
 

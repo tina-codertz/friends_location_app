@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
@@ -23,6 +24,7 @@ import { buildCircleInviteLink, formatInviteMessage } from '@/utils/invite';
 
 export default function CircleManagement() {
   const insets = useSafeAreaInsets();
+  const { invite: inviteParam } = useLocalSearchParams<{ invite?: string }>();
   const { colors, accent } = useAppTheme();
   const { user } = useAuth();
   const [friends, setFriends] = useState<FriendUser[]>([]);
@@ -52,6 +54,12 @@ export default function CircleManagement() {
   React.useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  React.useEffect(() => {
+    if (typeof inviteParam === 'string' && inviteParam.trim()) {
+      setJoinCode(inviteParam.trim().toUpperCase());
+    }
+  }, [inviteParam]);
 
   const generateCode = async () => {
     setGenerating(true);
@@ -161,15 +169,15 @@ export default function CircleManagement() {
         gap: 16,
       }}
     >
-      <Text style={[Type.hero, { color: colors.textPrimary }]}>Your Circle</Text>
+      <Text style={[Type.hero, { color: colors.textPrimary }]}>Circle management</Text>
       <Text style={[Type.body, { color: colors.textMuted }]}>
-        Generate an invite code or link so friends can join your circle. Location sharing stays opt-in on the Map tab.
+        Generate a code, share your invite link, or join another circle with a code. View friends and the map on the My Circle tab.
       </Text>
 
       <GlassCard borderRadius={22} intensity="heavy" glowAccent>
         <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Your invite code</Text>
         <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 14 }]}>
-          Friends enter this code in My Circle to send you a friend request.
+          Share this code or link so others can request to join your circle.
         </Text>
 
         {inviteCode ? (
