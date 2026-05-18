@@ -214,6 +214,25 @@ export const friendsAPI = {
     const res = await apiClient.get('/friends/incoming');
     return res.data;
   },
+  async getInvite(): Promise<{
+    success: boolean;
+    invite: { code: string; expires_at: string | null; created_at: string } | null;
+  }> {
+    const res = await apiClient.get('/friends/invite');
+    return res.data;
+  },
+  async generateInvite(): Promise<{ success: boolean; code?: string; expires_at?: string; message?: string }> {
+    const res = await apiClient.post('/friends/invite/generate');
+    return res.data;
+  },
+  async joinWithCode(code: string): Promise<{
+    success: boolean;
+    message?: string;
+    circle_owner?: FriendUser;
+  }> {
+    const res = await apiClient.post('/friends/invite/join', { code: code.trim().toUpperCase() });
+    return res.data;
+  },
 };
 
 export const locationAPI = {
