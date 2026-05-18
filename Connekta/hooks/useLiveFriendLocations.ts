@@ -36,7 +36,7 @@ export function useLiveFriendLocations(enabled: boolean, authToken: string | nul
   const appState = useRef(AppState.currentState);
 
   const fetchOnce = useCallback(async () => {
-    if (!enabled) return;
+    if (!enabled || !authToken) return;
     try {
       const res = await locationAPI.friendsLocations();
       if (res.success) {
@@ -46,7 +46,7 @@ export function useLiveFriendLocations(enabled: boolean, authToken: string | nul
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to refresh friends');
     }
-  }, [enabled]);
+  }, [enabled, authToken]);
 
   const applyWsMessage = useCallback((raw: string) => {
     let msg: WsPayload;
@@ -140,7 +140,7 @@ export function useLiveFriendLocations(enabled: boolean, authToken: string | nul
   }, [enabled, authToken, applyWsMessage, fetchOnce, stopWs]);
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !authToken) {
       stopWs();
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = null;
@@ -151,14 +151,9 @@ export function useLiveFriendLocations(enabled: boolean, authToken: string | nul
     void fetchOnce();
 
     if (pollRef.current) clearInterval(pollRef.current);
-    const pollMs = authToken ? POLL_MS_WITH_WS : POLL_MS_NO_WS;
-    pollRef.current = setInterval(fetchOnce, pollMs);
+    pollRef.current = setInterval(fetchOnce, POLL_MS_WITH_WS);
 
-    if (authToken) {
-      startWs();
-    } else {
-      stopWs();
-    }
+    startWs();
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);

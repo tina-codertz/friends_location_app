@@ -4,6 +4,7 @@ import auth from './routes/auth.routes';
 import friends from './routes/friends.routes';
 import location from './routes/location.routes';
 import emergency from './routes/emergency.routes';
+import { handlePublicWebSocket } from './realtime/ws-gateway';
 
 
 //this defines the enviroment variables and cloudflare bindings available inside your worker 
@@ -33,6 +34,8 @@ app.get('/', (c) => {
     realtime: 'GET wss? /realtime/ws?token=JWT',
   });
 });
+
+app.all('/realtime/ws', (c) => handlePublicWebSocket(c.req.raw, c.env));
 
 app.route('/auth', auth);
 app.route('/friends', friends);

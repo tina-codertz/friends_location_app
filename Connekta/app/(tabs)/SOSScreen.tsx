@@ -15,6 +15,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import * as Linking from 'expo-linking';
 import { emergencyAPI } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 
@@ -44,30 +45,48 @@ export default function SOSScreen() {
     try {
       setTriggering(true);
       scaleAnim.setValue(0.8);
-      
-      // Animate button press
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
 
-      // Get current location
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location required', 'Enable location so your message can include where you are.');
+        return;
+      }
 
-      // Send SOS to emergency contacts
-      const response = await emergencyAPI.triggerSOS(
-        location.coords.latitude,
-        location.coords.longitude
-      );
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const { latitude, longitude } = position.coords;
+
+      const listRes = await emergencyAPI.list();
+      const contacts = listRes.success ? listRes.contacts : [];
+      if (contacts.length === 0) {
+        Alert.alert('No emergency contacts', 'Add at least one contact under Safety before using SOS.');
+        return;
+      }
+
+      const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
+      const message = `SOS from ${user?.username ?? 'me'} on Connekta. I need help. My location: ${mapsUrl}`;
+
+      const phone = contacts[0].phone.replace(/\D/g, '');
+      const smsUrl = `sms:${phone}?body=${encodeURIComponent(message)}`;
+      const canOpen = await Linking.canOpenURL(smsUrl);
+      if (canOpen) {
+        await Linking.openURL(smsUrl);
+      } else {
+        const { Share } = await import('react-native');
+        await Share.share({ message });
+      }
 
       setLastSOS(new Date());
-
       Alert.alert(
-        'SOS Sent!',
-        `Emergency alert sent to ${response.notified} contact${response.notified === 1 ? '' : 's'}. Your location has been shared.`,
-        [{ text: 'OK', style: 'default' }]
+        'SOS ready',
+        contacts.length > 1
+          ? `Opened message to ${contacts[0].name}. Add more contacts in Safety if needed.`
+          : `Opened message to ${contacts[0].name} with your live location link.`
       );
     } catch (err) {
-      Alert.alert('Error', 'Failed to send SOS. Check your location permissions and emergency contacts.');
+      Alert.alert('Error', 'Could not prepare SOS. Check location permission and emergency contacts.');
       console.error('SOS trigger error:', err);
     } finally {
       setTriggering(false);

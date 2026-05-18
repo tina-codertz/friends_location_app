@@ -1,9 +1,5 @@
 /**
- * GlassButton — Reusable glassmorphism button component
- *
- * Frosted-glass button with scale animation on press,
- * multiple colour variants, and size presets. Automatically
- * adapts to light/dark mode via useAppTheme().
+ * GlassButton — Floating glass / gradient button with press scale.
  */
 
 import React, { useRef } from 'react';
@@ -16,36 +12,26 @@ import {
   TextStyle,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Font } from '@/constants/typography';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
 type ButtonSize = 'small' | 'medium' | 'large';
 
 interface GlassButtonProps {
-  /** Button label */
   title: string;
-  /** Press handler */
   onPress: () => void;
-  /** Colour variant */
   variant?: ButtonVariant;
-  /** Size preset */
   size?: ButtonSize;
-  /** Disable interaction */
   disabled?: boolean;
-  /** Show loading state */
   loading?: boolean;
-  /** Full-width mode */
   fullWidth?: boolean;
-  /** Optional icon element rendered before the label */
   icon?: React.ReactNode;
-  /** Extra container style */
   style?: ViewStyle;
-  /** Extra text style */
   textStyle?: TextStyle;
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
 export const GlassButton: React.FC<GlassButtonProps> = ({
   title,
   onPress,
@@ -62,100 +48,83 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   const scale = useRef(new Animated.Value(1)).current;
 
   const pressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.95,
-      tension: 120,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(scale, { toValue: 0.96, tension: 140, friction: 9, useNativeDriver: true }).start();
   };
-
   const pressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      tension: 120,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(scale, { toValue: 1, tension: 140, friction: 9, useNativeDriver: true }).start();
   };
 
-  // Variant-based styles (from theme)
-  const variantStyles: Record<ButtonVariant, ViewStyle> = {
-    primary: {
-      backgroundColor: accent.electricBlue,
-      borderWidth: 0,
-    },
-    secondary: {
-      backgroundColor: colors.tealGlass,
-      borderWidth: 1,
-      borderColor: colors.tealBorder,
-    },
-    outline: {
-      backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderColor: colors.glassBorderMedium,
-    },
-    ghost: {
-      backgroundColor: colors.glassBgLight,
-      borderWidth: 1,
-      borderColor: colors.glassBorderMedium,
-    },
-  };
-
-  const variantTextStyles: Record<ButtonVariant, TextStyle> = {
-    primary: { color: '#FFFFFF', fontWeight: '700' },
-    secondary: { color: accent.electricBlue, fontWeight: '700' },
-    outline: { color: colors.textPrimary, fontWeight: '600' },
-    ghost: { color: colors.textPrimary, fontWeight: '600' },
-  };
-
-  // Size-based styles
   const sizeStyles: Record<ButtonSize, ViewStyle> = {
-    small: { paddingVertical: 10, paddingHorizontal: 18 },
-    medium: { paddingVertical: 14, paddingHorizontal: 28 },
-    large: { paddingVertical: 18, paddingHorizontal: 36 },
+    small: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 18 },
+    medium: { paddingVertical: 14, paddingHorizontal: 28, borderRadius: 20 },
+    large: { paddingVertical: 18, paddingHorizontal: 36, borderRadius: 22 },
   };
 
-  const sizeTextStyles: Record<ButtonSize, TextStyle> = {
-    small: { fontSize: 13 },
-    medium: { fontSize: 15 },
-    large: { fontSize: 17 },
+  const sizeText: Record<ButtonSize, number> = { small: 13, medium: 15, large: 17 };
+
+  const isPrimary = variant === 'primary';
+
+  const shellStyle: ViewStyle = {
+    ...sizeStyles[size],
+    overflow: 'hidden',
+    borderWidth: variant === 'outline' ? 1.5 : variant === 'secondary' || variant === 'ghost' ? 1 : 0,
+    borderColor:
+      variant === 'outline'
+        ? colors.glassBorderMedium
+        : variant === 'secondary'
+          ? colors.tealBorder
+          : colors.glassBorderLight,
+    backgroundColor:
+      variant === 'secondary'
+        ? colors.tealGlass
+        : variant === 'ghost'
+          ? colors.glassBgLight
+          : variant === 'outline'
+            ? 'transparent'
+            : 'transparent',
+    shadowColor: isPrimary ? accent.electricBlue : '#000',
+    shadowOffset: { width: 0, height: isPrimary ? 8 : 4 },
+    shadowOpacity: isPrimary ? 0.35 : 0.2,
+    shadowRadius: isPrimary ? 16 : 10,
+    elevation: isPrimary ? 10 : 5,
+    ...(fullWidth ? { width: '100%' } : {}),
+    ...(disabled || loading ? { opacity: 0.45 } : {}),
   };
+
+  const labelColor =
+    variant === 'primary'
+      ? '#FFFFFF'
+      : variant === 'secondary'
+        ? accent.electricBlue
+        : colors.textPrimary;
 
   return (
-    <Animated.View
-      style={[
-        { transform: [{ scale }] },
-        fullWidth && { width: '100%' },
-      ]}
-    >
+    <Animated.View style={[{ transform: [{ scale }] }, fullWidth && { width: '100%' }]}>
       <TouchableOpacity
         onPress={onPress}
         onPressIn={pressIn}
         onPressOut={pressOut}
         disabled={disabled || loading}
-        activeOpacity={0.9}
-        style={[
-          styles.base,
-          variantStyles[variant],
-          sizeStyles[size],
-          fullWidth && { width: '100%' },
-          (disabled || loading) && styles.disabled,
-          style,
-        ]}
+        activeOpacity={0.92}
+        style={[shellStyle, style]}
       >
-        {/* Inner top highlight */}
+        {isPrimary ? (
+          <LinearGradient
+            colors={[accent.electricBlue, accent.electricBlueDeep]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
         {variant !== 'primary' && (
           <View style={[styles.innerHighlight, { backgroundColor: colors.glassHighlight }]} />
         )}
-
         <View style={styles.content}>
           {icon && <View style={styles.iconWrap}>{icon}</View>}
           <Text
             style={[
               styles.text,
-              variantTextStyles[variant],
-              sizeTextStyles[size],
+              { color: labelColor, fontSize: sizeText[size], fontFamily: Font.semibold },
               textStyle,
             ]}
           >
@@ -167,40 +136,21 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   );
 };
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  base: {
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
-  },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  iconWrap: {
-    marginRight: 4,
-  },
-  text: {
-    letterSpacing: 0.4,
-  },
+  iconWrap: { marginRight: 2 },
+  text: { letterSpacing: 0.35 },
   innerHighlight: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     height: 1,
-  },
-  disabled: {
-    opacity: 0.45,
   },
 });
 

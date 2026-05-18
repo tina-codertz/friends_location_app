@@ -5,7 +5,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { authAPI, User } from '@/services/api';
+import { authAPI, User, setApiAuthToken, setApiUnauthorizedHandler } from '@/services/api';
 
 export interface AuthContextType {
   user: User | null;
@@ -64,6 +64,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  // Keep API client token in sync with React state
+  useEffect(() => {
+    setApiAuthToken(token);
+  }, [token]);
+
+  useEffect(() => {
+    setApiUnauthorizedHandler(() => {
+      setToken(null);
+      setUser(null);
+    });
+    return () => setApiUnauthorizedHandler(null);
+  }, []);
+
   // Restore token on app launch
   useEffect(() => {
     const restoreToken = async () => {
@@ -75,6 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
 
         if (storedToken && storedUser) {
+          setApiAuthToken(storedToken);
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
         }
@@ -136,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           SecureStore.setItemAsync('user_data', JSON.stringify(response.user)),
           SecureStore.setItemAsync('needs_biometric_enrollment', '1'),
         ]);
+        setApiAuthToken(response.token);
         setToken(response.token);
         setUser(response.user);
       }
@@ -174,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           SecureStore.setItemAsync('user_data', JSON.stringify(response.user)),
         ]);
 
+        setApiAuthToken(response.token);
         setToken(response.token);
         setUser(response.user);
       } catch (err: any) {
@@ -200,6 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
+      setApiAuthToken(null);
       setToken(null);
       setUser(null);
       setError(null);

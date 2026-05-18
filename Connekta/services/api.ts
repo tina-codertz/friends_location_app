@@ -4,14 +4,21 @@
 
 import axios, { AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import {
+  getApiAuthToken,
+  notifyUnauthorized,
+  setApiAuthToken,
+  setApiUnauthorizedHandler,
+} from '@/services/auth-token';
+
+export { setApiAuthToken, setApiUnauthorizedHandler };
 
 // Get API base URL - use machine IP if running on device
 const getAPIBaseURL = (): string => {
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (envUrl) {
-    return envUrl;
+    return envUrl.replace(/\/$/, '');
   }
-  // Fallback for development
   return 'http://192.168.1.16:8789';
 };
 
@@ -33,9 +40,10 @@ export function getRealtimeWebSocketUrl(token: string): string {
 // Create axios instance
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // Increased timeout
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   },
 });
 
@@ -43,12 +51,15 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await SecureStore.getItemAsync('auth_token');
+      let token = getApiAuthToken();
+      if (!token) {
+        token = await SecureStore.getItemAsync('auth_token');
+      }
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (err) {
-      console.warn('[API] Failed to get token from secure store:', err);
+      console.warn('[API] Failed to get token:', err);
     }
     console.log('[API] Making request:', config.method?.toUpperCase(), config.url);
     return config;
@@ -65,7 +76,7 @@ apiClient.interceptors.response.use(
     console.log('[API] Response received:', response.status, response.config.url);
     return response;
   },
-  (error: AxiosError<any>) => {
+  async (error: AxiosError<any>) => {
     const errorInfo = {
       status: error.response?.status,
       message: error.message,
@@ -83,13 +94,14 @@ apiClient.interceptors.response.use(
     }
     
     if (error.response?.status === 401) {
-      // Unauthorized - clear token from secure storage
+      setApiAuthToken(null);
       try {
-        SecureStore.deleteItemAsync('auth_token');
-        SecureStore.deleteItemAsync('user_data');
+        await SecureStore.deleteItemAsync('auth_token');
+        await SecureStore.deleteItemAsync('user_data');
       } catch (err) {
         console.warn('[API] Failed to clear secure store:', err);
       }
+      notifyUnauthorized();
     }
     return Promise.reject(error);
   }
@@ -229,11 +241,11 @@ export const locationAPI = {
   },
 };
 
+/** Matches emergency_contacts table (no status column). */
 export interface EmergencyContact {
   id: number;
   name: string;
   phone: string;
-  status: 'pending' | 'accepted';
   sort_order: number;
 }
 
@@ -242,24 +254,12 @@ export const emergencyAPI = {
     const res = await apiClient.get('/emergency');
     return res.data;
   },
-  async add(name: string, phone: string): Promise<{ success: boolean; contact?: EmergencyContact }> {
-    const res = await apiClient.post('/emergency', { name, phone, status: 'pending' });
-    return res.data;
-  },
-  async accept(id: number): Promise<{ success: boolean }> {
-    const res = await apiClient.post(`/emergency/${id}/accept`);
-    return res.data;
-  },
-  async reject(id: number): Promise<{ success: boolean }> {
-    const res = await apiClient.post(`/emergency/${id}/reject`);
+  async add(name: string, phone: string): Promise<{ success: boolean }> {
+    const res = await apiClient.post('/emergency', { name, phone });
     return res.data;
   },
   async remove(id: number): Promise<{ success: boolean }> {
     const res = await apiClient.delete(`/emergency/${id}`);
-    return res.data;
-  },
-  async triggerSOS(lat: number, lng: number): Promise<{ success: boolean; notified: number }> {
-    const res = await apiClient.post('/emergency/sos', { lat, lng });
     return res.data;
   },
 };
