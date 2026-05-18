@@ -103,25 +103,6 @@ export default function EmergencyTabScreen() {
     }
   };
 
-  const acceptContact = async (id: number) => {
-    try {
-      await emergencyAPI.accept(id);
-      void load();
-      Alert.alert('Success', 'Emergency contact accepted.');
-    } catch (err) {
-      Alert.alert('Error', 'Failed to accept contact.');
-    }
-  };
-
-  const rejectContact = async (id: number) => {
-    try {
-      await emergencyAPI.reject(id);
-      void load();
-    } catch (err) {
-      Alert.alert('Error', 'Failed to reject contact.');
-    }
-  };
-
   const shareLiveLink = async () => {
     const url = Linking.createURL('/map', { scheme: 'connekta' });
     const message = `If you need me, I use Connekta for live location with trusted friends. Invite: ${url}`;
@@ -214,96 +195,54 @@ export default function EmergencyTabScreen() {
             </Text>
           </View>
         }
-        renderItem={({ item }) => {
-          const isPending = item.status === 'pending';
-          return (
-            <GlassCard 
-              borderRadius={22} 
-              intensity={isPending ? 'light' : 'medium'} 
-              style={{ 
-                paddingVertical: 14, 
-                borderColor: isPending ? `${accent.orange}44` : undefined,
-                borderWidth: isPending ? 1 : 0,
-              }}
-            >
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() =>
+              router.push({
+                pathname: '/emergency/EmergencyContactsDetails',
+                params: { id: String(item.id), name: item.name, phone: item.phone },
+              })
+            }
+          >
+            <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View
                   style={{
                     width: 40,
                     height: 40,
-                    borderRadius: 8,
-                    backgroundColor: isPending ? `${accent.orange}22` : `${accent.electricBlue}22`,
+                    borderRadius: 20,
+                    backgroundColor: `${accent.electricBlue}22`,
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
                 >
-                  <Ionicons 
-                    name={isPending ? 'hourglass' : 'checkmark-circle'} 
-                    size={20} 
-                    color={isPending ? accent.orange : accent.electricBlue} 
-                  />
+                  <Ionicons name="person" size={20} color={accent.electricBlue} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
-                      {item.name}
-                    </Text>
-                    {isPending && (
-                      <View style={{ backgroundColor: accent.orange, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
-                        <Text style={[Type.caption, { color: '#fff', fontFamily: Font.medium }]}>Pending</Text>
-                      </View>
-                    )}
-                  </View>
+                  <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+                    {item.name}
+                  </Text>
                   <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>{item.phone}</Text>
                 </View>
-                {isPending ? (
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
-                    <TouchableOpacity
-                      onPress={() => acceptContact(item.id)}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 8,
-                        backgroundColor: `${accent.green}22`,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Ionicons name="checkmark" size={18} color={accent.green} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => rejectContact(item.id)}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 8,
-                        backgroundColor: 'rgba(255,67,54,0.15)',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Ionicons name="close" size={18} color="#FF4336" />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => remove(item.id)}
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 8,
-                      backgroundColor: 'rgba(255,67,54,0.15)',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Ionicons name="close" size={18} color="#FF4336" />
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  onPress={() => remove(item.id)}
+                  hitSlop={12}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: 'rgba(255,111,97,0.15)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={18} color={accent.coral} />
+                </TouchableOpacity>
               </View>
             </GlassCard>
-          );
-        }}
+          </TouchableOpacity>
+        )}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', gap: 8 }}>
             <Ionicons name="alert-circle-outline" size={40} color={colors.textMuted} />

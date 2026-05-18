@@ -40,9 +40,10 @@ export function getRealtimeWebSocketUrl(token: string): string {
 // Create axios instance
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // Increased timeout
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   },
 });
 
@@ -75,7 +76,7 @@ apiClient.interceptors.response.use(
     console.log('[API] Response received:', response.status, response.config.url);
     return response;
   },
-  (error: AxiosError<any>) => {
+  async (error: AxiosError<any>) => {
     const errorInfo = {
       status: error.response?.status,
       message: error.message,
