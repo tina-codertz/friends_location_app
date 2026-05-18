@@ -4,14 +4,21 @@
 
 import axios, { AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import {
+  getApiAuthToken,
+  notifyUnauthorized,
+  setApiAuthToken,
+  setApiUnauthorizedHandler,
+} from '@/services/auth-token';
+
+export { setApiAuthToken, setApiUnauthorizedHandler };
 
 // Get API base URL - use machine IP if running on device
 const getAPIBaseURL = (): string => {
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (envUrl) {
-    return envUrl;
+    return envUrl.replace(/\/$/, '');
   }
-  // Fallback for development
   return 'http://192.168.1.16:8789';
 };
 
