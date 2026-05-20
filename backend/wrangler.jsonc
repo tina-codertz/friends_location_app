@@ -10,10 +10,7 @@
 	"observability": {
 		"enabled": true
 	},
-	"vars": {
-		"JWT_SECRET": "d4475313e733c84abb2e541dfc1951cc80acd618dda251797272f8e2fd080117",
-		"RESEND_API_KEY": "re_cFg4ipfG_2SbLRz33Tg6MRxsFh1rsszYS"
-	},
+
 	"upload_source_maps": true,
 	"compatibility_flags": [
 		"nodejs_compat"
@@ -38,7 +35,7 @@
 	"migrations": [
 		{
 			"tag": "v2-realtime-hub",
-			"new_classes": ["RealtimeHub"]
+			"new_sqlite_classes": ["RealtimeHub"]
 		}
 	]
 
