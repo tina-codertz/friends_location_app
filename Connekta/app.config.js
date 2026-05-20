@@ -23,7 +23,7 @@ module.exports = ({ config }) => {
       [
         '@rnmapbox/maps',
         {
-          RNMapboxMapsVersion: '10.1.33',
+          RNMapboxMapsVersion: '10.19.0',
           ...(mapboxDownloadsToken
             ? { RNMapboxMapsDownloadToken: mapboxDownloadsToken }
             : {}),
