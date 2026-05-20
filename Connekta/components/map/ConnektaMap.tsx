@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
-import { canUseMapbox, MAPBOX_STYLE_URL } from '@/utils/maps-config';
+import { canUseMapbox, getMapboxStyleUrl, type MapColorMode } from '@/utils/maps-config';
 import { ensureMapboxConfigured } from '@/utils/mapbox-init';
 import {
   getMapboxModule,
@@ -35,11 +35,14 @@ function deltaToZoom(latitudeDelta = 0.04): number {
   return Math.max(4, Math.min(16, Math.log2(360 / latitudeDelta) - 1));
 }
 
+type MapboxInnerProps = Props & { colorMode: MapColorMode };
+
 function MapboxMapInner(
   {
     style,
     containerStyle,
     initialRegion,
+    colorMode,
     showUserLocation,
     scrollEnabled,
     zoomEnabled,
@@ -47,7 +50,7 @@ function MapboxMapInner(
     pitchEnabled,
     onPress,
     children,
-  }: Props,
+  }: MapboxInnerProps,
   ref: React.Ref<ConnektaMapRef>
 ) {
   const Mapbox = getMapboxModule()!;
@@ -74,7 +77,7 @@ function MapboxMapInner(
     <View style={[styles.fill, containerStyle, style]}>
       <Mapbox.MapView
         style={styles.fill}
-        styleURL={MAPBOX_STYLE_URL}
+        styleURL={getMapboxStyleUrl(colorMode)}
         scrollEnabled={scrollEnabled}
         zoomEnabled={zoomEnabled}
         rotateEnabled={rotateEnabled}
@@ -108,7 +111,7 @@ function MapboxMapInner(
 const MapboxMap = forwardRef(MapboxMapInner);
 
 export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMap(props, ref) {
-  const { colors } = useAppTheme();
+  const { colors, mode } = useAppTheme();
   const useNativeMapbox = isMapboxNativeAvailable() && ensureMapboxConfigured();
   const useLegacy = shouldUseLegacyMapEngine();
 
@@ -125,7 +128,7 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
   if (useNativeMapbox) {
     return (
       <MapEngineProvider engine="mapbox">
-        <MapboxMap ref={ref} {...props} />
+        <MapboxMap ref={ref} {...props} colorMode={mode} />
       </MapEngineProvider>
     );
   }
@@ -137,6 +140,7 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
           ref={ref}
           style={props.style}
           initialRegion={props.initialRegion}
+          colorMode={mode}
           showUserLocation={props.showUserLocation}
           onPress={props.onPress}
         >
@@ -162,6 +166,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: colors.bg,
   },
 });

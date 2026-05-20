@@ -22,7 +22,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
-import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
+import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
 import { placesAPI, type SavedPlace } from '@/services/api';
@@ -149,16 +149,13 @@ export default function MyPlacesScreen() {
   const previewMarkers = useMemo(() => {
     const capped = capList(places, MAX_PLACE_MARKERS_MAIN);
     return capped.map((p) => (
-      <PlaceLabelMarker
+      <PlaceAreaMarker
         key={`mine-${p.id}`}
         id={`mine-${p.id}`}
         latitude={p.lat}
         longitude={p.lng}
         label={p.name}
         accentColor={accent.electricBlue}
-        backgroundColor={colors.glassBgHeavy}
-        textColor={colors.textPrimary}
-        borderColor={accent.electricBlue}
       />
     ));
   }, [places, accent.electricBlue, colors]);

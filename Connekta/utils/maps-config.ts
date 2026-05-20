@@ -32,5 +32,19 @@ export function canUseNativeMapsOnAndroid(): boolean {
   return canUseMapbox() || getAndroidMapsApiKey() != null;
 }
 
-/** Dark style — matches app #121212 theme */
+export type MapColorMode = 'light' | 'dark';
+
+/** Mapbox style aligned with device light/dark preference. */
+export function getMapboxStyleUrl(mode: MapColorMode): string {
+  return mode === 'dark'
+    ? 'mapbox://styles/mapbox/dark-v11'
+    : 'mapbox://styles/mapbox/streets-v12';
+}
+
+/** Raster tile style id for react-native-maps UrlTile overlay. */
+export function getMapboxRasterStyleId(mode: MapColorMode): string {
+  return mode === 'dark' ? 'dark-v11' : 'streets-v12';
+}
+
+/** @deprecated Use getMapboxStyleUrl(mode) */
 export const MAPBOX_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';

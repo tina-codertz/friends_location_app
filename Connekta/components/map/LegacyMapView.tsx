@@ -1,13 +1,14 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import { Platform, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import MapView, { UrlTile, type Region } from 'react-native-maps';
-import { getMapboxAccessToken } from '@/utils/maps-config';
+import { getMapboxAccessToken, getMapboxRasterStyleId, type MapColorMode } from '@/utils/maps-config';
 import type { MapRegion } from '@/types/map';
 import type { ConnektaMapRef } from '@/components/map/ConnektaMap';
 
 type Props = {
   style?: StyleProp<ViewStyle>;
   initialRegion: MapRegion;
+  colorMode?: MapColorMode;
   showUserLocation?: boolean;
   onPress?: (coord: { latitude: number; longitude: number }) => void;
   children?: React.ReactNode;
@@ -15,11 +16,12 @@ type Props = {
 
 /** Expo Go / dev fallback using react-native-maps + optional Mapbox raster tiles. */
 export const LegacyMapView = forwardRef<ConnektaMapRef, Props>(function LegacyMapView(
-  { style, initialRegion, showUserLocation = true, onPress, children },
+  { style, initialRegion, colorMode = 'light', showUserLocation = true, onPress, children },
   ref
 ) {
   const mapRef = useRef<MapView>(null);
   const token = getMapboxAccessToken();
+  const rasterStyle = getMapboxRasterStyleId(colorMode);
   const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
 
   const region: Region = {
@@ -64,7 +66,7 @@ export const LegacyMapView = forwardRef<ConnektaMapRef, Props>(function LegacyMa
     >
       {token ? (
         <UrlTile
-          urlTemplate={`https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${token}`}
+          urlTemplate={`https://api.mapbox.com/styles/v1/mapbox/${rasterStyle}/tiles/256/{z}/{x}/{y}@2x?access_token=${token}`}
           maximumZ={19}
           flipY={false}
           zIndex={-1}

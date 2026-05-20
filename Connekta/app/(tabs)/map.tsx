@@ -21,6 +21,7 @@ import { ENABLE_MAP_LOCATION_TRACKING } from '@/constants/features';
 import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
 import { useCirclePlaces } from '@/hooks/useCirclePlaces';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
+import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
 import { locationAPI } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 import type { MapRegion } from '@/types/map';
@@ -230,7 +231,7 @@ export default function MapTabScreen() {
         {placeMarkers.map((p) => {
           const isMine = user?.id === p.user_id;
           return (
-            <PlaceLabelMarker
+            <PlaceAreaMarker
               key={`place-${p.id}`}
               id={`place-${p.id}`}
               latitude={p.lat}
@@ -238,9 +239,6 @@ export default function MapTabScreen() {
               label={p.name}
               subtitle={isMine ? 'Your place' : p.username}
               accentColor={isMine ? accent.electricBlue : accent.teal}
-              backgroundColor={colors.glassBgMedium}
-              textColor={colors.textPrimary}
-              borderColor={isMine ? accent.electricBlue : colors.glassBorderMedium}
             />
           );
         })}
