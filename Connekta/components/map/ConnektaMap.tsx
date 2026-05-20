@@ -2,7 +2,11 @@ import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
 import { canUseMapbox, MAPBOX_STYLE_URL } from '@/utils/maps-config';
 import { ensureMapboxConfigured } from '@/utils/mapbox-init';
-import { getMapboxModule, isMapboxNativeAvailable } from '@/utils/map-runtime';
+import {
+  getMapboxModule,
+  isMapboxNativeAvailable,
+  shouldUseLegacyMapEngine,
+} from '@/utils/map-runtime';
 import { MapEngineProvider } from '@/components/map/MapEngineContext';
 import { LegacyMapView } from '@/components/map/LegacyMapView';
 import type { MapRegion } from '@/types/map';
@@ -106,6 +110,7 @@ const MapboxMap = forwardRef(MapboxMapInner);
 export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMap(props, ref) {
   const { colors } = useAppTheme();
   const useNativeMapbox = isMapboxNativeAvailable() && ensureMapboxConfigured();
+  const useLegacy = shouldUseLegacyMapEngine();
 
   if (!canUseMapbox()) {
     return (
@@ -125,18 +130,28 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
     );
   }
 
+  if (useLegacy) {
+    return (
+      <MapEngineProvider engine="legacy">
+        <LegacyMapView
+          ref={ref}
+          style={props.style}
+          initialRegion={props.initialRegion}
+          showUserLocation={props.showUserLocation}
+          onPress={props.onPress}
+        >
+          {props.children}
+        </LegacyMapView>
+      </MapEngineProvider>
+    );
+  }
+
   return (
-    <MapEngineProvider engine="legacy">
-      <LegacyMapView
-        ref={ref}
-        style={props.style}
-        initialRegion={props.initialRegion}
-        showUserLocation={props.showUserLocation}
-        onPress={props.onPress}
-      >
-        {props.children}
-      </LegacyMapView>
-    </MapEngineProvider>
+    <View style={[styles.fallback, props.containerStyle, props.style]}>
+      <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', fontFamily: Font.medium }]}>
+        Map unavailable. Run a dev build: npx expo run:android
+      </Text>
+    </View>
   );
 });
 

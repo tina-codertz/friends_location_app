@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
 import { DraftPinMarker } from '@/components/map/DraftPinMarker';
