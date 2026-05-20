@@ -1,15 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform, type ViewStyle } from 'react-native';
 import MapView, { type MapViewProps, type Region } from 'react-native-maps';
-import Constants from 'expo-constants';
-import { HAS_ANDROID_MAPS_KEY } from '@/constants/features';
+import { canUseNativeMapsOnAndroid } from '@/utils/maps-config';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
 
 function resolveMapsKey(): boolean {
   if (Platform.OS === 'ios') return true;
-  const extra = Constants.expoConfig?.extra as { googleMapsAndroidApiKey?: string } | undefined;
-  return HAS_ANDROID_MAPS_KEY || !!extra?.googleMapsAndroidApiKey?.trim();
+  return canUseNativeMapsOnAndroid();
 }
 
 type Props = MapViewProps & {

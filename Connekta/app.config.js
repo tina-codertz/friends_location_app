@@ -8,7 +8,7 @@ module.exports = {
     ...appJson.expo,
     extra: {
       ...appJson.expo.extra,
-      googleMapsAndroidApiKey: googleMapsKey ?? null,
+      ...(googleMapsKey ? { googleMapsAndroidApiKey: googleMapsKey } : {}),
     },
     plugins: [
       ...(appJson.expo.plugins ?? []),
