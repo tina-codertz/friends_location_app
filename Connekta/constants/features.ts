@@ -15,4 +15,6 @@ export const ENABLE_MAP_LOCATION_TRACKING =
   process.env.EXPO_PUBLIC_ENABLE_MAP_TRACKING !== 'false';
 
 /** Mapbox public token (pk.*) — primary map provider on iOS and Android. */
-export const HAS_MAPBOX = canUseMapbox();
+export function hasMapbox(): boolean {
+  return canUseMapbox();
+}

@@ -7,12 +7,34 @@ export function normalizeMapsApiKey(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function getExpoExtra(): Record<string, unknown> | undefined {
+  const fromExpoConfig = Constants.expoConfig?.extra;
+  if (fromExpoConfig && typeof fromExpoConfig === 'object') {
+    return fromExpoConfig as Record<string, unknown>;
+  }
+
+  const manifest2 = (Constants as { manifest2?: { extra?: unknown } }).manifest2?.extra;
+  if (manifest2 && typeof manifest2 === 'object') {
+    return manifest2 as Record<string, unknown>;
+  }
+
+  const manifest = Constants.manifest as { extra?: unknown } | null;
+  if (manifest?.extra && typeof manifest.extra === 'object') {
+    return manifest.extra as Record<string, unknown>;
+  }
+
+  return undefined;
+}
+
 export function getMapboxAccessToken(): string | null {
+  const extra = getExpoExtra();
+  const fromExtra = normalizeMapsApiKey(extra?.mapboxAccessToken);
+  if (fromExtra) return fromExtra;
+
   const fromEnv = normalizeMapsApiKey(process.env.EXPO_PUBLIC_MAPBOX_TOKEN);
   if (fromEnv) return fromEnv;
 
-  const extra = Constants.expoConfig?.extra as { mapboxAccessToken?: unknown } | undefined;
-  return normalizeMapsApiKey(extra?.mapboxAccessToken);
+  return null;
 }
 
 export function canUseMapbox(): boolean {
@@ -24,7 +46,7 @@ export function getAndroidMapsApiKey(): string | null {
   const fromEnv = normalizeMapsApiKey(process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY);
   if (fromEnv) return fromEnv;
 
-  const extra = Constants.expoConfig?.extra as { googleMapsAndroidApiKey?: unknown } | undefined;
+  const extra = getExpoExtra();
   return normalizeMapsApiKey(extra?.googleMapsAndroidApiKey);
 }
 
