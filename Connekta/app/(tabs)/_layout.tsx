@@ -23,6 +23,7 @@ export default function TabLayout() {
       <BiometricGate>
       <Tabs
         screenOptions={{
+          lazy: true,
           tabBarActiveTintColor: accent.electricBlue,
           tabBarInactiveTintColor: colors.textTertiary,
           tabBarStyle: {

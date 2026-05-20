@@ -12,7 +12,8 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+import { Marker } from 'react-native-maps';
+import { SafeMapView, type Region } from '@/components/map/SafeMapView';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -35,7 +36,7 @@ export default function MyPlacesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors, accent } = useAppTheme();
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
 
   const [places, setPlaces] = useState<SavedPlace[]>([]);
   const [loading, setLoading] = useState(true);
@@ -206,7 +207,7 @@ export default function MyPlacesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={styles.mapWrap}>
-        <MapView
+        <SafeMapView
           ref={mapRef}
           style={StyleSheet.absoluteFill}
           initialRegion={region}
@@ -222,7 +223,7 @@ export default function MyPlacesScreen() {
           {addOpen && pin ? (
             <Marker coordinate={{ latitude: pin.lat, longitude: pin.lng }} pinColor={accent.coral} />
           ) : null}
-        </MapView>
+        </SafeMapView>
 
         <TouchableOpacity
           onPress={() => router.back()}

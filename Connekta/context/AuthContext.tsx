@@ -88,9 +88,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ]);
 
         if (storedToken && storedUser) {
-          setApiAuthToken(storedToken);
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          let parsed: User | null = null;
+          try {
+            const raw = JSON.parse(storedUser) as Partial<User>;
+            if (
+              raw &&
+              typeof raw.id === 'number' &&
+              typeof raw.username === 'string' &&
+              typeof raw.email === 'string'
+            ) {
+              parsed = raw as User;
+            }
+          } catch {
+            await SecureStore.deleteItemAsync('user_data').catch(() => undefined);
+          }
+          if (parsed) {
+            setApiAuthToken(storedToken);
+            setToken(storedToken);
+            setUser(parsed);
+          } else {
+            await SecureStore.deleteItemAsync('auth_token').catch(() => undefined);
+          }
         }
       } catch (err) {
         console.error('Failed to restore token:', err);

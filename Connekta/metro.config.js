@@ -9,6 +9,7 @@ const defaultResolveRequest = config.resolver.resolveRequest;
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (
+    process.env.NODE_ENV !== 'production' &&
     moduleName === 'expo-keep-awake' &&
     !context.originModulePath?.includes(`${path.sep}shims${path.sep}`)
   ) {

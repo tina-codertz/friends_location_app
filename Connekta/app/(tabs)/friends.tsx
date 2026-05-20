@@ -10,17 +10,17 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import MapView, { Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { SafeMapView, type Region } from '@/components/map/SafeMapView';
 import { useAppTheme } from '@/context/ThemeContext';
 import { friendsAPI, type FriendUser } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 import { useAuth } from '@/context/AuthContext';
-import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
+import { useFriendLocationsPoll } from '@/hooks/useFriendLocationsPoll';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 
 function apiErrorMessage(e: unknown, fallback: string): string {
@@ -35,18 +35,21 @@ export default function FriendsTabScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { invite: inviteParam } = useLocalSearchParams<{ invite?: string }>();
-  const { token } = useAuth();
+  const { token, isLoggedIn } = useAuth();
   const { colors, accent } = useAppTheme();
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
 
+  const [focused, setFocused] = useState(false);
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [incoming, setIncoming] = useState<FriendUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
-  const [mapReady, setMapReady] = useState(false);
 
-  const { locations: friendLocations, refresh: refreshLocations } = useLiveFriendLocations(true, token);
+  const { locations: friendLocations, refresh: refreshLocations } = useFriendLocationsPoll(
+    focused && isLoggedIn,
+    token
+  );
 
   const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
 
@@ -61,39 +64,43 @@ export default function FriendsTabScreen() {
   }, [me]);
 
   const loadLists = useCallback(async () => {
+    if (!token) return;
     try {
       const [f, inc] = await Promise.all([friendsAPI.list(), friendsAPI.incoming()]);
-      if (f.success) setFriends(f.friends);
-      if (inc.success) setIncoming(inc.incoming);
+      if (f.success && Array.isArray(f.friends)) setFriends(f.friends);
+      if (inc.success && Array.isArray(inc.incoming)) setIncoming(inc.incoming);
     } catch {
       /* network */
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
-
-  const loadMyLocation = useCallback(async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadLists();
-    void loadMyLocation();
-  }, [loadLists, loadMyLocation]);
+  }, [token]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadMyLocation();
-      void refreshLocations();
-    }, [loadMyLocation, refreshLocations])
+      if (!isLoggedIn || !token) return;
+      setFocused(true);
+      setLoading(true);
+      void loadLists();
+
+      let cancelled = false;
+      (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (cancelled || status !== 'granted') return;
+          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          if (!cancelled) setMe({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        } catch {
+          /* ignore */
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+        setFocused(false);
+      };
+    }, [isLoggedIn, token, loadLists])
   );
 
   useEffect(() => {
@@ -106,10 +113,10 @@ export default function FriendsTabScreen() {
   }, [inviteParam, router]);
 
   useEffect(() => {
-    if (mapReady && region && mapRef.current) {
+    if (region && mapRef.current?.animateToRegion) {
       mapRef.current.animateToRegion(region, 500);
     }
-  }, [mapReady, region]);
+  }, [region]);
 
   const accept = async (id: number) => {
     try {
@@ -138,7 +145,7 @@ export default function FriendsTabScreen() {
 
   const focusFriend = (username: string) => {
     const loc = friendLocations.find((f) => f.username === username);
-    if (loc && mapRef.current) {
+    if (loc && mapRef.current?.animateToRegion) {
       mapRef.current.animateToRegion(
         { latitude: loc.lat, longitude: loc.lng, latitudeDelta: 0.02, longitudeDelta: 0.02 },
         400
@@ -175,14 +182,13 @@ export default function FriendsTabScreen() {
             <Text style={[Type.caption, { color: colors.textMuted, marginTop: 8 }]}>Getting your location…</Text>
           </View>
         ) : (
-          <MapView
+          <SafeMapView
             ref={mapRef}
             style={StyleSheet.absoluteFill}
             initialRegion={region}
             showsUserLocation
             showsMyLocationButton={Platform.OS === 'android'}
             {...mapTypeProps}
-            onMapReady={() => setMapReady(true)}
           >
             {friendLocations.map((f) => (
               <PlaceLabelMarker
@@ -198,12 +204,12 @@ export default function FriendsTabScreen() {
                 borderColor={accent.coral}
               />
             ))}
-          </MapView>
+          </SafeMapView>
         )}
       </View>
 
       <Text style={[Type.caption, { color: colors.textMuted, paddingHorizontal: 4 }]}>
-        Map centers on you. Friends appear when they have live sharing on.
+        Centered on you. Friends appear when they have live sharing on.
       </Text>
 
       {incoming.length > 0 ? (
@@ -234,7 +240,7 @@ export default function FriendsTabScreen() {
     </View>
   );
 
-  if (loading) {
+  if (!isLoggedIn || loading) {
     return (
       <View style={[styles.center, { backgroundColor: colors.bg }]}>
         <ActivityIndicator color={accent.electricBlue} />
@@ -260,7 +266,6 @@ export default function FriendsTabScreen() {
             onRefresh={() => {
               setRefreshing(true);
               void loadLists();
-              void loadMyLocation();
               void refreshLocations();
             }}
             tintColor={accent.electricBlue}
@@ -292,9 +297,7 @@ export default function FriendsTabScreen() {
                       {isLive ? 'Sharing location' : 'Not sharing live location'}
                     </Text>
                   </View>
-                  {isLive ? (
-                    <View style={[styles.liveDot, { backgroundColor: accent.coral }]} />
-                  ) : null}
+                  {isLive ? <View style={[styles.liveDot, { backgroundColor: accent.coral }]} /> : null}
                 </View>
               </GlassCard>
             </TouchableOpacity>

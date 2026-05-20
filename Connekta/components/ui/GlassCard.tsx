@@ -92,14 +92,14 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
   const body = (
     <View style={[shell, style]}>
-      {blur && Platform.OS !== 'web' ? (
+      {blur && Platform.OS === 'ios' ? (
         <BlurView
           intensity={BLUR_INTENSITY[intensity]}
           tint={isDark ? 'dark' : 'light'}
           style={StyleSheet.absoluteFill}
         />
       ) : null}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: bgColor, opacity: blur && Platform.OS !== 'web' ? 0.72 : 1 }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: bgColor, opacity: blur && Platform.OS === 'ios' ? 0.72 : 1 }]} />
       {innerGlow}
       <View style={styles.content}>{children}</View>
     </View>
