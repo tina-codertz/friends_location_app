@@ -71,13 +71,7 @@ export default function SettingsHomeScreen() {
         </GlassCard>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/(tabs)/settings/LocationHistory')} activeOpacity={0.85}>
-        <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 18 }}>
-          <Text style={[Type.section, { color: colors.textPrimary }]}>Location History</Text>
-          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>View your location records</Text>
-        </GlassCard>
-      </TouchableOpacity>
-
+  
       <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 16 }}>
         <View style={styles.row}>
           <View style={{ flex: 1 }}>

@@ -141,44 +141,10 @@ export default function EmergencyTabScreen() {
 
             <GlassCard borderRadius={22} intensity="heavy">
               <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 12 }]}>Safety Contacts</Text>
-              <TextInput
-                placeholder="Name"
-                placeholderTextColor={colors.inputPlaceholder}
-                value={name}
-                onChangeText={setName}
-                style={[
-                  styles.input,
-                  { color: colors.textPrimary, borderColor: colors.inputBorder, fontFamily: Font.regular },
-                ]}
-              />
-              <TextInput
-                placeholder="Phone"
-                placeholderTextColor={colors.inputPlaceholder}
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                style={[
-                  styles.input,
-                  { color: colors.textPrimary, borderColor: colors.inputBorder, fontFamily: Font.regular, marginTop: 10 },
-                ]}
-              />
+             
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, alignItems: 'center' }}>
-                <View style={{ flex: 1 }}>
-                  <GlassButton title="Save contact" onPress={add} variant="secondary" fullWidth />
-                </View>
-                <TouchableOpacity
-                  onPress={pickContact}
-                  style={{
-                    width: 48,
-                    height: 48,
-                    backgroundColor: accent.electricBlue,
-                    borderRadius: 12,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Ionicons name="person-add-outline" size={22} color="#fff" />
-                </TouchableOpacity>
+               
+               
               </View>
               <View style={{ marginTop: 12 }}>
                 <GlassButton 

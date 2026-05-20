@@ -9,22 +9,24 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
-  Platform,
   KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
+import type { MapRegion } from '@/types/map';
+import { capList, MAX_PLACE_MARKERS_MAIN } from '@/utils/map-limits';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
-import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
+import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
 import { placesAPI, type SavedPlace } from '@/services/api';
 
-const DEFAULT_REGION: Region = {
+const DEFAULT_REGION: MapRegion = {
   latitude: 37.7749,
   longitude: -122.4194,
   latitudeDelta: 0.05,
@@ -35,17 +37,15 @@ export default function MyPlacesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors, accent } = useAppTheme();
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<ConnektaMapRef>(null);
 
   const [places, setPlaces] = useState<SavedPlace[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [placeName, setPlaceName] = useState('');
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
-  const [region, setRegion] = useState<Region>(DEFAULT_REGION);
+  const [region, setRegion] = useState<MapRegion>(DEFAULT_REGION);
   const [saving, setSaving] = useState(false);
-
-  const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
 
   const loadPlaces = useCallback(async () => {
     setLoading(true);
@@ -68,7 +68,7 @@ export default function MyPlacesScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const r: Region = {
+      const r: MapRegion = {
         latitude: pos.coords.latitude,
         longitude: pos.coords.longitude,
         latitudeDelta: 0.04,
@@ -134,7 +134,7 @@ export default function MyPlacesScreen() {
   );
 
   const focusPlace = (place: SavedPlace) => {
-    mapRef.current?.animateToRegion(
+    mapRef.current?.flyTo(
       {
         latitude: place.lat,
         longitude: place.lng,
@@ -145,23 +145,19 @@ export default function MyPlacesScreen() {
     );
   };
 
-  const previewMarkers = useMemo(
-    () =>
-      places.map((p) => (
-        <PlaceLabelMarker
-          key={`mine-${p.id}`}
-          id={`mine-${p.id}`}
-          latitude={p.lat}
-          longitude={p.lng}
-          label={p.name}
-          accentColor={accent.electricBlue}
-          backgroundColor={colors.glassBgHeavy}
-          textColor={colors.textPrimary}
-          borderColor={accent.electricBlue}
-        />
-      )),
-    [places, accent.electricBlue, colors]
-  );
+  const previewMarkers = useMemo(() => {
+    const capped = capList(places, MAX_PLACE_MARKERS_MAIN);
+    return capped.map((p) => (
+      <PlaceAreaMarker
+        key={`mine-${p.id}`}
+        id={`mine-${p.id}`}
+        latitude={p.lat}
+        longitude={p.lng}
+        label={p.name}
+        accentColor={accent.electricBlue}
+      />
+    ));
+  }, [places, accent.electricBlue, colors]);
 
   const renderPlaceItem = ({ item }: { item: SavedPlace }) => (
     <TouchableOpacity onPress={() => focusPlace(item)} activeOpacity={0.85}>
@@ -206,23 +202,28 @@ export default function MyPlacesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={styles.mapWrap}>
-        <MapView
+        <ConnektaMap
           ref={mapRef}
           style={StyleSheet.absoluteFill}
           initialRegion={region}
-          showsUserLocation
-          {...mapTypeProps}
-          onPress={(e) => {
-            if (addOpen) {
-              setPin({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude });
-            }
-          }}
+          showUserLocation
+          onPress={
+            addOpen
+              ? (coord) => setPin({ lat: coord.latitude, lng: coord.longitude })
+              : undefined
+          }
         >
           {previewMarkers}
           {addOpen && pin ? (
-            <Marker coordinate={{ latitude: pin.lat, longitude: pin.lng }} pinColor={accent.coral} />
+            <PlaceAreaMarker
+              id="draft-place"
+              latitude={pin.lat}
+              longitude={pin.lng}
+              label={placeName.trim() || 'New place'}
+              accentColor={accent.coral}
+            />
           ) : null}
-        </MapView>
+        </ConnektaMap>
 
         <TouchableOpacity
           onPress={() => router.back()}

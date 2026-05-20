@@ -1,31 +1,38 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
   Switch,
-  Platform,
   TouchableOpacity,
   Animated,
   Modal,
 } from 'react-native';
-import MapView, { Circle, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
+import { ENABLE_MAP_LOCATION_TRACKING } from '@/constants/features';
 import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
 import { useCirclePlaces } from '@/hooks/useCirclePlaces';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
+import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
 import { locationAPI } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
+import type { MapRegion } from '@/types/map';
+import {
+  capList,
+  MAX_FRIEND_MARKERS_MAIN,
+  MAX_PLACE_MARKERS_MAIN,
+} from '@/utils/map-limits';
 
-const MIN_PING_MS = 14000;
-const MIN_MOVE_M = 45;
+const MIN_PING_MS = 20000;
+const MIN_MOVE_M = 50;
 
 function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371000;
@@ -42,31 +49,27 @@ function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 export default function MapTabScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { token, user } = useAuth();
+  const { token, user, isLoggedIn } = useAuth();
   const { colors, accent } = useAppTheme();
+  const [focused, setFocused] = useState(false);
   const [permission, setPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
   const [sharing, setSharing] = useState(false);
+  const [showPlaces, setShowPlaces] = useState(true);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const lastPing = useRef(0);
   const lastSent = useRef<{ lat: number; lng: number } | null>(null);
-  const mapRef = useRef<MapView>(null);
+  const sharingRef = useRef(false);
+  const mapRef = useRef<ConnektaMapRef>(null);
   const overlayShift = useRef(new Animated.Value(0)).current;
 
-  const { locations, refresh } = useLiveFriendLocations(sharing, token);
-  const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(token);
+  sharingRef.current = sharing;
 
-  useFocusEffect(
-    useCallback(() => {
-      void refreshPlaces();
-    }, [refreshPlaces])
-  );
+  const { locations, refresh } = useLiveFriendLocations(focused && isLoggedIn, token);
+  const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(focused && isLoggedIn, token);
 
-  /** Android AirMap throws when mapType updates to an invalid native value — omit on Android. */
-  const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
-
-  const region: Region | null = useMemo(() => {
+  const region: MapRegion | null = useMemo(() => {
     if (!me) return null;
     return {
       latitude: me.lat,
@@ -76,84 +79,92 @@ export default function MapTabScreen() {
     };
   }, [me]);
 
-  const syncSharing = useCallback(async () => {
-    try {
-      const s = await locationAPI.myState();
-      if (s.success) setSharing(s.sharing);
-    } catch {
-      /* offline — keep local */
-    }
-  }, []);
+  const friendMarkers = useMemo(
+    () => capList(locations, MAX_FRIEND_MARKERS_MAIN),
+    [locations]
+  );
 
-  useEffect(() => {
-    let sub: Location.LocationSubscription | undefined;
+  const placeMarkers = useMemo(() => {
+    if (!showPlaces) return [];
+    return capList(circlePlaces, MAX_PLACE_MARKERS_MAIN);
+  }, [circlePlaces, showPlaces]);
 
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        setPermission(status === 'granted' ? 'granted' : 'denied');
-        if (status !== 'granted') {
-          setLoading(false);
-          return;
-        }
+  useFocusEffect(
+    useCallback(() => {
+      if (!isLoggedIn || !token) return;
+      setFocused(true);
+      let sub: Location.LocationSubscription | undefined;
+      let cancelled = false;
 
-        await syncSharing();
-
-        const first = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        const coords = { lat: first.coords.latitude, lng: first.coords.longitude };
-        setMe(coords);
-        setLoading(false);
-
-        sub = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.Balanced,
-            distanceInterval: 35,
-            timeInterval: 12000,
-          },
-          async (loc) => {
-            const next = { lat: loc.coords.latitude, lng: loc.coords.longitude };
-            setMe(next);
-            const now = Date.now();
-            if (!sharing) return;
-            if (now - lastPing.current < MIN_PING_MS) return;
-            const prev = lastSent.current;
-            if (prev && distanceM(prev, next) < MIN_MOVE_M) return;
-            lastPing.current = now;
-            lastSent.current = next;
-            try {
-              await locationAPI.ping(next.lat, next.lng);
-              void refresh();
-              void refreshPlaces();
-            } catch {
-              /* ignore transient errors */
-            }
+      (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (cancelled) return;
+          setPermission(status === 'granted' ? 'granted' : 'denied');
+          if (status !== 'granted') {
+            setLoading(false);
+            return;
           }
-        );
-      } catch {
-        setLoading(false);
-        setPermission('denied');
-      }
-    })();
 
-    return () => {
-      sub?.remove();
-    };
-  }, [sharing, refresh, syncSharing]);
+          try {
+            const s = await locationAPI.myState();
+            if (!cancelled && s.success) setSharing(!!s.sharing);
+          } catch {
+            /* offline */
+          }
+
+          const first = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          if (cancelled) return;
+          setMe({ lat: first.coords.latitude, lng: first.coords.longitude });
+          setLoading(false);
+
+          if (!ENABLE_MAP_LOCATION_TRACKING) return;
+
+          sub = await Location.watchPositionAsync(
+            {
+              accuracy: Location.Accuracy.Balanced,
+              distanceInterval: 40,
+              timeInterval: 15000,
+            },
+            (loc) => {
+              if (cancelled) return;
+              const next = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+              setMe(next);
+              if (!sharingRef.current) return;
+              const now = Date.now();
+              if (now - lastPing.current < MIN_PING_MS) return;
+              const prev = lastSent.current;
+              if (prev && distanceM(prev, next) < MIN_MOVE_M) return;
+              lastPing.current = now;
+              lastSent.current = next;
+              locationAPI.ping(next.lat, next.lng).catch(() => undefined);
+            }
+          );
+        } catch {
+          if (!cancelled) {
+            setLoading(false);
+            setPermission('denied');
+          }
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+        setFocused(false);
+        sub?.remove();
+      };
+    }, [isLoggedIn, token])
+  );
 
   const onToggleShare = async (value: boolean) => {
+    if (!token) return;
     setSharing(value);
     try {
       await locationAPI.setSharing(value);
       if (value && me) {
         lastPing.current = 0;
         lastSent.current = null;
-        try {
-          await locationAPI.ping(me.lat, me.lng);
-        } catch {
-          /* ngrok/wrangler blip — location watcher will retry */
-        }
+        locationAPI.ping(me.lat, me.lng).catch(() => undefined);
         void refresh();
         void refreshPlaces();
       }
@@ -161,6 +172,14 @@ export default function MapTabScreen() {
       setSharing(!value);
     }
   };
+
+  if (!isLoggedIn) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator color={accent.electricBlue} />
+      </View>
+    );
+  }
 
   if (loading) {
     return (
@@ -188,42 +207,14 @@ export default function MapTabScreen() {
 
   return (
     <View style={styles.fill}>
-      <MapView
+      <ConnektaMap
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         initialRegion={region}
-        showsUserLocation
-        showsMyLocationButton={Platform.OS === 'android'}
-        showsCompass
-        loadingEnabled={Platform.OS === 'ios'}
-        {...mapTypeProps}
-        onMapReady={() => mapRef.current?.animateToRegion(region, 400)}
-        onRegionChange={() => {
-          Animated.spring(overlayShift, {
-            toValue: 6,
-            tension: 80,
-            friction: 12,
-            useNativeDriver: true,
-          }).start();
-        }}
-        onRegionChangeComplete={() => {
-          Animated.spring(overlayShift, {
-            toValue: 0,
-            tension: 80,
-            friction: 12,
-            useNativeDriver: true,
-          }).start();
-        }}
+        showUserLocation
+        onPress={undefined}
       >
-        {sharing && me ? (
-          <Circle
-            center={{ latitude: me.lat, longitude: me.lng }}
-            radius={90}
-            strokeColor="rgba(30, 144, 255, 0.55)"
-            fillColor="rgba(30, 144, 255, 0.12)"
-          />
-        ) : null}
-        {locations.map((f) => (
+        {friendMarkers.map((f) => (
           <PlaceLabelMarker
             key={`live-${f.id}`}
             id={`live-${f.id}`}
@@ -237,10 +228,10 @@ export default function MapTabScreen() {
             borderColor={accent.coral}
           />
         ))}
-        {circlePlaces.map((p) => {
+        {placeMarkers.map((p) => {
           const isMine = user?.id === p.user_id;
           return (
-            <PlaceLabelMarker
+            <PlaceAreaMarker
               key={`place-${p.id}`}
               id={`place-${p.id}`}
               latitude={p.lat}
@@ -248,13 +239,10 @@ export default function MapTabScreen() {
               label={p.name}
               subtitle={isMine ? 'Your place' : p.username}
               accentColor={isMine ? accent.electricBlue : accent.teal}
-              backgroundColor={colors.glassBgMedium}
-              textColor={colors.textPrimary}
-              borderColor={isMine ? accent.electricBlue : colors.glassBorderMedium}
             />
           );
         })}
-      </MapView>
+      </ConnektaMap>
 
       <Animated.View
         pointerEvents="box-none"
@@ -268,7 +256,6 @@ export default function MapTabScreen() {
           },
         ]}
       >
-        {/* Hamburger Menu Button */}
         <TouchableOpacity
           onPress={() => setMenuOpen(true)}
           activeOpacity={0.85}
@@ -282,10 +269,6 @@ export default function MapTabScreen() {
             marginBottom: 14,
             borderWidth: 1,
             borderColor: colors.glassBorderMedium,
-            shadowColor: colors.glassShadow,
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.28,
-            shadowRadius: 16,
             elevation: 8,
           }}
         >
@@ -297,7 +280,7 @@ export default function MapTabScreen() {
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={[Type.section, { color: colors.textPrimary }]}>Live map</Text>
               <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-                Sharing is opt-in. Only accepted friends see you when sharing is on.
+                {friendMarkers.length} friends · {showPlaces ? placeMarkers.length : 0} places shown
               </Text>
             </View>
             <Switch
@@ -307,26 +290,25 @@ export default function MapTabScreen() {
               thumbColor={sharing ? accent.electricBlue : colors.textTertiary}
             />
           </View>
+          <View style={[styles.row, { marginTop: 10 }]}>
+            <Text style={[Type.caption, { color: colors.textMuted, flex: 1 }]}>Show saved places</Text>
+            <Switch
+              value={showPlaces}
+              onValueChange={setShowPlaces}
+              trackColor={{ false: colors.divider, true: `${accent.teal}88` }}
+              thumbColor={showPlaces ? accent.teal : colors.textTertiary}
+            />
+          </View>
         </GlassCard>
       </Animated.View>
 
-      {/* Menu Modal */}
-      <Modal
-        visible={menuOpen}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setMenuOpen(false)}
-      >
+      <Modal visible={menuOpen} animationType="fade" transparent onRequestClose={() => setMenuOpen(false)}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
-          <TouchableOpacity
-            onPress={() => setMenuOpen(false)}
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-          />
+          <TouchableOpacity onPress={() => setMenuOpen(false)} style={StyleSheet.absoluteFill} activeOpacity={1} />
           <GlassCard
             borderRadius={24}
             intensity="heavy"
-            blur
+            blur={false}
             style={{
               borderBottomLeftRadius: 0,
               borderBottomRightRadius: 0,
@@ -335,7 +317,6 @@ export default function MapTabScreen() {
               paddingBottom: insets.bottom + 20,
             }}
           >
-            {/* Menu Title */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <Text style={[Type.section, { color: colors.textPrimary }]}>Menu</Text>
               <TouchableOpacity onPress={() => setMenuOpen(false)}>
@@ -343,11 +324,9 @@ export default function MapTabScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Menu Items */}
             <TouchableOpacity
               onPress={() => {
                 setMenuOpen(false);
-                // MyPlaces is at the same level, but we can navigate via router
                 router.push('/(tabs)/MyPlaces' as any);
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomColor: colors.divider, borderBottomWidth: 1 }}

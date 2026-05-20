@@ -59,7 +59,7 @@ export function BiometricGate({ children }: Props) {
   }, [refreshPolicy]);
 
   useEffect(() => {
-    runUnlock();
+    void runUnlock().catch(() => setGate('unlocked'));
   }, [runUnlock]);
 
   useEffect(() => {

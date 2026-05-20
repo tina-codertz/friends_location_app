@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
+import { getMapboxModule } from '@/utils/map-runtime';
+import { useMapEngine } from '@/components/map/MapEngineContext';
 import { Font } from '@/constants/typography';
 
 type Props = {
@@ -15,41 +17,71 @@ type Props = {
   borderColor: string;
 };
 
-/** Round pill marker with place name (and optional subtitle). */
-export function PlaceLabelMarker({
-  id,
-  latitude,
-  longitude,
+function MarkerBubble({
   label,
   subtitle,
   accentColor,
   backgroundColor,
   textColor,
   borderColor,
-}: Props) {
+}: Omit<Props, 'id' | 'latitude' | 'longitude'>) {
+  return (
+    <View style={styles.wrap}>
+      <View style={[styles.bubble, { backgroundColor, borderColor }]}>
+        <View style={[styles.dot, { backgroundColor: accentColor }]} />
+        <Text style={[styles.label, { color: textColor }]} numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
+      {subtitle ? (
+        <Text style={[styles.subtitle, { color: textColor }]} numberOfLines={1}>
+          {subtitle}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function PlaceLabelMarkerComponent(props: Props) {
+  const engine = useMapEngine();
+  const bubble = (
+    <MarkerBubble
+      label={props.label}
+      subtitle={props.subtitle}
+      accentColor={props.accentColor}
+      backgroundColor={props.backgroundColor}
+      textColor={props.textColor}
+      borderColor={props.borderColor}
+    />
+  );
+
+  if (engine === 'mapbox') {
+    const Mapbox = getMapboxModule();
+    if (!Mapbox) return null;
+    return (
+      <Mapbox.PointAnnotation
+        id={props.id}
+        coordinate={[props.longitude, props.latitude]}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        {bubble}
+      </Mapbox.PointAnnotation>
+    );
+  }
+
   return (
     <Marker
-      identifier={id}
-      coordinate={{ latitude, longitude }}
+      identifier={props.id}
+      coordinate={{ latitude: props.latitude, longitude: props.longitude }}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={false}
     >
-      <View style={styles.wrap}>
-        <View style={[styles.bubble, { backgroundColor, borderColor }]}>
-          <View style={[styles.dot, { backgroundColor: accentColor }]} />
-          <Text style={[styles.label, { color: textColor }]} numberOfLines={1}>
-            {label}
-          </Text>
-        </View>
-        {subtitle ? (
-          <Text style={[styles.subtitle, { color: textColor }]} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
+      {bubble}
     </Marker>
   );
 }
+
+export const PlaceLabelMarker = memo(PlaceLabelMarkerComponent);
 
 const styles = StyleSheet.create({
   wrap: {
@@ -64,10 +96,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
     elevation: 6,
   },
   dot: {

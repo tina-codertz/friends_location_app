@@ -107,60 +107,8 @@ export default function ShareLocationScreen() {
         </GlassCard>
       )}
 
-      {/* Share Methods */}
-      <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 12, marginTop: 8 }]}>
-        Share Methods
-      </Text>
+     
 
-      <GlassCard borderRadius={16} intensity="light" style={{ marginBottom: 12, paddingVertical: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: accent.teal,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Ionicons name="share-social" size={24} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
-              Quick Share
-            </Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-              Share current location via system share
-            </Text>
-          </View>
-        </View>
-      </GlassCard>
-
-      <GlassCard borderRadius={16} intensity="light" style={{ paddingVertical: 14, marginBottom: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: accent.orange,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Ionicons name="link" size={24} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
-              Copy Link
-            </Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-              Get shareable Google Maps link
-            </Text>
-          </View>
-        </View>
-      </GlassCard>
 
       {/* Share Button */}
       <GlassButton

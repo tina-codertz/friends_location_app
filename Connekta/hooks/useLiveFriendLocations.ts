@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
+import { ENABLE_REALTIME } from '@/constants/features';
 import { FriendLocation, getRealtimeWebSocketUrl, locationAPI } from '@/services/api';
 
-/** Backup sync when WebSocket is unavailable */
-const POLL_MS_NO_WS = 8000;
-/** Infrequent REST catch-up while WebSocket is healthy */
-const POLL_MS_WITH_WS = 40000;
+const POLL_MS = 30000;
+const MAX_WS_RECONNECT = 5;
 
 type WsPayload = {
   event: string;
@@ -24,31 +23,35 @@ function isLocationPayload(d: unknown): d is FriendLocation {
   );
 }
 
-export function useLiveFriendLocations(enabled: boolean, authToken: string | null) {
+/**
+ * Live friend locations. WebSocket is OFF unless EXPO_PUBLIC_ENABLE_REALTIME=true.
+ * Use useFriendLocationsPoll for the Friends tab (safer on Android APK).
+ */
+export function useLiveFriendLocations(active: boolean, authToken: string | null) {
   const [locations, setLocations] = useState<FriendLocation[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [wsConnected, setWsConnected] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const attemptRef = useRef(0);
+  const mountedRef = useRef(true);
   const appState = useRef(AppState.currentState);
 
   const fetchOnce = useCallback(async () => {
-    if (!enabled || !authToken) return;
+    if (!active || !authToken || !mountedRef.current) return;
     try {
       const res = await locationAPI.friendsLocations();
-      if (res.success) {
-        setLocations(res.locations);
-        setError(null);
+      if (!mountedRef.current) return;
+      if (res.success && Array.isArray(res.locations)) {
+        setLocations(res.locations.filter((l) => l && typeof l.lat === 'number'));
       }
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to refresh friends');
+    } catch {
+      /* offline */
     }
-  }, [enabled, authToken]);
+  }, [active, authToken]);
 
   const applyWsMessage = useCallback((raw: string) => {
+    if (!mountedRef.current) return;
     let msg: WsPayload;
     try {
       msg = JSON.parse(raw) as WsPayload;
@@ -88,90 +91,105 @@ export function useLiveFriendLocations(enabled: boolean, authToken: string | nul
       }
       wsRef.current = null;
     }
-    setWsConnected(false);
   }, []);
 
   const startWs = useCallback(() => {
-    if (!enabled || !authToken) return;
+    if (!ENABLE_REALTIME || !active || !authToken) return;
     stopWs();
     attemptRef.current = 0;
 
     const open = () => {
-      const url = getRealtimeWebSocketUrl(authToken);
-      const ws = new WebSocket(url);
-      wsRef.current = ws;
+      if (!mountedRef.current || !active || !authToken) return;
+      if (attemptRef.current >= MAX_WS_RECONNECT) return;
 
-      ws.onopen = () => {
-        setWsConnected(true);
-        attemptRef.current = 0;
-        void fetchOnce();
-        pingRef.current = setInterval(() => {
+      try {
+        const url = getRealtimeWebSocketUrl(authToken);
+        const ws = new WebSocket(url);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          attemptRef.current = 0;
+          void fetchOnce();
+          pingRef.current = setInterval(() => {
+            try {
+              if (ws.readyState === WebSocket.OPEN) ws.send('ping');
+            } catch {
+              /* ignore */
+            }
+          }, 25000);
+        };
+
+        ws.onmessage = (ev) => {
+          if (typeof ev.data === 'string') applyWsMessage(ev.data);
+        };
+
+        ws.onclose = () => {
+          if (pingRef.current) {
+            clearInterval(pingRef.current);
+            pingRef.current = null;
+          }
+          wsRef.current = null;
+          if (!mountedRef.current || !active || !authToken) return;
+          attemptRef.current += 1;
+          if (attemptRef.current >= MAX_WS_RECONNECT) return;
+          const delay = Math.min(2000 * attemptRef.current, 12000);
+          reconnectRef.current = setTimeout(open, delay);
+        };
+
+        ws.onerror = () => {
           try {
-            if (ws.readyState === WebSocket.OPEN) ws.send('ping');
+            ws.close();
           } catch {
             /* ignore */
           }
-        }, 25000);
-      };
-
-      ws.onmessage = (ev) => {
-        if (typeof ev.data === 'string') applyWsMessage(ev.data);
-      };
-
-      ws.onerror = () => {
-        setError('Realtime connection error');
-      };
-
-      ws.onclose = () => {
-        setWsConnected(false);
-        if (pingRef.current) {
-          clearInterval(pingRef.current);
-          pingRef.current = null;
-        }
-        wsRef.current = null;
-        if (!enabled || !authToken) return;
-        const n = ++attemptRef.current;
-        const delay = Math.min(1500 * 2 ** Math.min(n, 6), 28000);
-        reconnectRef.current = setTimeout(open, delay);
-      };
+        };
+      } catch {
+        /* invalid ws url */
+      }
     };
 
     open();
-  }, [enabled, authToken, applyWsMessage, fetchOnce, stopWs]);
+  }, [active, authToken, applyWsMessage, fetchOnce, stopWs]);
 
   useEffect(() => {
-    if (!enabled || !authToken) {
-      stopWs();
-      if (pollRef.current) clearInterval(pollRef.current);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
       pollRef.current = null;
+    }
+    stopWs();
+
+    if (!active || !authToken) {
       setLocations([]);
       return;
     }
 
     void fetchOnce();
-
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(fetchOnce, POLL_MS_WITH_WS);
-
-    startWs();
+    pollRef.current = setInterval(() => void fetchOnce(), POLL_MS);
+    if (ENABLE_REALTIME) startWs();
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = null;
       stopWs();
     };
-  }, [enabled, authToken, fetchOnce, startWs, stopWs]);
+  }, [active, authToken, fetchOnce, startWs, stopWs]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
-      if (appState.current.match(/inactive|background/) && next === 'active' && enabled) {
+      if (appState.current.match(/inactive|background/) && next === 'active' && active && authToken) {
         void fetchOnce();
-        if (authToken) startWs();
       }
       appState.current = next;
     });
     return () => sub.remove();
-  }, [enabled, authToken, fetchOnce, startWs]);
+  }, [active, authToken, fetchOnce]);
 
-  return { locations, error, refresh: fetchOnce, wsConnected };
+  return { locations, refresh: fetchOnce, wsConnected: false };
 }

@@ -1,29 +1,54 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { placesAPI, type SavedPlace } from '@/services/api';
 
-export function useCirclePlaces(authToken: string | null) {
-  const [places, setPlaces] = useState<SavedPlace[]>([]);
-  const [loading, setLoading] = useState(true);
+const MIN_FETCH_MS = 45000;
 
-  const refresh = useCallback(async () => {
-    if (!authToken) {
-      setPlaces([]);
-      setLoading(false);
-      return;
-    }
-    try {
-      const res = await placesAPI.circle();
-      if (res.success) setPlaces(res.places);
-    } catch {
-      /* offline */
-    } finally {
-      setLoading(false);
-    }
-  }, [authToken]);
+export function useCirclePlaces(active: boolean, authToken: string | null) {
+  const [places, setPlaces] = useState<SavedPlace[]>([]);
+  const [loading, setLoading] = useState(false);
+  const mountedRef = useRef(true);
+  const lastFetchRef = useRef(0);
+
+  const refresh = useCallback(
+    async (force = false) => {
+      if (!active || !authToken || !mountedRef.current) {
+        if (mountedRef.current) {
+          setPlaces([]);
+          setLoading(false);
+        }
+        return;
+      }
+
+      const now = Date.now();
+      if (!force && now - lastFetchRef.current < MIN_FETCH_MS) return;
+
+      setLoading(true);
+      try {
+        const res = await placesAPI.circle();
+        lastFetchRef.current = Date.now();
+        if (!mountedRef.current) return;
+        if (res.success && Array.isArray(res.places)) {
+          setPlaces(res.places);
+        }
+      } catch {
+        /* offline */
+      } finally {
+        if (mountedRef.current) setLoading(false);
+      }
+    },
+    [active, authToken]
+  );
 
   useEffect(() => {
-    void refresh();
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    void refresh(true);
   }, [refresh]);
 
-  return { places, loading, refresh };
-}
+  return { places, loading, refresh: () => refresh(true) };
+};
