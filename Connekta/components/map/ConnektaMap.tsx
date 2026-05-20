@@ -119,7 +119,8 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
     return (
       <View style={[styles.fallback, { backgroundColor: colors.bg }, props.containerStyle, props.style]}>
         <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', fontFamily: Font.medium }]}>
-          {props.fallbackMessage ?? 'Add EXPO_PUBLIC_MAPBOX_TOKEN to .env'}
+          {props.fallbackMessage ??
+            'Mapbox token missing. Add EXPO_PUBLIC_MAPBOX_TOKEN to .env, then restart with: npx expo start -c'}
         </Text>
       </View>
     );
