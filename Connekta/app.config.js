@@ -9,6 +9,13 @@ module.exports = ({ config }) => {
   }
   const googleMapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim();
 
+  if (process.env.EAS_BUILD === 'true' && !mapboxToken) {
+    console.warn(
+      '[Connekta] EAS Build: EXPO_PUBLIC_MAPBOX_TOKEN is missing. ' +
+        'Add it with: eas secret:create --scope project --name EXPO_PUBLIC_MAPBOX_TOKEN --value "pk...."'
+    );
+  }
+
   return {
     ...config,
     extra: {
