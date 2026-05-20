@@ -8,7 +8,7 @@ import { hexToRgba } from '@/utils/map-colors';
 import { Font } from '@/constants/typography';
 
 /** Default radius shown on map (~city block). */
-export const PLACE_AREA_RADIUS_M = 100;
+export const PLACE_AREA_RADIUS_M = 120;
 
 type Props = {
   id: string;

@@ -13,7 +13,6 @@ import {
   Platform,
 } from 'react-native';
 import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
-import { DraftPinMarker } from '@/components/map/DraftPinMarker';
 import type { MapRegion } from '@/types/map';
 import { capList, MAX_PLACE_MARKERS_MAIN } from '@/utils/map-limits';
 import * as Location from 'expo-location';
@@ -216,7 +215,13 @@ export default function MyPlacesScreen() {
         >
           {previewMarkers}
           {addOpen && pin ? (
-            <DraftPinMarker latitude={pin.lat} longitude={pin.lng} color={accent.coral} />
+            <PlaceAreaMarker
+              id="draft-place"
+              latitude={pin.lat}
+              longitude={pin.lng}
+              label={placeName.trim() || 'New place'}
+              accentColor={accent.coral}
+            />
           ) : null}
         </ConnektaMap>
 

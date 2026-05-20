@@ -117,7 +117,7 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
 
   if (!canUseMapbox()) {
     return (
-      <View style={[styles.fallback, props.containerStyle, props.style]}>
+      <View style={[styles.fallback, { backgroundColor: colors.bg }, props.containerStyle, props.style]}>
         <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', fontFamily: Font.medium }]}>
           {props.fallbackMessage ?? 'Add EXPO_PUBLIC_MAPBOX_TOKEN to .env'}
         </Text>
@@ -151,7 +151,7 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
   }
 
   return (
-    <View style={[styles.fallback, props.containerStyle, props.style]}>
+    <View style={[styles.fallback, { backgroundColor: colors.bg }, props.containerStyle, props.style]}>
       <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', fontFamily: Font.medium }]}>
         Map unavailable. Run a dev build: npx expo run:android
       </Text>
@@ -166,6 +166,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: colors.bg,
   },
 });
