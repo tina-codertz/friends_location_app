@@ -184,15 +184,8 @@ export default function FriendsTabScreen() {
             <Text style={[Type.caption, { color: colors.textMuted, marginTop: 8 }]}>Getting your location…</Text>
           </View>
         ) : (
-          <SafeMapView
-            ref={mapRef}
-            style={StyleSheet.absoluteFill}
-            initialRegion={region}
-            showsUserLocation
-            showsMyLocationButton={Platform.OS === 'android'}
-            {...mapTypeProps}
-          >
-            {friendLocations.map((f) => (
+          <ConnektaMap ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={region} showUserLocation>
+            {friendMarkers.map((f) => (
               <PlaceLabelMarker
                 key={`friend-${f.id}`}
                 id={`friend-${f.id}`}
@@ -206,7 +199,7 @@ export default function FriendsTabScreen() {
                 borderColor={accent.coral}
               />
             ))}
-          </SafeMapView>
+          </ConnektaMap>
         )}
       </View>
 
