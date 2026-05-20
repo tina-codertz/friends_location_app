@@ -11,8 +11,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
 } from 'react-native';
-import Mapbox from '@rnmapbox/maps';
 import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
+import { DraftPinMarker } from '@/components/map/DraftPinMarker';
 import type { MapRegion } from '@/types/map';
 import { capList, MAX_PLACE_MARKERS_MAIN } from '@/utils/map-limits';
 import * as Location from 'expo-location';
@@ -218,18 +218,7 @@ export default function MyPlacesScreen() {
         >
           {previewMarkers}
           {addOpen && pin ? (
-            <Mapbox.PointAnnotation id="draft-pin" coordinate={[pin.lng, pin.lat]}>
-              <View
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: 7,
-                  backgroundColor: accent.coral,
-                  borderWidth: 2,
-                  borderColor: '#fff',
-                }}
-              />
-            </Mapbox.PointAnnotation>
+            <DraftPinMarker latitude={pin.lat} longitude={pin.lng} color={accent.coral} />
           ) : null}
         </ConnektaMap>
 

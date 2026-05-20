@@ -1,6 +1,8 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Mapbox from '@rnmapbox/maps';
+import { Marker } from 'react-native-maps';
+import { getMapboxModule } from '@/utils/map-runtime';
+import { useMapEngine } from '@/components/map/MapEngineContext';
 import { Font } from '@/constants/typography';
 
 type Props = {
@@ -15,34 +17,67 @@ type Props = {
   borderColor: string;
 };
 
-/** Round pill marker with name — Mapbox PointAnnotation */
-function PlaceLabelMarkerComponent({
-  id,
-  latitude,
-  longitude,
+function MarkerBubble({
   label,
   subtitle,
   accentColor,
   backgroundColor,
   textColor,
   borderColor,
-}: Props) {
+}: Omit<Props, 'id' | 'latitude' | 'longitude'>) {
   return (
-    <Mapbox.PointAnnotation id={id} coordinate={[longitude, latitude]} anchor={{ x: 0.5, y: 0.5 }}>
-      <View style={styles.wrap}>
-        <View style={[styles.bubble, { backgroundColor, borderColor }]}>
-          <View style={[styles.dot, { backgroundColor: accentColor }]} />
-          <Text style={[styles.label, { color: textColor }]} numberOfLines={1}>
-            {label}
-          </Text>
-        </View>
-        {subtitle ? (
-          <Text style={[styles.subtitle, { color: textColor }]} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        ) : null}
+    <View style={styles.wrap}>
+      <View style={[styles.bubble, { backgroundColor, borderColor }]}>
+        <View style={[styles.dot, { backgroundColor: accentColor }]} />
+        <Text style={[styles.label, { color: textColor }]} numberOfLines={1}>
+          {label}
+        </Text>
       </View>
-    </Mapbox.PointAnnotation>
+      {subtitle ? (
+        <Text style={[styles.subtitle, { color: textColor }]} numberOfLines={1}>
+          {subtitle}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function PlaceLabelMarkerComponent(props: Props) {
+  const engine = useMapEngine();
+  const bubble = (
+    <MarkerBubble
+      label={props.label}
+      subtitle={props.subtitle}
+      accentColor={props.accentColor}
+      backgroundColor={props.backgroundColor}
+      textColor={props.textColor}
+      borderColor={props.borderColor}
+    />
+  );
+
+  if (engine === 'mapbox') {
+    const Mapbox = getMapboxModule();
+    if (!Mapbox) return null;
+    return (
+      <Mapbox.PointAnnotation
+        id={props.id}
+        coordinate={[props.longitude, props.latitude]}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        {bubble}
+      </Mapbox.PointAnnotation>
+    );
+  }
+
+  return (
+    <Marker
+      identifier={props.id}
+      coordinate={{ latitude: props.latitude, longitude: props.longitude }}
+      anchor={{ x: 0.5, y: 0.5 }}
+      tracksViewChanges={false}
+    >
+      {bubble}
+    </Marker>
   );
 }
 
