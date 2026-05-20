@@ -19,7 +19,7 @@ const getAPIBaseURL = (): string => {
   if (envUrl) {
     return envUrl.replace(/\/$/, '');
   }
-  return 'http://192.168.1.16:8789';
+  return 'https://backend.christinakimario8.workers.dev';
 };
 
 const API_BASE_URL = getAPIBaseURL();

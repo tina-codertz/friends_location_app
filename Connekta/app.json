@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Connekta uses your location to show you on the map and optionally share with friends you approve.",
         "NSFaceIDUsageDescription": "Connekta uses Face ID to unlock the app and protect your session."
-      }
+      },
+      "bundleIdentifier": "com.christinakimario.friendslocationsharing"
     },
     "android": {
       "permissions": [
