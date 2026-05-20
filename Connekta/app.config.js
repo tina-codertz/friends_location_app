@@ -1,20 +1,18 @@
 /** @type {import('expo/config').ExpoConfig} */
-const appJson = require('./app.json');
+module.exports = ({ config }) => {
+  const mapboxToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN?.trim();
+  const mapboxDownloadsToken = process.env.MAPBOX_DOWNLOADS_TOKEN?.trim();
+  const googleMapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim();
 
-const mapboxToken = process.env.EXPO_PUBLIC_MAPBOX_TOKEN?.trim();
-const mapboxDownloadsToken = process.env.MAPBOX_DOWNLOADS_TOKEN?.trim();
-const googleMapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim();
-
-module.exports = {
-  expo: {
-    ...appJson.expo,
+  return {
+    ...config,
     extra: {
-      ...appJson.expo.extra,
+      ...config.extra,
       ...(mapboxToken ? { mapboxAccessToken: mapboxToken } : {}),
       ...(googleMapsKey ? { googleMapsAndroidApiKey: googleMapsKey } : {}),
     },
     plugins: [
-      ...(appJson.expo.plugins ?? []),
+      ...(config.plugins ?? []),
       [
         'expo-location',
         {
@@ -33,15 +31,15 @@ module.exports = {
       ],
     ],
     android: {
-      ...appJson.expo.android,
+      ...config.android,
       ...(googleMapsKey
         ? {
             config: {
-              ...(appJson.expo.android?.config ?? {}),
+              ...(config.android?.config ?? {}),
               googleMaps: { apiKey: googleMapsKey },
             },
           }
         : {}),
     },
-  },
+  };
 };
