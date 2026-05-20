@@ -5,18 +5,16 @@ import {
   StyleSheet,
   ActivityIndicator,
   Switch,
-  Platform,
   TouchableOpacity,
   Animated,
   Modal,
 } from 'react-native';
-import { Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { SafeMapView, type Region } from '@/components/map/SafeMapView';
+import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { ENABLE_MAP_LOCATION_TRACKING } from '@/constants/features';
@@ -25,6 +23,12 @@ import { useCirclePlaces } from '@/hooks/useCirclePlaces';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 import { locationAPI } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
+import type { MapRegion } from '@/types/map';
+import {
+  capList,
+  MAX_FRIEND_MARKERS_MAIN,
+  MAX_PLACE_MARKERS_MAIN,
+} from '@/utils/map-limits';
 
 const MIN_PING_MS = 20000;
 const MIN_MOVE_M = 50;
@@ -49,13 +53,14 @@ export default function MapTabScreen() {
   const [focused, setFocused] = useState(false);
   const [permission, setPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
   const [sharing, setSharing] = useState(false);
+  const [showPlaces, setShowPlaces] = useState(true);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const lastPing = useRef(0);
   const lastSent = useRef<{ lat: number; lng: number } | null>(null);
   const sharingRef = useRef(false);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<ConnektaMapRef>(null);
   const overlayShift = useRef(new Animated.Value(0)).current;
 
   sharingRef.current = sharing;
@@ -63,9 +68,7 @@ export default function MapTabScreen() {
   const { locations, refresh } = useLiveFriendLocations(focused && isLoggedIn, token);
   const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(focused && isLoggedIn, token);
 
-  const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
-
-  const region: Region | null = useMemo(() => {
+  const region: MapRegion | null = useMemo(() => {
     if (!me) return null;
     return {
       latitude: me.lat,
@@ -74,6 +77,16 @@ export default function MapTabScreen() {
       longitudeDelta: 0.04,
     };
   }, [me]);
+
+  const friendMarkers = useMemo(
+    () => capList(locations, MAX_FRIEND_MARKERS_MAIN),
+    [locations]
+  );
+
+  const placeMarkers = useMemo(() => {
+    if (!showPlaces) return [];
+    return capList(circlePlaces, MAX_PLACE_MARKERS_MAIN);
+  }, [circlePlaces, showPlaces]);
 
   useFocusEffect(
     useCallback(() => {
@@ -193,42 +206,14 @@ export default function MapTabScreen() {
 
   return (
     <View style={styles.fill}>
-      <SafeMapView
+      <ConnektaMap
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         initialRegion={region}
-        showsUserLocation
-        showsMyLocationButton={Platform.OS === 'android'}
-        showsCompass
-        loadingEnabled={Platform.OS === 'ios'}
-        {...mapTypeProps}
-        onMapReady={() => mapRef.current?.animateToRegion?.(region, 400)}
-        onRegionChange={() => {
-          Animated.spring(overlayShift, {
-            toValue: 6,
-            tension: 80,
-            friction: 12,
-            useNativeDriver: true,
-          }).start();
-        }}
-        onRegionChangeComplete={() => {
-          Animated.spring(overlayShift, {
-            toValue: 0,
-            tension: 80,
-            friction: 12,
-            useNativeDriver: true,
-          }).start();
-        }}
+        showUserLocation
+        onPress={undefined}
       >
-        {sharing && me ? (
-          <Circle
-            center={{ latitude: me.lat, longitude: me.lng }}
-            radius={90}
-            strokeColor="rgba(30, 144, 255, 0.55)"
-            fillColor="rgba(30, 144, 255, 0.12)"
-          />
-        ) : null}
-        {locations.map((f) => (
+        {friendMarkers.map((f) => (
           <PlaceLabelMarker
             key={`live-${f.id}`}
             id={`live-${f.id}`}
@@ -242,7 +227,7 @@ export default function MapTabScreen() {
             borderColor={accent.coral}
           />
         ))}
-        {circlePlaces.map((p) => {
+        {placeMarkers.map((p) => {
           const isMine = user?.id === p.user_id;
           return (
             <PlaceLabelMarker
@@ -259,7 +244,7 @@ export default function MapTabScreen() {
             />
           );
         })}
-      </SafeMapView>
+      </ConnektaMap>
 
       <Animated.View
         pointerEvents="box-none"
@@ -297,7 +282,7 @@ export default function MapTabScreen() {
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={[Type.section, { color: colors.textPrimary }]}>Live map</Text>
               <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-                Sharing is opt-in. Only accepted friends see you when sharing is on.
+                {friendMarkers.length} friends · {showPlaces ? placeMarkers.length : 0} places shown
               </Text>
             </View>
             <Switch
@@ -305,6 +290,15 @@ export default function MapTabScreen() {
               onValueChange={onToggleShare}
               trackColor={{ false: colors.divider, true: `${accent.electricBlue}88` }}
               thumbColor={sharing ? accent.electricBlue : colors.textTertiary}
+            />
+          </View>
+          <View style={[styles.row, { marginTop: 10 }]}>
+            <Text style={[Type.caption, { color: colors.textMuted, flex: 1 }]}>Show saved places</Text>
+            <Switch
+              value={showPlaces}
+              onValueChange={setShowPlaces}
+              trackColor={{ false: colors.divider, true: `${accent.teal}88` }}
+              thumbColor={showPlaces ? accent.teal : colors.textTertiary}
             />
           </View>
         </GlassCard>

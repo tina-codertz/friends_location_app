@@ -8,8 +8,10 @@ import 'react-native-reanimated';
 
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { ensureMapboxConfigured } from '@/utils/mapbox-init';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+ensureMapboxConfigured();
 
 export const unstable_settings = {
   anchor: '(landing)',

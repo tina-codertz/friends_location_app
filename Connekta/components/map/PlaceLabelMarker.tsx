@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Marker } from 'react-native-maps';
+import Mapbox from '@rnmapbox/maps';
 import { Font } from '@/constants/typography';
 
 type Props = {
@@ -15,8 +15,8 @@ type Props = {
   borderColor: string;
 };
 
-/** Round pill marker with place name (and optional subtitle). */
-export function PlaceLabelMarker({
+/** Round pill marker with name — Mapbox PointAnnotation */
+function PlaceLabelMarkerComponent({
   id,
   latitude,
   longitude,
@@ -28,12 +28,7 @@ export function PlaceLabelMarker({
   borderColor,
 }: Props) {
   return (
-    <Marker
-      identifier={id}
-      coordinate={{ latitude, longitude }}
-      anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges={false}
-    >
+    <Mapbox.PointAnnotation id={id} coordinate={[longitude, latitude]} anchor={{ x: 0.5, y: 0.5 }}>
       <View style={styles.wrap}>
         <View style={[styles.bubble, { backgroundColor, borderColor }]}>
           <View style={[styles.dot, { backgroundColor: accentColor }]} />
@@ -47,9 +42,11 @@ export function PlaceLabelMarker({
           </Text>
         ) : null}
       </View>
-    </Marker>
+    </Mapbox.PointAnnotation>
   );
 }
+
+export const PlaceLabelMarker = memo(PlaceLabelMarkerComponent);
 
 const styles = StyleSheet.create({
   wrap: {
@@ -64,10 +61,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1.5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
     elevation: 6,
   },
   dot: {

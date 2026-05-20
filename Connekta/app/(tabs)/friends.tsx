@@ -8,20 +8,21 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  Platform,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { SafeMapView, type Region } from '@/components/map/SafeMapView';
+import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
 import { useAppTheme } from '@/context/ThemeContext';
 import { friendsAPI, type FriendUser } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 import { useAuth } from '@/context/AuthContext';
 import { useFriendLocationsPoll } from '@/hooks/useFriendLocationsPoll';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
+import type { MapRegion } from '@/types/map';
+import { capList, MAX_FRIEND_MARKERS_PREVIEW } from '@/utils/map-limits';
 
 function apiErrorMessage(e: unknown, fallback: string): string {
   if (e && typeof e === 'object' && 'response' in e) {
@@ -37,7 +38,7 @@ export default function FriendsTabScreen() {
   const { invite: inviteParam } = useLocalSearchParams<{ invite?: string }>();
   const { token, isLoggedIn } = useAuth();
   const { colors, accent } = useAppTheme();
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<ConnektaMapRef>(null);
 
   const [focused, setFocused] = useState(false);
   const [friends, setFriends] = useState<FriendUser[]>([]);
@@ -51,9 +52,7 @@ export default function FriendsTabScreen() {
     token
   );
 
-  const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
-
-  const region: Region | null = useMemo(() => {
+  const region: MapRegion | null = useMemo(() => {
     if (!me) return null;
     return {
       latitude: me.lat,
@@ -62,6 +61,11 @@ export default function FriendsTabScreen() {
       longitudeDelta: 0.05,
     };
   }, [me]);
+
+  const friendMarkers = useMemo(
+    () => capList(friendLocations, MAX_FRIEND_MARKERS_PREVIEW),
+    [friendLocations]
+  );
 
   const loadLists = useCallback(async () => {
     if (!token) return;
@@ -113,9 +117,7 @@ export default function FriendsTabScreen() {
   }, [inviteParam, router]);
 
   useEffect(() => {
-    if (region && mapRef.current?.animateToRegion) {
-      mapRef.current.animateToRegion(region, 500);
-    }
+    if (region) mapRef.current?.flyTo(region, 500);
   }, [region]);
 
   const accept = async (id: number) => {
@@ -145,8 +147,8 @@ export default function FriendsTabScreen() {
 
   const focusFriend = (username: string) => {
     const loc = friendLocations.find((f) => f.username === username);
-    if (loc && mapRef.current?.animateToRegion) {
-      mapRef.current.animateToRegion(
+    if (loc) {
+      mapRef.current?.flyTo(
         { latitude: loc.lat, longitude: loc.lng, latitudeDelta: 0.02, longitudeDelta: 0.02 },
         400
       );

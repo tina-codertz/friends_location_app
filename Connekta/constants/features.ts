@@ -1,4 +1,4 @@
-import { canUseNativeMapsOnAndroid } from '@/utils/maps-config';
+import { canUseMapbox } from '@/utils/maps-config';
 
 /**
  * Feature flags — set in .env or EAS build env.
@@ -14,5 +14,5 @@ export const ENABLE_FRIEND_LOCATION_POLL = true;
 export const ENABLE_MAP_LOCATION_TRACKING =
   process.env.EXPO_PUBLIC_ENABLE_MAP_TRACKING !== 'false';
 
-/** Android needs a Google Maps API key for react-native-maps (see app.config.js). */
-export const HAS_ANDROID_MAPS_KEY = canUseNativeMapsOnAndroid();
+/** Mapbox public token (pk.*) — primary map provider on iOS and Android. */
+export const HAS_MAPBOX = canUseMapbox();
