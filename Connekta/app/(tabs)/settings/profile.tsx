@@ -88,7 +88,7 @@ export default function ProfileScreen() {
       <View style={{ height: 20 }} />
 
       <GlassCard borderRadius={22} intensity="medium">
-        <Row label="User ID" value={String(user?.id ?? '—')} colors={colors} />
+        
         <Row label="Verified" value={user?.verified ? 'Yes' : 'No'} colors={colors} />
         <Row label="Device" value={user?.device_id ? 'Linked' : '—'} colors={colors} muted />
         <Row label="Created" value={new Date(user?.created_at || '').toLocaleDateString()} colors={colors} muted />
