@@ -235,4 +235,36 @@ export class FriendsService {
       .all();
     return results as { id: number; username: string }[];
   }
+
+  /** Remove an accepted circle member (either side of the friendship). */
+  async removeFriend(
+    currentUserId: number,
+    friendUserId: number
+  ): Promise<{ success: boolean; message: string }> {
+    if (currentUserId === friendUserId) {
+      return { success: false, message: 'Cannot remove yourself' };
+    }
+
+    if (!(await this.areFriends(currentUserId, friendUserId))) {
+      return { success: false, message: 'This user is not in your circle' };
+    }
+
+    const low = Math.min(currentUserId, friendUserId);
+    const high = Math.max(currentUserId, friendUserId);
+
+    await this.db
+      .prepare('DELETE FROM friendships WHERE user_low = ? AND user_high = ?')
+      .bind(low, high)
+      .run();
+
+    await this.db
+      .prepare(
+        `DELETE FROM friend_requests
+         WHERE (from_user_id = ? AND to_user_id = ?) OR (from_user_id = ? AND to_user_id = ?)`
+      )
+      .bind(currentUserId, friendUserId, friendUserId, currentUserId)
+      .run();
+
+    return { success: true, message: 'Member removed from your circle' };
+  }
 }

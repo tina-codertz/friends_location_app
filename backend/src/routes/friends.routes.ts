@@ -7,6 +7,7 @@ import {
   rejectFriendRequest,
   listFriends,
   listIncoming,
+  removeFriend,
 } from '../controllers/friends.controller';
 import { getMyInvite, generateInvite, joinWithCode } from '../controllers/invite.controller';
 
@@ -20,6 +21,7 @@ friends.post('/reject', rejectFriendRequest);
 friends.get('/', listFriends);
 friends.get('', listFriends);
 friends.get('/incoming', listIncoming);
+friends.delete('/:id', removeFriend);
 friends.get('/invite', getMyInvite);
 friends.post('/invite/generate', generateInvite);
 friends.post('/invite/join', joinWithCode);

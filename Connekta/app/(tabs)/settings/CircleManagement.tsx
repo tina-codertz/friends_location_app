@@ -18,7 +18,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
-import { friendsAPI, type FriendUser } from '@/services/api';
+import { friendsAPI, getApiErrorMessage, type FriendUser } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { buildCircleInviteLink, formatInviteMessage } from '@/utils/invite';
 
@@ -34,6 +34,7 @@ export default function CircleManagement() {
   const [generating, setGenerating] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [joining, setJoining] = useState(false);
+  const [removingId, setRemovingId] = useState<number | null>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);

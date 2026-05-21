@@ -77,3 +77,14 @@ export const listIncoming = async (c: Context) => {
   const incoming = await friends.listIncomingPending(userId);
   return c.json({ success: true, incoming });
 };
+
+export const removeFriend = async (c: Context) => {
+  const userId = c.get('userId') as number;
+  const friendId = Number(c.req.param('id'));
+  if (!friendId || friendId < 1) {
+    return c.json({ success: false, message: 'Invalid member' }, 400);
+  }
+  const friends = new FriendsService(c.env.database);
+  const result = await friends.removeFriend(userId, friendId);
+  return c.json(result, result.success ? 200 : 400);
+};
