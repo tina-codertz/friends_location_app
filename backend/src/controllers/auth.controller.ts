@@ -16,7 +16,12 @@ export const register = async (c: Context) => {
       );
     }
 
-    const authService = new AuthService(c.env.database, c.env.JWT_SECRET, c.env.RESEND_API_KEY);
+    const authService = new AuthService(
+      c.env.database,
+      c.env.JWT_SECRET,
+      c.env.RESEND_API_KEY,
+      c.env.RESEND_FROM_EMAIL
+    );
     const result = await authService.register(email, username, device_id);
 
     return c.json(result, result.success ? 201 : 400);
@@ -47,7 +52,12 @@ export const verifyOTP = async (c: Context) => {
       );
     }
 
-    const authService = new AuthService(c.env.database, c.env.JWT_SECRET, c.env.RESEND_API_KEY);
+    const authService = new AuthService(
+      c.env.database,
+      c.env.JWT_SECRET,
+      c.env.RESEND_API_KEY,
+      c.env.RESEND_FROM_EMAIL
+    );
     const result = await authService.verifyOTP(email, code);
 
     return c.json(result, result.success ? 200 : 400);
@@ -70,7 +80,12 @@ export const checkUsername = async (c: Context) => {
       return c.json({ success: false, message: 'username query is required' }, 400);
     }
 
-    const authService = new AuthService(c.env.database, c.env.JWT_SECRET, c.env.RESEND_API_KEY);
+    const authService = new AuthService(
+      c.env.database,
+      c.env.JWT_SECRET,
+      c.env.RESEND_API_KEY,
+      c.env.RESEND_FROM_EMAIL
+    );
     const result = await authService.isUsernameAvailable(username);
 
     return c.json({
@@ -99,7 +114,12 @@ export const login = async (c: Context) => {
       );
     }
 
-    const authService = new AuthService(c.env.database, c.env.JWT_SECRET, c.env.RESEND_API_KEY);
+    const authService = new AuthService(
+      c.env.database,
+      c.env.JWT_SECRET,
+      c.env.RESEND_API_KEY,
+      c.env.RESEND_FROM_EMAIL
+    );
     const result = await authService.login(username, device_id);
 
     return c.json(result, result.success ? 200 : 401);
