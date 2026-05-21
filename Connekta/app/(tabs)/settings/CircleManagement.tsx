@@ -18,7 +18,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
-import { friendsAPI, type FriendUser } from '@/services/api';
+import { friendsAPI, getApiErrorMessage, type FriendUser } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { buildCircleInviteLink, formatInviteMessage } from '@/utils/invite';
 
@@ -34,6 +34,7 @@ export default function CircleManagement() {
   const [generating, setGenerating] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [joining, setJoining] = useState(false);
+  const [removingId, setRemovingId] = useState<number | null>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -135,29 +136,75 @@ export default function CircleManagement() {
     }
   };
 
-  const renderFriendItem = ({ item }: { item: FriendUser }) => (
-    <GlassCard
-      borderRadius={16}
-      intensity="light"
-      style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: `${accent.electricBlue}22`,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name="person" size={18} color={accent.electricBlue} />
+  const confirmRemoveMember = (member: FriendUser) => {
+    Alert.alert(
+      'Remove from circle',
+      `Remove ${member.username} from your circle? They will no longer see your shared location.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => void removeMember(member.id),
+        },
+      ]
+    );
+  };
+
+  const removeMember = async (friendId: number) => {
+    setRemovingId(friendId);
+    try {
+      const res = await friendsAPI.remove(friendId);
+      if (res.success) {
+        setFriends((prev) => prev.filter((f) => f.id !== friendId));
+      } else {
+        Alert.alert('Could not remove', res.message ?? 'Try again');
+      }
+    } catch (e: unknown) {
+      Alert.alert('Could not remove', getApiErrorMessage(e, 'Try again'));
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const renderFriendItem = ({ item }: { item: FriendUser }) => {
+    const isRemoving = removingId === item.id;
+    return (
+      <GlassCard borderRadius={16} intensity="light" style={styles.memberCard}>
+        <View style={styles.memberRow}>
+          <View style={styles.memberInfo}>
+            <View
+              style={[
+                styles.memberAvatar,
+                { backgroundColor: `${accent.electricBlue}22` },
+              ]}
+            >
+              <Ionicons name="person" size={18} color={accent.electricBlue} />
+            </View>
+            <Text
+              style={[Type.body, styles.memberName, { color: colors.textPrimary }]}
+              numberOfLines={1}
+            >
+              {item.username}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => confirmRemoveMember(item)}
+            disabled={isRemoving}
+            style={styles.removeBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={`Remove ${item.username}`}
+          >
+            {isRemoving ? (
+              <ActivityIndicator size="small" color={accent.coral} />
+            ) : (
+              <Ionicons name="trash-outline" size={22} color={accent.coral} />
+            )}
+          </TouchableOpacity>
         </View>
-        <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.medium }]}>{item.username}</Text>
-      </View>
-    </GlassCard>
-  );
+      </GlassCard>
+    );
+  };
 
   return (
     <ScrollView
@@ -292,5 +339,40 @@ const styles = StyleSheet.create({
     fontSize: 20,
     letterSpacing: 4,
     textAlign: 'center',
+  },
+  memberCard: {
+    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  memberInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 0,
+  },
+  memberAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberName: {
+    flex: 1,
+    fontFamily: Font.medium,
+  },
+  removeBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

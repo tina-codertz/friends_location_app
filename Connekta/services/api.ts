@@ -245,6 +245,10 @@ export const friendsAPI = {
     const res = await apiClient.get('/friends');
     return res.data;
   },
+  async remove(friendId: number): Promise<{ success: boolean; message?: string }> {
+    const res = await apiClient.delete(`/friends/${friendId}`);
+    return res.data;
+  },
   async incoming(): Promise<{ success: boolean; incoming: FriendUser[] }> {
     const res = await apiClient.get('/friends/incoming');
     return res.data;
