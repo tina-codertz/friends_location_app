@@ -24,8 +24,9 @@ export function getMapboxModule(): MapboxModule | null {
   }
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('@rnmapbox/maps') as MapboxModule;
-    mapboxModule = (mod as { default?: MapboxModule })?.default ?? mod;
+    const mod = require('@rnmapbox/maps') as unknown;
+    const resolved = (mod as { default?: MapboxModule })?.default ?? mod;
+    mapboxModule = resolved as MapboxModule;
   } catch {
     mapboxModule = null;
   }

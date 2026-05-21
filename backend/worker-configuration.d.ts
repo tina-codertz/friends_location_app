@@ -8,8 +8,6 @@ declare namespace Cloudflare {
 	}
 	interface Env {
 		database: D1Database;
-		JWT_SECRET: "d4475313e733c84abb2e541dfc1951cc80acd618dda251797272f8e2fd080117";
-		RESEND_API_KEY: "re_cFg4ipfG_2SbLRz33Tg6MRxsFh1rsszYS";
 		REALTIME_HUB: DurableObjectNamespace<import("./src/index").RealtimeHub>;
 	}
 }

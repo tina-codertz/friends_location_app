@@ -13,6 +13,8 @@ export type WorkerEnv = {
   database: D1Database;
   JWT_SECRET: string;
   RESEND_API_KEY: string;
+  /** After verifying a domain in Resend, e.g. "Connekta <noreply@yourdomain.com>" */
+  RESEND_FROM_EMAIL?: string;
   REALTIME_HUB: DurableObjectNamespace;
 };
 

@@ -22,6 +22,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import FloatingWords from '@/components/background/FloatingWords';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { authAPI } from '@/services/api';
+import { validateUsername } from '@/utils/username';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -89,13 +91,14 @@ export default function AuthScreen() {
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleLogin = async () => {
-    if (!username.trim()) {
-      Alert.alert('Validation', 'Please enter your username');
+    const usernameCheck = validateUsername(username);
+    if (!usernameCheck.ok) {
+      Alert.alert('Username', usernameCheck.message);
       return;
     }
 
     try {
-      await login(username.trim());
+      await login(usernameCheck.value);
       router.replace('/(tabs)/map');
     } catch (err) {
       console.error('Login error:', err);
@@ -108,14 +111,26 @@ export default function AuthScreen() {
       return;
     }
 
+    const usernameCheck = validateUsername(username);
+    if (!usernameCheck.ok) {
+      Alert.alert('Username', usernameCheck.message);
+      return;
+    }
+
     // Simple email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       Alert.alert('Validation', 'Please enter a valid email');
       return;
     }
 
     try {
-      await register(email.trim(), username.trim());
+      const availability = await authAPI.checkUsername(usernameCheck.value);
+      if (!availability.available) {
+        Alert.alert('Username taken', availability.message ?? 'This username is already taken');
+        return;
+      }
+
+      await register(email.trim().toLowerCase(), usernameCheck.value);
       setTempEmail(email);
       setIsVerifyingOTP(true);
       Alert.alert('Success', 'OTP sent to your email. Please check your inbox.');
