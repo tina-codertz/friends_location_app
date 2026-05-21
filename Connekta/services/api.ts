@@ -121,6 +121,18 @@ apiClient.interceptors.response.use(
   }
 );
 
+/** Prefer server message from axios 4xx/5xx responses. */
+export function getApiErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as { message?: unknown } | undefined;
+    if (typeof data?.message === 'string' && data.message.trim().length > 0) {
+      return data.message;
+    }
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
+
 export interface RegisterRequest {
   email: string;
   username: string;
@@ -157,6 +169,15 @@ export interface AuthResponse {
  * Auth API endpoints
  */
 export const authAPI = {
+  /** Check if username is free before sign-up. */
+  async checkUsername(username: string): Promise<{ success: boolean; available: boolean; message?: string }> {
+    const response = await apiClient.get<{ success: boolean; available: boolean; message?: string }>(
+      '/auth/check-username',
+      { params: { username: username.trim() } }
+    );
+    return response.data;
+  },
+
   /**
    * Register new user
    */

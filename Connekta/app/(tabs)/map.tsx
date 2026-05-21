@@ -327,7 +327,7 @@ export default function MapTabScreen() {
             <TouchableOpacity
               onPress={() => {
                 setMenuOpen(false);
-                router.push('/(tabs)/MyPlaces' as any);
+                router.push('/(tabs)/MyPlaces');
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomColor: colors.divider, borderBottomWidth: 1 }}
             >
@@ -341,7 +341,7 @@ export default function MapTabScreen() {
             <TouchableOpacity
               onPress={() => {
                 setMenuOpen(false);
-                router.push('/(tabs)/ShareLocation' as any);
+                router.push('/(tabs)/ShareLocation');
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomColor: colors.divider, borderBottomWidth: 1 }}
             >
@@ -355,7 +355,7 @@ export default function MapTabScreen() {
             <TouchableOpacity
               onPress={() => {
                 setMenuOpen(false);
-                router.push('/(tabs)/SOSScreen' as any);
+                router.push('/(tabs)/SOSScreen');
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 }}
             >

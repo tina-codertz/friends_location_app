@@ -1,5 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
+import type { Feature } from 'geojson';
 import { canUseMapbox, getMapboxStyleUrl, type MapColorMode } from '@/utils/maps-config';
 import { ensureMapboxConfigured } from '@/utils/mapbox-init';
 import {
@@ -87,8 +88,10 @@ function MapboxMapInner(
         compassEnabled
         onPress={
           onPress
-            ? (e: { geometry: { coordinates: [number, number] } }) => {
-                const [lng, lat] = e.geometry.coordinates;
+            ? (feature: Feature) => {
+                const geom = feature.geometry;
+                if (geom.type !== 'Point') return;
+                const [lng, lat] = geom.coordinates;
                 onPress({ latitude: lat, longitude: lng });
               }
             : undefined

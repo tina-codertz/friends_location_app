@@ -63,6 +63,27 @@ export const verifyOTP = async (c: Context) => {
   }
 };
 
+export const checkUsername = async (c: Context) => {
+  try {
+    const username = c.req.query('username')?.trim();
+    if (!username) {
+      return c.json({ success: false, message: 'username query is required' }, 400);
+    }
+
+    const authService = new AuthService(c.env.database, c.env.JWT_SECRET, c.env.RESEND_API_KEY);
+    const result = await authService.isUsernameAvailable(username);
+
+    return c.json({
+      success: true,
+      available: result.available,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error('Check username handler error:', error);
+    return c.json({ success: false, message: 'Could not check username' }, 500);
+  }
+};
+
 export const login = async (c: Context) => {
   try {
     const { username, device_id } = await c.req.json();

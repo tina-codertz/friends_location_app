@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,7 +13,7 @@ export const unstable_settings = {
   initialRouteName: 'map',
 };
 
-const TabBarButton = (props: any) => <HapticTab {...props} />;
+const TabBarButton = (props: BottomTabBarButtonProps) => <HapticTab {...props} />;
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();

@@ -1,4 +1,5 @@
 import { generateOTP } from '../utils/otp';
+import { normalizeEmail, normalizeUsername } from '../utils/auth-validation';
 import { sign } from 'hono/jwt';
 import { EmailService } from './email.service';
 
@@ -27,23 +28,61 @@ export class AuthService {
     this.emailService = new EmailService(resendApiKey);
   }
 
+  async isUsernameAvailable(username: string): Promise<{ available: boolean; message?: string }> {
+    const parsed = normalizeUsername(username);
+    if (!parsed.ok) {
+      return { available: false, message: parsed.message };
+    }
+
+    const taken = await this.db
+      .prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?)')
+      .bind(parsed.value)
+      .first();
+
+    if (taken) {
+      return { available: false, message: 'This username is already taken' };
+    }
+    return { available: true };
+  }
+
   async register(
     email: string,
     username: string,
     device_id: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      // Check if email or username already exists
-      const existing = await this.db
-        .prepare('SELECT id FROM users WHERE email = ? OR username = ?')
-        .bind(email, username)
-        .first();
+      const parsedUsername = normalizeUsername(username);
+      if (!parsedUsername.ok) {
+        return { success: false, message: parsedUsername.message };
+      }
 
-      if (existing) {
+      const normalizedEmail = normalizeEmail(email);
+      if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+        return { success: false, message: 'Please enter a valid email address' };
+      }
+
+      const emailRow = await this.db
+        .prepare('SELECT id, verified FROM users WHERE LOWER(email) = ?')
+        .bind(normalizedEmail)
+        .first<{ id: number; verified: number }>();
+
+      if (emailRow) {
+        if (emailRow.verified) {
+          return { success: false, message: 'This email is already registered' };
+        }
         return {
           success: false,
-          message: 'Email or username already registered',
+          message: 'This email is pending verification. Check your inbox for the OTP or try again later.',
         };
+      }
+
+      const usernameRow = await this.db
+        .prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?)')
+        .bind(parsedUsername.value)
+        .first();
+
+      if (usernameRow) {
+        return { success: false, message: 'This username is already taken' };
       }
 
       // Create user with verified=0 (awaiting OTP verification)
@@ -51,7 +90,7 @@ export class AuthService {
         .prepare(
           'INSERT INTO users (email, username, device_id, verified) VALUES (?, ?, ?, 0)'
         )
-        .bind(email, username, device_id)
+        .bind(normalizedEmail, parsedUsername.value, device_id)
         .run();
 
       // Generate and store OTP
@@ -60,11 +99,11 @@ export class AuthService {
 
       await this.db
         .prepare('INSERT INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)')
-        .bind(email, otp, expiresAt)
+        .bind(normalizedEmail, otp, expiresAt)
         .run();
 
       // Send OTP to email
-      const emailResult = await this.emailService.sendOTP(email, otp);
+      const emailResult = await this.emailService.sendOTP(normalizedEmail, otp);
       if (!emailResult.success) {
         console.warn('Failed to send OTP email:', emailResult.message);
         // Don't fail registration, user can try again
@@ -73,7 +112,16 @@ export class AuthService {
         success: true,
         message: 'Registration initiated. OTP sent to your email.',
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes('UNIQUE constraint failed')) {
+        if (msg.includes('users.email')) {
+          return { success: false, message: 'This email is already registered' };
+        }
+        if (msg.includes('users.username')) {
+          return { success: false, message: 'This username is already taken' };
+        }
+      }
       console.error('Register error:', error);
       return {
         success: false,
@@ -90,12 +138,14 @@ export class AuthService {
     code: string
   ): Promise<{ success: boolean; message: string; user?: User; token?: string }> {
     try {
+      const normalizedEmail = normalizeEmail(email);
+
       // Find valid OTP
       const otp = await this.db
         .prepare(
           'SELECT * FROM otp_codes WHERE email = ? AND code = ? AND expires_at > datetime("now")'
         )
-        .bind(email, code)
+        .bind(normalizedEmail, code)
         .first();
 
       if (!otp) {
@@ -108,18 +158,18 @@ export class AuthService {
       // Mark user as verified
       await this.db
         .prepare('UPDATE users SET verified = 1 WHERE email = ?')
-        .bind(email)
+        .bind(normalizedEmail)
         .run();
 
       // Delete used OTP
       await this.db
         .prepare('DELETE FROM otp_codes WHERE email = ?')
-        .bind(email)
+        .bind(normalizedEmail)
         .run();
 
       const user = (await this.db
         .prepare('SELECT * FROM users WHERE email = ?')
-        .bind(email)
+        .bind(normalizedEmail)
         .first()) as User | undefined;
 
       if (!user) {
@@ -155,9 +205,14 @@ export class AuthService {
     device_id: string
   ): Promise<{ success: boolean; user?: User; token?: string; message?: string }> {
     try {
+      const parsed = normalizeUsername(username);
+      if (!parsed.ok) {
+        return { success: false, message: parsed.message };
+      }
+
       const user = (await this.db
-        .prepare('SELECT * FROM users WHERE username = ?')
-        .bind(username)
+        .prepare('SELECT * FROM users WHERE LOWER(username) = LOWER(?)')
+        .bind(parsed.value)
         .first()) as User | undefined;
 
       if (!user) {

@@ -3,7 +3,7 @@
  * @see https://github.com/expo/expo/issues — expo/withDevTools calls useKeepAwake
  */
 import { useEffect, useId } from 'react';
-import type { KeepAwakeOptions } from 'expo-keep-awake/build/KeepAwake.types';
+import type { KeepAwakeOptions } from 'expo-keep-awake';
 import ExpoKeepAwake from '../node_modules/expo-keep-awake/src/ExpoKeepAwake';
 import {
   isAvailableAsync,
