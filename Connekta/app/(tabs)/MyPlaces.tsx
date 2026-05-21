@@ -154,6 +154,7 @@ export default function MyPlacesScreen() {
         latitude={p.lat}
         longitude={p.lng}
         label={p.name}
+        subtitle="Your saved place"
         accentColor={accent.electricBlue}
       />
     ));

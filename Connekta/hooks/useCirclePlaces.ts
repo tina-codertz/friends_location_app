@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { placesAPI, type SavedPlace } from '@/services/api';
 
-const MIN_FETCH_MS = 45000;
+const MIN_FETCH_MS = 20000;
 
 export function useCirclePlaces(active: boolean, authToken: string | null) {
   const [places, setPlaces] = useState<SavedPlace[]>([]);

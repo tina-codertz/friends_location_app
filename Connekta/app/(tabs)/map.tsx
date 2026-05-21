@@ -86,8 +86,24 @@ export default function MapTabScreen() {
 
   const placeMarkers = useMemo(() => {
     if (!showPlaces) return [];
-    return capList(circlePlaces, MAX_PLACE_MARKERS_MAIN);
+    const valid = circlePlaces.filter(
+      (p) =>
+        Number.isFinite(p.lat) &&
+        Number.isFinite(p.lng) &&
+        p.lat >= -90 &&
+        p.lat <= 90 &&
+        p.lng >= -180 &&
+        p.lng <= 180 &&
+        p.name?.trim()
+    );
+    return capList(valid, MAX_PLACE_MARKERS_MAIN);
   }, [circlePlaces, showPlaces]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isLoggedIn && token) void refreshPlaces();
+    }, [isLoggedIn, token, refreshPlaces])
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -236,8 +252,8 @@ export default function MapTabScreen() {
               id={`place-${p.id}`}
               latitude={p.lat}
               longitude={p.lng}
-              label={p.name}
-              subtitle={isMine ? 'Your place' : p.username}
+              label={p.name.trim()}
+              subtitle={isMine ? 'Your saved place' : `Shared by ${p.username}`}
               accentColor={isMine ? accent.electricBlue : accent.teal}
             />
           );
