@@ -5,7 +5,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { authAPI, User, setApiAuthToken, setApiUnauthorizedHandler } from '@/services/api';
+import { authAPI, getApiErrorMessage, User, setApiAuthToken, setApiUnauthorizedHandler } from '@/services/api';
 
 export interface AuthContextType {
   user: User | null;
@@ -140,8 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.warn('Failed to store temp email:', storageErr);
           // Continue anyway, user can re-enter email on OTP screen
         }
-      } catch (err: any) {
-        const errorMsg = err.message || 'Registration failed';
+      } catch (err: unknown) {
+        const errorMsg = getApiErrorMessage(err, 'Registration failed');
         setError(errorMsg);
         throw err;
       } finally {
@@ -179,8 +179,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (storageErr) {
         console.warn('Failed to remove temp email:', storageErr);
       }
-    } catch (err: any) {
-      const errorMsg = err.message || 'OTP verification failed';
+    } catch (err: unknown) {
+      const errorMsg = getApiErrorMessage(err, 'OTP verification failed');
       setError(errorMsg);
       throw err;
     } finally {
@@ -210,8 +210,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setApiAuthToken(response.token);
         setToken(response.token);
         setUser(response.user);
-      } catch (err: any) {
-        const errorMsg = err.message || 'Login failed';
+      } catch (err: unknown) {
+        const errorMsg = getApiErrorMessage(err, 'Login failed');
         setError(errorMsg);
         throw err;
       } finally {

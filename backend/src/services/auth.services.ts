@@ -22,10 +22,18 @@ export class AuthService {
   private jwtSecret: string;
   private emailService: EmailService;
 
-  constructor(db: D1Database, jwtSecret: string, resendApiKey: string) {
+  constructor(
+    db: D1Database,
+    jwtSecret: string,
+    resendApiKey: string,
+    resendFrom?: string
+  ) {
     this.db = db;
     this.jwtSecret = jwtSecret;
-    this.emailService = new EmailService(resendApiKey);
+    this.emailService = new EmailService({
+      apiKey: resendApiKey,
+      from: resendFrom,
+    });
   }
 
   async isUsernameAvailable(username: string): Promise<{ available: boolean; message?: string }> {
@@ -102,15 +110,19 @@ export class AuthService {
         .bind(normalizedEmail, otp, expiresAt)
         .run();
 
-      // Send OTP to email
       const emailResult = await this.emailService.sendOTP(normalizedEmail, otp);
       if (!emailResult.success) {
-        console.warn('Failed to send OTP email:', emailResult.message);
-        // Don't fail registration, user can try again
+        await this.db.prepare('DELETE FROM otp_codes WHERE email = ?').bind(normalizedEmail).run();
+        await this.db
+          .prepare('DELETE FROM users WHERE email = ? AND verified = 0')
+          .bind(normalizedEmail)
+          .run();
+        return { success: false, message: emailResult.message };
       }
+
       return {
         success: true,
-        message: 'Registration initiated. OTP sent to your email.',
+        message: 'Verification code sent to your email.',
       };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
