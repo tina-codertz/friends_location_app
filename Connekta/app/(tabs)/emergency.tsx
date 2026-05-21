@@ -131,13 +131,6 @@ export default function EmergencyTabScreen() {
               Add trusted emergency contacts and share your location link with them for your safety.
             </Text>
 
-            <GlassCard borderRadius={22} intensity="medium" style={{ borderColor: `${accent.coral}44`, borderWidth: 1 }}>
-              <Text style={[Type.section, { color: accent.coral, marginBottom: 8 }]}>Share by link</Text>
-              <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 14 }]}>
-                Send a short invite or deep link so trusted contacts know how to reach you on Connekta.
-              </Text>
-              <GlassButton title="Share invite" onPress={shareLiveLink} variant="primary" fullWidth size="large" />
-            </GlassCard>
 
             <GlassCard borderRadius={22} intensity="heavy">
               <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 12 }]}>Safety Contacts</Text>
