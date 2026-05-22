@@ -15,6 +15,8 @@ export type WorkerEnv = {
   RESEND_API_KEY: string;
   /** After verifying a domain in Resend, e.g. "Connekta <noreply@yourdomain.com>" */
   RESEND_FROM_EMAIL?: string;
+  /** Local only (.dev.vars): log OTP to wrangler console instead of sending email */
+  DEV_LOG_OTP?: string;
   REALTIME_HUB: DurableObjectNamespace;
 };
 
@@ -33,7 +35,7 @@ app.use('*', cors({
 app.get('/', (c) => {
   return c.json({
     message: 'Friends Location API is live!',
-    version: '1.1.0',
+    version: '1.2.0',
     realtime: 'GET wss? /realtime/ws?token=JWT',
   });
 });

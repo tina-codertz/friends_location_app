@@ -21,15 +21,18 @@ export class AuthService {
   private db: D1Database;
   private jwtSecret: string;
   private emailService: EmailService;
+  private devLogOtp: boolean;
 
   constructor(
     db: D1Database,
     jwtSecret: string,
     resendApiKey: string,
-    resendFrom?: string
+    resendFrom?: string,
+    devLogOtp = false
   ) {
     this.db = db;
     this.jwtSecret = jwtSecret;
+    this.devLogOtp = devLogOtp;
     this.emailService = new EmailService({
       apiKey: resendApiKey,
       from: resendFrom,
@@ -109,6 +112,14 @@ export class AuthService {
         .prepare('INSERT INTO otp_codes (email, code, expires_at) VALUES (?, ?, ?)')
         .bind(normalizedEmail, otp, expiresAt)
         .run();
+
+      if (this.devLogOtp) {
+        console.log(`[DEV] OTP for ${normalizedEmail}: ${otp}`);
+        return {
+          success: true,
+          message: 'Development mode: OTP printed in worker logs (wrangler dev terminal).',
+        };
+      }
 
       const emailResult = await this.emailService.sendOTP(normalizedEmail, otp);
       if (!emailResult.success) {

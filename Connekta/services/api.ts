@@ -171,11 +171,20 @@ export interface AuthResponse {
 export const authAPI = {
   /** Check if username is free before sign-up. */
   async checkUsername(username: string): Promise<{ success: boolean; available: boolean; message?: string }> {
-    const response = await apiClient.get<{ success: boolean; available: boolean; message?: string }>(
-      '/auth/check-username',
-      { params: { username: username.trim() } }
-    );
-    return response.data;
+    try {
+      const response = await apiClient.get<{ success: boolean; available: boolean; message?: string }>(
+        '/auth/check-username',
+        { params: { username: username.trim() } }
+      );
+      return response.data;
+    } catch (err) {
+      // Older deployed workers may not have this route yet; register still validates username.
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        console.warn('[API] /auth/check-username not deployed — skipping pre-check');
+        return { success: true, available: true };
+      }
+      throw err;
+    }
   },
 
   /**

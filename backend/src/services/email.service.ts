@@ -73,7 +73,7 @@ export class EmailService {
           return {
             success: false,
             message:
-              'Email could not be sent: Resend test mode only allows sending to your Resend account email. Verify a domain at resend.com and set RESEND_FROM_EMAIL.',
+              'We can only send verification email to your Resend account email until you verify a domain. Use that email to test, or add RESEND_FROM_EMAIL on the worker after verifying your domain at resend.com.',
           };
         }
 

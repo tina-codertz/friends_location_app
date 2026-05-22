@@ -1,0 +1,10 @@
+# Copy to .dev.vars (gitignored) for: npx wrangler dev
+RESEND_API_KEY=re_your_key_here
+JWT_SECRET=your-local-jwt-secret-min-32-chars
+
+# Skip Resend in local dev — OTP prints in the wrangler terminal
+DEV_LOG_OTP=true
+
+# Production only (after verifying domain at https://resend.com/domains):
+# RESEND_FROM_EMAIL=Connekta <noreply@yourdomain.com>
+# Then: npx wrangler secret put RESEND_FROM_EMAIL
