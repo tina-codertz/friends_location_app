@@ -144,11 +144,6 @@ export interface LoginRequest {
   device_id: string;
 }
 
-export interface VerifyOTPRequest {
-  email: string;
-  code: string;
-}
-
 export interface User {
   id: number;
   email: string;
@@ -195,17 +190,6 @@ export const authAPI = {
       email,
       username,
       device_id,
-    });
-    return response.data;
-  },
-
-  /**
-   * Verify OTP (returns session token when successful)
-   */
-  async verifyOTP(email: string, code: string): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/verify-otp', {
-      email,
-      code,
     });
     return response.data;
   },

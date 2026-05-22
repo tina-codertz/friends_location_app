@@ -16,7 +16,6 @@ export interface AuthContextType {
   
   // Auth methods
   register: (email: string, username: string) => Promise<void>;
-  verifyOTP: (email: string, code: string) => Promise<void>;
   login: (username: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -120,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     restoreToken();
   }, []);
 
-  // Register with email and username
+  // Register with email and username (no email verification)
   const register = useCallback(
     async (email: string, username: string) => {
       setIsLoading(true);
@@ -129,17 +128,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const deviceId = await getDeviceId();
         const response = await authAPI.register(email, username, deviceId);
 
-        if (!response.success) {
+        if (!response.success || !response.token || !response.user) {
           throw new Error(response.message || 'Registration failed');
         }
 
-        // Store email temporarily for OTP verification
-        try {
-          await AsyncStorage.setItem('temp_email', email);
-        } catch (storageErr) {
-          console.warn('Failed to store temp email:', storageErr);
-          // Continue anyway, user can re-enter email on OTP screen
-        }
+        await Promise.all([
+          SecureStore.setItemAsync('auth_token', response.token),
+          SecureStore.setItemAsync('user_data', JSON.stringify(response.user)),
+          SecureStore.setItemAsync('needs_biometric_enrollment', '1'),
+        ]);
+        setApiAuthToken(response.token);
+        setToken(response.token);
+        setUser(response.user);
       } catch (err: unknown) {
         const errorMsg = getApiErrorMessage(err, 'Registration failed');
         setError(errorMsg);
@@ -150,43 +150,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
     [getDeviceId]
   );
-
-  // Verify OTP
-  const verifyOTP = useCallback(async (email: string, code: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await authAPI.verifyOTP(email, code);
-
-      if (!response.success) {
-        throw new Error(response.message || 'OTP verification failed');
-      }
-
-      if (response.token && response.user) {
-        await Promise.all([
-          SecureStore.setItemAsync('auth_token', response.token),
-          SecureStore.setItemAsync('user_data', JSON.stringify(response.user)),
-          SecureStore.setItemAsync('needs_biometric_enrollment', '1'),
-        ]);
-        setApiAuthToken(response.token);
-        setToken(response.token);
-        setUser(response.user);
-      }
-
-      // Clear temp email
-      try {
-        await AsyncStorage.removeItem('temp_email');
-      } catch (storageErr) {
-        console.warn('Failed to remove temp email:', storageErr);
-      }
-    } catch (err: unknown) {
-      const errorMsg = getApiErrorMessage(err, 'OTP verification failed');
-      setError(errorMsg);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   // Login with username
   const login = useCallback(
@@ -229,7 +192,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         SecureStore.deleteItemAsync('user_data').catch(err => console.warn('Failed to delete user data:', err)),
         SecureStore.deleteItemAsync('needs_biometric_enrollment').catch(() => undefined),
         SecureStore.deleteItemAsync('biometric_unlock_enabled').catch(() => undefined),
-        AsyncStorage.removeItem('temp_email').catch(err => console.warn('Failed to remove temp email:', err)),
       ]);
     } catch (err) {
       console.error('Logout error:', err);
@@ -250,10 +212,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     token,
     isLoading,
-    isLoggedIn: !!token && !!user,
+    isLoggedIn: Boolean(token && user),
     error,
     register,
-    verifyOTP,
     login,
     logout,
     clearError,
