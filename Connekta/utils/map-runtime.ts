@@ -38,7 +38,12 @@ export function isMapboxNativeAvailable(): boolean {
   return getMapboxModule() != null;
 }
 
-/** Mapbox token present but use react-native-maps tiles (Expo Go / missing native). */
+/** Mapbox token present but use react-native-maps + raster tiles (Expo Go / missing native). */
 export function shouldUseLegacyMapEngine(): boolean {
   return canUseMapbox() && !isMapboxNativeAvailable();
+}
+
+/** @deprecated Use resolveMapEngine() from utils/map-engine.ts */
+export function shouldUseMapboxGlEngine(): boolean {
+  return isMapboxNativeAvailable();
 }

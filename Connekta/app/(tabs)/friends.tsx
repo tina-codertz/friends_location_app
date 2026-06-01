@@ -171,13 +171,21 @@ export default function FriendsTabScreen() {
       </View>
 
       <View style={[styles.mapBox, { borderColor: colors.glassBorderMedium }]}>
+        <View style={styles.mapClip}>
         {!region ? (
           <View style={[styles.mapPlaceholder, { backgroundColor: colors.surface }]}>
             <ActivityIndicator color={accent.electricBlue} />
             <Text style={[Type.caption, { color: colors.textMuted, marginTop: 8 }]}>Getting your location…</Text>
           </View>
-        ) : (
-          <ConnektaMap ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={region} showUserLocation>
+        ) : focused ? (
+          <ConnektaMap
+            ref={mapRef}
+            style={StyleSheet.absoluteFill}
+            initialRegion={region}
+            showUserLocation
+            rotateEnabled={false}
+            pitchEnabled={false}
+          >
             {friendMarkers.map((f) => (
               <PlaceLabelMarker
                 key={`friend-${f.id}`}
@@ -186,14 +194,19 @@ export default function FriendsTabScreen() {
                 longitude={f.lng}
                 label={f.username}
                 subtitle="Live"
-                accentColor={accent.coral}
+                accentColor={accent.cyan}
                 backgroundColor={colors.glassBgHeavy}
                 textColor={colors.textPrimary}
-                borderColor={accent.coral}
+                borderColor={accent.cyan}
               />
             ))}
           </ConnektaMap>
+        ) : (
+          <View style={[styles.mapPlaceholder, { backgroundColor: colors.surface }]}>
+            <Ionicons name="map-outline" size={32} color={colors.textMuted} />
+          </View>
         )}
+        </View>
       </View>
 
       <Text style={[Type.caption, { color: colors.textMuted, paddingHorizontal: 4 }]}>
@@ -301,10 +314,16 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   mapBox: {
-    height: 220,
+    height: 240,
     borderRadius: 20,
-    overflow: 'hidden',
+    overflow: 'visible',
     borderWidth: 1,
+    paddingTop: 20,
+  },
+  mapClip: {
+    flex: 1,
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   mapPlaceholder: {
     flex: 1,

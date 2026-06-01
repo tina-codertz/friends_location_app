@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
-import { getMapboxModule } from '@/utils/map-runtime';
 import { useMapEngine } from '@/components/map/MapEngineContext';
+import { MapboxPointAnnotation } from '@/components/map/MapboxPointAnnotation';
 import { PlaceNameBadge } from '@/components/map/PlaceNameBadge';
 import { Font } from '@/constants/typography';
 
@@ -38,16 +38,15 @@ function PlaceLabelMarkerComponent(props: Props) {
   );
 
   if (engine === 'mapbox') {
-    const Mapbox = getMapboxModule();
-    if (!Mapbox) return null;
     return (
-      <Mapbox.PointAnnotation
+      <MapboxPointAnnotation
         id={props.id}
-        coordinate={[props.longitude, props.latitude]}
-        anchor={{ x: 0.5, y: 0.5 }}
+        longitude={props.longitude}
+        latitude={props.latitude}
+        anchor={{ x: 0.5, y: 1 }}
       >
         {content}
-      </Mapbox.PointAnnotation>
+      </MapboxPointAnnotation>
     );
   }
 
@@ -55,7 +54,7 @@ function PlaceLabelMarkerComponent(props: Props) {
     <Marker
       identifier={props.id}
       coordinate={{ latitude: props.latitude, longitude: props.longitude }}
-      anchor={{ x: 0.5, y: 0.5 }}
+      anchor={{ x: 0.5, y: 1 }}
       tracksViewChanges={false}
     >
       {content}
@@ -68,7 +67,8 @@ export const PlaceLabelMarker = memo(PlaceLabelMarkerComponent);
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
-    maxWidth: 140,
+    justifyContent: 'flex-end',
+    maxWidth: 160,
   },
   subtitle: {
     fontFamily: Font.regular,

@@ -170,8 +170,7 @@ export default function MyPlacesScreen() {
         latitude={p.lat}
         longitude={p.lng}
         label={p.name}
-        subtitle="Your saved place"
-        accentColor={accent.electricBlue}
+        accentColor={accent.cyan}
       />
     ));
   }, [places, accent.electricBlue, colors]);
@@ -237,7 +236,7 @@ export default function MyPlacesScreen() {
               latitude={pin.lat}
               longitude={pin.lng}
               label={placeName.trim() || 'New place'}
-              accentColor={accent.coral}
+              accentColor={accent.cyan}
             />
           ) : null}
         </ConnektaMap>
