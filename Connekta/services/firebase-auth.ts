@@ -9,11 +9,28 @@ import {
 import {
   doc,
   getDoc,
-  runTransaction,
+  writeBatch,
   Timestamp,
 } from 'firebase/firestore';
 import { auth, firestore } from '@/lib/firebase';
 import type { AppUser } from '@/types/user';
+
+/** Firestore needs the Auth ID token before writes; right after sign-up it can lag briefly. */
+async function ensureFirestoreAuth(user: FirebaseUser): Promise<void> {
+  await user.getIdToken(true);
+  if (auth.currentUser?.uid !== user.uid) {
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => resolve(), 3000);
+      const unsub = onAuthStateChanged(auth, (u) => {
+        if (u?.uid === user.uid) {
+          clearTimeout(timeout);
+          unsub();
+          resolve();
+        }
+      });
+    });
+  }
+}
 
 export function firebaseAuthErrorMessage(err: unknown): string {
   const code =
@@ -22,6 +39,8 @@ export function firebaseAuthErrorMessage(err: unknown): string {
       : '';
 
   switch (code) {
+    case 'permission-denied':
+      return 'Firestore denied this action. Publish firestore.rules in Firebase Console and check .env project IDs match your Firebase project.';
     case 'auth/email-already-in-use':
       return 'This email is already registered.';
     case 'auth/invalid-email':
@@ -42,8 +61,20 @@ export function firebaseAuthErrorMessage(err: unknown): string {
 
 export async function isUsernameAvailable(username: string): Promise<boolean> {
   const key = username.trim().toLowerCase();
-  const snap = await getDoc(doc(firestore, 'usernames', key));
-  return !snap.exists();
+  try {
+    const snap = await getDoc(doc(firestore, 'usernames', key));
+    return !snap.exists();
+  } catch (err: unknown) {
+    const code =
+      err && typeof err === 'object' && 'code' in err
+        ? String((err as { code: string }).code)
+        : '';
+    if (code === 'permission-denied') {
+      // Skip pre-check if rules require sign-in; register transaction still validates.
+      return true;
+    }
+    throw err;
+  }
 }
 
 export async function registerWithEmail(
@@ -57,27 +88,29 @@ export async function registerWithEmail(
   const usernameKey = username.trim().toLowerCase();
 
   try {
-    await runTransaction(firestore, async (tx) => {
-      const usernameRef = doc(firestore, 'usernames', usernameKey);
-      const userRef = doc(firestore, 'users', uid);
+    await ensureFirestoreAuth(cred.user);
 
-      const existing = await tx.get(usernameRef);
-      if (existing.exists()) {
-        throw new Error('Username is already taken');
-      }
+    const usernameRef = doc(firestore, 'usernames', usernameKey);
+    const userRef = doc(firestore, 'users', uid);
 
-      tx.set(usernameRef, { uid });
-      tx.set(userRef, {
-        email: email.trim().toLowerCase(),
-        username: username.trim(),
-        deviceId,
-        createdAt: Timestamp.now(),
-        sharing: false,
-        lat: null,
-        lng: null,
-        locationUpdatedAt: null,
-      });
+    const existing = await getDoc(usernameRef);
+    if (existing.exists()) {
+      throw new Error('Username is already taken');
+    }
+
+    const batch = writeBatch(firestore);
+    batch.set(usernameRef, { uid });
+    batch.set(userRef, {
+      email: email.trim().toLowerCase(),
+      username: username.trim(),
+      deviceId,
+      createdAt: Timestamp.now(),
+      sharing: false,
+      lat: null,
+      lng: null,
+      locationUpdatedAt: null,
     });
+    await batch.commit();
   } catch (err) {
     try {
       await deleteUser(cred.user);

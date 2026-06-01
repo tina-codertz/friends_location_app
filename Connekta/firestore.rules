@@ -31,7 +31,8 @@ service cloud.firestore {
     }
 
     match /usernames/{usernameLower} {
-      allow read: if signedIn();
+      // Public read so sign-up can check availability before auth
+      allow read: if true;
       allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid;
       allow update, delete: if false;
