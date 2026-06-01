@@ -56,7 +56,20 @@ export function canUseNativeMapsOnAndroid(): boolean {
 
 export type MapColorMode = 'light' | 'dark';
 
-/** Vector style — dark for Connekta UI; light uses outdoors for clarity. */
+/** Zoom limits for ConnektaMap camera (navigation-focused, readable scale). */
+export const MAP_ZOOM = {
+  min: 4,
+  max: 17,
+  defaultLatitudeDelta: 0.04,
+} as const;
+
+export function latitudeDeltaToZoom(latitudeDelta?: number): number {
+  const delta = latitudeDelta ?? MAP_ZOOM.defaultLatitudeDelta;
+  const raw = Math.log2(360 / delta) - 1;
+  return Math.max(MAP_ZOOM.min, Math.min(MAP_ZOOM.max, raw));
+}
+
+/** Vector style — navigation-night for dark; streets for light. */
 export function getMapboxStyleUrl(mode: MapColorMode): string {
   return mode === 'dark'
     ? 'mapbox://styles/mapbox/navigation-night-v1'

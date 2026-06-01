@@ -5,7 +5,7 @@ import { MapboxPointAnnotation } from '@/components/map/MapboxPointAnnotation';
 import { useMapEngine } from '@/components/map/MapEngineContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useMarkerTracks } from '@/hooks/useMarkerTracks';
-import { PlaceNameBadge } from '@/components/map/PlaceNameBadge';
+import { MapMarkerLabel } from '@/components/map/MapMarkerLabel';
 import { circlePolygon } from '@/utils/map-geo';
 import { hexToRgba } from '@/utils/map-colors';
 
@@ -17,6 +17,7 @@ type Props = {
   latitude: number;
   longitude: number;
   label: string;
+  subtitle?: string;
   accentColor: string;
   radiusMeters?: number;
 };
@@ -26,17 +27,19 @@ function PlaceAreaMarkerComponent({
   latitude,
   longitude,
   label,
+  subtitle,
   accentColor,
   radiusMeters = PLACE_AREA_RADIUS_M,
 }: Props) {
   const engine = useMapEngine();
   const { colors, isDark } = useAppTheme();
-  const tracksViewChanges = useMarkerTracks([label, accentColor, isDark]);
+  const tracksViewChanges = useMarkerTracks([label, subtitle, accentColor, isDark]);
 
   const fillColor = useMemo(() => hexToRgba(accentColor, 0.38), [accentColor]);
   const strokeColor = accentColor;
-  const badgeBg = isDark ? colors.bgCard : '#fff';
-  const badgeText = isDark ? colors.textPrimary : '#111';
+  const badgeBg = colors.glassBgHeavy;
+  const badgeText = colors.textPrimary;
+  const subtitleColor = colors.textMuted;
 
   const areaShape = useMemo(
     () => ({
@@ -47,13 +50,15 @@ function PlaceAreaMarkerComponent({
     [longitude, latitude, radiusMeters]
   );
 
-  const nameBadge = (
-    <PlaceNameBadge
+  const labelContent = (
+    <MapMarkerLabel
       label={label}
+      subtitle={subtitle}
       accentColor={accentColor}
       backgroundColor={badgeBg}
       textColor={badgeText}
       borderColor={strokeColor}
+      subtitleColor={subtitleColor}
     />
   );
 
@@ -78,8 +83,9 @@ function PlaceAreaMarkerComponent({
           longitude={longitude}
           latitude={latitude}
           anchor={{ x: 0.5, y: 1 }}
+          hasSubtitle={Boolean(subtitle)}
         >
-          {nameBadge}
+          {labelContent}
         </MapboxPointAnnotation>
       </>
     );
@@ -102,7 +108,7 @@ function PlaceAreaMarkerComponent({
         tracksViewChanges={tracksViewChanges}
         zIndex={10}
       >
-        {nameBadge}
+        {labelContent}
       </Marker>
     </>
   );

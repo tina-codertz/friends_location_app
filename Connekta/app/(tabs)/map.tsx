@@ -280,6 +280,7 @@ export default function MapTabScreen() {
                   latitude={p.lat}
                   longitude={p.lng}
                   label={p.name.trim()}
+                  subtitle={isMine ? 'Your saved place' : `Shared by ${p.username}`}
                   accentColor={isMine ? accent.cyan : accent.green}
                 />
               );

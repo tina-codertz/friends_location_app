@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Marker } from 'react-native-maps';
-import { getMapboxModule } from '@/utils/map-runtime';
+import { MapboxPointAnnotation } from '@/components/map/MapboxPointAnnotation';
 import { useMapEngine } from '@/components/map/MapEngineContext';
 
 type Props = {
@@ -14,6 +14,7 @@ export function DraftPinMarker({ latitude, longitude, color }: Props) {
   const engine = useMapEngine();
   const dot = (
     <View
+      collapsable={false}
       style={{
         width: 14,
         height: 14,
@@ -26,12 +27,15 @@ export function DraftPinMarker({ latitude, longitude, color }: Props) {
   );
 
   if (engine === 'mapbox') {
-    const Mapbox = getMapboxModule();
-    if (!Mapbox) return null;
     return (
-      <Mapbox.PointAnnotation id="draft-pin" coordinate={[longitude, latitude]}>
+      <MapboxPointAnnotation
+        id="draft-pin"
+        longitude={longitude}
+        latitude={latitude}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
         {dot}
-      </Mapbox.PointAnnotation>
+      </MapboxPointAnnotation>
     );
   }
 

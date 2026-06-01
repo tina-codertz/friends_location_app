@@ -1,7 +1,12 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
 import type { Feature } from 'geojson';
-import { canUseMapbox, getMapboxStyleUrl, type MapColorMode } from '@/utils/maps-config';
+import {
+  canUseMapbox,
+  getMapboxStyleUrl,
+  latitudeDeltaToZoom,
+  type MapColorMode,
+} from '@/utils/maps-config';
 import { resolveMapEngine, mapEngineLabel } from '@/utils/map-engine';
 import { getMapboxModule } from '@/utils/map-runtime';
 import { MapEngineProvider } from '@/components/map/MapEngineContext';
@@ -28,11 +33,10 @@ type Props = {
   children?: React.ReactNode;
 };
 
-function deltaToZoom(latitudeDelta = 0.04): number {
-  return Math.max(4, Math.min(18, Math.log2(360 / latitudeDelta) - 1));
-}
-
-type MapboxInnerProps = Props & { colorMode: MapColorMode };
+type MapboxInnerProps = Props & {
+  colorMode: MapColorMode;
+  mapBg: string;
+};
 
 function MapboxMapInner(
   {
@@ -40,6 +44,7 @@ function MapboxMapInner(
     containerStyle,
     initialRegion,
     colorMode,
+    mapBg,
     showUserLocation,
     scrollEnabled = true,
     zoomEnabled = true,
@@ -58,7 +63,10 @@ function MapboxMapInner(
     [initialRegion.longitude, initialRegion.latitude]
   );
 
-  const zoom = useMemo(() => deltaToZoom(initialRegion.latitudeDelta), [initialRegion.latitudeDelta]);
+  const zoom = useMemo(
+    () => latitudeDeltaToZoom(initialRegion.latitudeDelta),
+    [initialRegion.latitudeDelta]
+  );
 
   const styleURL = useMemo(() => getMapboxStyleUrl(colorMode), [colorMode]);
 
@@ -66,17 +74,18 @@ function MapboxMapInner(
     flyTo: (region: MapRegion, durationMs = 500) => {
       cameraRef.current?.setCamera({
         centerCoordinate: [region.longitude, region.latitude],
-        zoomLevel: deltaToZoom(region.latitudeDelta),
+        zoomLevel: latitudeDeltaToZoom(region.latitudeDelta),
         animationDuration: durationMs,
         pitch: 0,
+        heading: 0,
       });
     },
   }));
 
   return (
-    <View style={[styles.fill, containerStyle, style]}>
+    <View style={[styles.fill, { backgroundColor: mapBg }, containerStyle, style]}>
       <Mapbox.MapView
-        style={styles.fill}
+        style={[styles.fill, { backgroundColor: mapBg }]}
         styleURL={styleURL}
         scrollEnabled={scrollEnabled}
         zoomEnabled={zoomEnabled}
@@ -103,10 +112,16 @@ function MapboxMapInner(
             centerCoordinate: center,
             zoomLevel: zoom,
             pitch: 0,
+            heading: 0,
           }}
         />
         {showUserLocation ? (
-          <Mapbox.UserLocation visible showsUserHeadingIndicator androidRenderMode="compass" />
+          <Mapbox.UserLocation
+            visible
+            showsUserHeadingIndicator
+            androidRenderMode="compass"
+            minDisplacement={5}
+          />
         ) : null}
         {children}
       </Mapbox.MapView>
@@ -117,12 +132,12 @@ function MapboxMapInner(
 const MapboxMap = forwardRef(MapboxMapInner);
 
 export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMap(props, ref) {
-  const { colors, mode } = useAppTheme();
+  const { colors, accent, mode } = useAppTheme();
   const engine = resolveMapEngine();
 
-  if (!canUseMapbox() || engine === 'unavailable') {
+  if (!canUseMapbox()) {
     return (
-      <View style={[styles.fallback, { backgroundColor: colors.bg }, props.containerStyle, props.style]}>
+      <View style={[styles.fallback, { backgroundColor: colors.mapBg }, props.containerStyle, props.style]}>
         <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', fontFamily: Font.medium }]}>
           {props.fallbackMessage ??
             'Mapbox token missing. Add EXPO_PUBLIC_MAPBOX_TOKEN to .env, then restart with: npx expo start -c'}
@@ -134,7 +149,12 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
   if (engine === 'mapbox-gl') {
     return (
       <MapEngineProvider engine="mapbox">
-        <MapboxMap ref={ref} {...props} colorMode={mode} />
+        <MapboxMap
+          ref={ref}
+          {...props}
+          colorMode={mode}
+          mapBg={colors.mapBg}
+        />
       </MapEngineProvider>
     );
   }
@@ -155,13 +175,12 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
   );
 });
 
-/** Dev helper — which renderer is active */
 export function getActiveMapEngineLabel(): string {
   return mapEngineLabel(resolveMapEngine());
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: '#131316' },
+  fill: { flex: 1 },
   fallback: {
     flex: 1,
     alignItems: 'center',

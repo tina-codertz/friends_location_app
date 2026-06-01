@@ -31,6 +31,22 @@ import {
   listEmergencyContacts,
   removeEmergencyContact,
 } from '@/services/firestore-emergency';
+import { isAuthQuotaExceeded } from '@/services/firestore-friends';
+
+let lastQuotaWarnAt = 0;
+
+function warnApiFailure(tag: string, err: unknown): void {
+  if (isAuthQuotaExceeded(err)) {
+    const now = Date.now();
+    if (now - lastQuotaWarnAt < 120_000) return;
+    lastQuotaWarnAt = now;
+    console.warn(
+      `[${tag}] Firebase Auth quota exceeded — pausing token refresh. Wait ~15 min or check Firebase Console → Usage.`,
+    );
+    return;
+  }
+  console.warn(`[${tag}] failed:`, err);
+}
 
 export { setApiAuthToken, setApiUnauthorizedHandler };
 import type { SavedPlace } from '@/types/places';
@@ -294,7 +310,7 @@ export const friendsAPI = {
       const friends = await firestoreCircle.listFriends(uid);
       return { success: true, friends };
     } catch (err) {
-      console.warn('[friendsAPI] list failed:', err);
+      warnApiFailure('friendsAPI.list', err);
       return { success: false, friends: [] };
     }
   },
@@ -315,7 +331,7 @@ export const friendsAPI = {
       const incoming = await firestoreCircle.listIncoming(uid);
       return { success: true, incoming };
     } catch (err) {
-      console.warn('[friendsAPI] incoming failed:', err);
+      warnApiFailure('friendsAPI.incoming', err);
       return { success: false, incoming: [] };
     }
   },
@@ -426,7 +442,7 @@ export const locationAPI = {
       if (!uid) return { success: false, sharing: false };
       return await setLocationSharing(uid, enabled);
     } catch (err) {
-      console.warn('[locationAPI] setSharing failed:', err);
+      warnApiFailure('locationAPI.setSharing', err);
       return { success: false, sharing: !enabled };
     }
   },
@@ -436,7 +452,7 @@ export const locationAPI = {
       if (!uid) return { success: false, message: 'Not signed in' };
       return await pingLocation(uid, lat, lng);
     } catch (err) {
-      console.warn('[locationAPI] ping failed:', err);
+      warnApiFailure('locationAPI.ping', err);
       return { success: false, message: 'Could not update location' };
     }
   },
@@ -447,7 +463,7 @@ export const locationAPI = {
       const locations = await listFriendLocations(uid);
       return { success: true, locations };
     } catch (err) {
-      console.warn('[locationAPI] friendsLocations failed:', err);
+      warnApiFailure('locationAPI.friendsLocations', err);
       return { success: false, locations: [] };
     }
   },
@@ -465,7 +481,7 @@ export const locationAPI = {
       }
       return await getMyLocationState(uid);
     } catch (err) {
-      console.warn('[locationAPI] myState failed:', err);
+      warnApiFailure('locationAPI.myState', err);
       return { success: false, sharing: false, lat: null, lng: null, updated_at: null };
     }
   },
