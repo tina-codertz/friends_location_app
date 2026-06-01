@@ -21,7 +21,7 @@ import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassIconButton } from '@/components/ui/GlassIconButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { isUsernameAvailable } from '@/firebase';
+import { isUsernameAvailable } from '@/connekta-firebase';
 import { validateUsername } from '@/utils/username';
 import { Font, FontBrand } from '@/constants/typography';
 import {

@@ -12,9 +12,9 @@ import {
   firebaseLogout,
   loadAppUser,
   loginWithEmail,
-  onAuthStateChanged,
   registerWithEmail,
-} from '@/firebase';
+  subscribeToAuthState,
+} from '@/connekta-firebase';
 import { setApiAuthToken } from '@/services/api';
 import { setLegacyApiLogoutOn401 } from '@/services/auth-token';
 import {
@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (fbUser) => {
+    const unsub = subscribeToAuthState(async (fbUser) => {
       setIsLoading(true);
       try {
         if (fbUser) {

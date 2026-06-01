@@ -1,4 +1,4 @@
-export { auth, firestore, db } from '@/firebase/config';
+export { auth, firestore, db } from './config';
 export {
   firebaseAuthErrorMessage,
   firestoreErrorMessage,
@@ -6,14 +6,14 @@ export {
   isUsernameAvailable,
   loadAppUser,
   loginWithEmail,
-  onAuthStateChanged,
+  subscribeToAuthState,
   registerWithEmail,
   verifyCurrentUserPassword,
-} from '@/firebase/auth';
+} from './auth-service';
 export {
   clearAuthQuotaBackoff,
   ensureFirestoreSignedIn,
   getCircleMemberUids,
   isAuthQuotaExceeded,
-} from '@/firebase/firestore/friends';
-export { friendshipDocId } from '@/firebase/ids';
+} from './firestore/friends';
+export { friendshipDocId } from './ids';

@@ -1,7 +1,7 @@
 import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
-import { firestore } from '@/firebase/config';
+import { firestore } from '../config';
 import type { FriendLocation } from '@/types/location';
-import { ensureFirestoreSignedIn, getCircleMemberUids } from '@/firebase/firestore/friends';
+import { ensureFirestoreSignedIn, getCircleMemberUids } from './friends';
 
 function updatedAtIso(data: Record<string, unknown>): string {
   const u = data.locationUpdatedAt;

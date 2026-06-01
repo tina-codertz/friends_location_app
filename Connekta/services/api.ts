@@ -11,25 +11,25 @@ import {
   setApiAuthToken,
   setApiUnauthorizedHandler,
 } from '@/services/auth-token';
-import { auth, isAuthQuotaExceeded, loadAppUser } from '@/firebase';
+import { auth, firebaseAuthErrorMessage, isAuthQuotaExceeded, loadAppUser } from '@/connekta-firebase';
 import {
   createPlace,
   deletePlace,
   listCirclePlaces,
   listMyPlaces,
-} from '@/firebase/firestore/places';
+} from '@/connekta-firebase/firestore/places';
 import {
   getMyLocationState,
   listFriendLocations,
   pingLocation,
   setLocationSharing,
-} from '@/firebase/firestore/location';
-import * as firestoreCircle from '@/firebase/firestore/circle';
+} from '@/connekta-firebase/firestore/location';
+import * as firestoreCircle from '@/connekta-firebase/firestore/circle';
 import {
   addEmergencyContact,
   listEmergencyContacts,
   removeEmergencyContact,
-} from '@/firebase/firestore/emergency';
+} from '@/connekta-firebase/firestore/emergency';
 
 let lastQuotaWarnAt = 0;
 
@@ -368,7 +368,7 @@ export const friendsAPI = {
       return await firestoreCircle.joinWithInviteCode(uid, code);
     } catch (err) {
       console.warn('[friendsAPI] joinWithCode failed:', err);
-      return { success: false, message: 'Could not join circle' };
+      return { success: false, message: firebaseAuthErrorMessage(err) };
     }
   },
 };

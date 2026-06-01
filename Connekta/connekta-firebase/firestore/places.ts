@@ -8,8 +8,8 @@ import {
   where,
   Timestamp,
 } from 'firebase/firestore';
-import { firestore } from '@/firebase/config';
-import { ensureFirestoreSignedIn, getCircleMemberUids } from '@/firebase/firestore/friends';
+import { firestore } from '../config';
+import { ensureFirestoreSignedIn, getCircleMemberUids } from './friends';
 import type { SavedPlace } from '@/types/places';
 
 function rowFromDoc(

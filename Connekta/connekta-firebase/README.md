@@ -2,10 +2,12 @@
 
 Client SDK and Firestore deploy artifacts for the mobile app.
 
+Import as `@/connekta-firebase` (not `@/firebase` — that path collides with the npm `firebase` package in Metro).
+
 ```
-firebase/
+connekta-firebase/
   config.ts          # App init — auth + Firestore
-  auth.ts            # Email auth, profiles, session helpers
+  auth-service.ts    # Email auth, profiles, session helpers
   ids.ts             # Document ID helpers
   types.ts           # Firestore document shapes
   index.ts           # Barrel exports
