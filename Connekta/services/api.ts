@@ -11,8 +11,19 @@ import {
   setApiAuthToken,
   setApiUnauthorizedHandler,
 } from '@/services/auth-token';
+import { auth } from '@/lib/firebase';
+import { loadAppUser } from '@/services/firebase-auth';
+import {
+  createPlace,
+  deletePlace,
+  listCirclePlaces,
+  listMyPlaces,
+} from '@/services/firestore-places';
 
 export { setApiAuthToken, setApiUnauthorizedHandler };
+import type { SavedPlace } from '@/types/places';
+
+export type { SavedPlace };
 
 // Get API base URL - use machine IP if running on device
 const getAPIBaseURL = (): string => {
@@ -94,12 +105,15 @@ apiClient.interceptors.response.use(
       code: error.code,
     };
 
+    const isLegacyPlacesCall = typeof url === 'string' && url.includes('/places');
     if (isGatewayOutage) {
       console.warn(
         '[API] Gateway/backend unavailable for',
         url,
         '— ensure `npx wrangler dev` is running and ngrok points to port 8787'
       );
+    } else if (isLegacyPlacesCall) {
+      console.warn('[API] Deprecated /places HTTP call (use Firestore placesAPI):', url);
     } else {
       console.error('[API] Response error:', errorInfo);
     }
@@ -268,32 +282,60 @@ export const friendsAPI = {
   },
 };
 
-export interface SavedPlace {
-  id: number;
-  user_id: number;
-  username: string;
-  name: string;
-  lat: number;
-  lng: number;
-  created_at: string;
-}
-
+/** Places use Firestore (not the Cloudflare /places API). */
 export const placesAPI = {
   async mine(): Promise<{ success: boolean; places: SavedPlace[] }> {
-    const res = await apiClient.get('/places/mine');
-    return res.data;
+    try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return { success: false, places: [] };
+      const places = await listMyPlaces(uid);
+      return { success: true, places };
+    } catch (err) {
+      console.warn('[placesAPI] mine failed:', err);
+      return { success: false, places: [] };
+    }
   },
   async circle(): Promise<{ success: boolean; places: SavedPlace[] }> {
-    const res = await apiClient.get('/places/circle');
-    return res.data;
+    try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return { success: false, places: [] };
+      const places = await listCirclePlaces(uid);
+      return { success: true, places };
+    } catch (err) {
+      console.warn('[placesAPI] circle failed:', err);
+      return { success: false, places: [] };
+    }
   },
-  async create(name: string, lat: number, lng: number): Promise<{ success: boolean; place?: SavedPlace; message?: string }> {
-    const res = await apiClient.post('/places', { name, lat, lng });
-    return res.data;
+  async create(
+    name: string,
+    lat: number,
+    lng: number,
+  ): Promise<{ success: boolean; place?: SavedPlace; message?: string }> {
+    try {
+      const fbUser = auth.currentUser;
+      if (!fbUser) return { success: false, message: 'Not signed in' };
+      const profile = await loadAppUser(fbUser);
+      const place = await createPlace(
+        fbUser.uid,
+        profile?.username ?? 'user',
+        name,
+        lat,
+        lng,
+      );
+      return { success: true, place };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not save place';
+      return { success: false, message };
+    }
   },
-  async remove(id: number): Promise<{ success: boolean; message?: string }> {
-    const res = await apiClient.delete(`/places/${id}`);
-    return res.data;
+  async remove(id: string | number): Promise<{ success: boolean; message?: string }> {
+    try {
+      await deletePlace(String(id));
+      return { success: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not delete place';
+      return { success: false, message };
+    }
   },
 };
 
