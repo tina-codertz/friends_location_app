@@ -24,6 +24,10 @@ import { useAuth } from '@/context/AuthContext';
 import { isUsernameAvailable } from '@/services/firebase-auth';
 import { validateUsername } from '@/utils/username';
 import { Font, FontBrand } from '@/constants/typography';
+import {
+  getBiometricPolicy,
+  readBiometricCredentialsForSignIn,
+} from '@/services/biometric-unlock';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -40,6 +44,8 @@ export default function AuthScreen() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [canBiometricSignIn, setCanBiometricSignIn] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
 
   const heroOpacity = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -60,6 +66,36 @@ export default function AuthScreen() {
       Alert.alert('Error', error, [{ text: 'OK', onPress: clearError }]);
     }
   }, [error, clearError]);
+
+  useEffect(() => {
+    void (async () => {
+      const policy = await getBiometricPolicy();
+      setCanBiometricSignIn(policy.hasStoredCredentials);
+      if (policy.lastEmail && !email) {
+        setEmail(policy.lastEmail);
+      }
+    })();
+  }, []);
+
+  const handleBiometricSignIn = async () => {
+    setBioLoading(true);
+    clearError();
+    try {
+      const creds = await readBiometricCredentialsForSignIn();
+      if (!creds) {
+        Alert.alert('Biometrics', 'Could not read saved credentials. Sign in with your password.');
+        const policy = await getBiometricPolicy();
+        setCanBiometricSignIn(policy.hasStoredCredentials);
+        return;
+      }
+      await login(creds.email, creds.password);
+      router.replace('/(tabs)/map');
+    } catch (err) {
+      console.error('Biometric sign-in error:', err);
+    } finally {
+      setBioLoading(false);
+    }
+  };
 
   const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
@@ -237,9 +273,36 @@ export default function AuthScreen() {
                 size="large"
                 fullWidth
                 loading={isLoading}
-                disabled={isLoading}
+                disabled={isLoading || bioLoading}
                 style={styles.submitBtn}
               />
+
+              {isLogin && canBiometricSignIn ? (
+                <>
+                  <View style={styles.divider}>
+                    <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
+                    <Text style={[styles.dividerText, { color: colors.textTertiary, fontFamily: Font.medium }]}>
+                      or
+                    </Text>
+                    <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.bioBtn, { borderColor: colors.tealBorder, backgroundColor: colors.tealGlass }]}
+                    onPress={() => void handleBiometricSignIn()}
+                    disabled={isLoading || bioLoading}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons
+                      name={Platform.OS === 'ios' ? 'scan-outline' : 'finger-print-outline'}
+                      size={26}
+                      color={accent.cyan}
+                    />
+                    <Text style={[styles.bioBtnText, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+                      {bioLoading ? 'Authenticating…' : 'Sign in with biometrics'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : null}
             </GlassCard>
           </Animated.View>
 
@@ -334,6 +397,24 @@ const styles = StyleSheet.create({
   },
   modeBtn: { flex: 1 },
   submitBtn: { marginTop: 4 },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 14,
+  },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12, marginHorizontal: 12 },
+  bioBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  bioBtnText: { fontSize: 15 },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',

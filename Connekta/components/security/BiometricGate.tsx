@@ -6,103 +6,133 @@ import {
   AppState,
   type AppStateStatus,
   Platform,
+  Alert,
 } from 'react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
+import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Type } from '@/constants/typography';
-
-const BIO_ENABLED_KEY = 'biometric_unlock_enabled';
-const NEEDS_ENROLL_KEY = 'needs_biometric_enrollment';
+import {
+  consumePendingBiometricCredentials,
+  clearPendingBiometricCredentials,
+  deviceSupportsBiometric,
+  disableBiometricAppLock,
+  enableBiometricAppLockOnly,
+  enableBiometricUnlock,
+  getBiometricPolicy,
+  promptBiometricUnlock,
+  skipBiometricEnrollment,
+} from '@/services/biometric-unlock';
 
 type Props = {
   children: React.ReactNode;
 };
 
+type GateState = 'loading' | 'unlocked' | 'locked' | 'enroll';
+
 export function BiometricGate({ children }: Props) {
   const { colors, accent } = useAppTheme();
-  const [gate, setGate] = useState<'loading' | 'unlocked' | 'locked' | 'enroll'>('loading');
+  const [gate, setGate] = useState<GateState>('loading');
   const appState = useRef(AppState.currentState);
+  const unlockedThisSession = useRef(false);
 
-  const refreshPolicy = useCallback(async () => {
-    const [enabled, needs] = await Promise.all([
-      SecureStore.getItemAsync(BIO_ENABLED_KEY),
-      SecureStore.getItemAsync(NEEDS_ENROLL_KEY),
-    ]);
-    return { enabled: enabled === '1', needsEnrollment: needs === '1' };
-  }, []);
+  const resolveInitialGate = useCallback(async () => {
+    const policy = await getBiometricPolicy();
 
-  const runUnlock = useCallback(async () => {
-    const { enabled, needsEnrollment } = await refreshPolicy();
-    if (needsEnrollment) {
+    if (policy.needsEnrollment) {
       setGate('enroll');
       return;
     }
-    if (!enabled) {
+
+    if (!policy.enabled) {
+      setGate('unlocked');
+      unlockedThisSession.current = true;
+      return;
+    }
+
+    if (unlockedThisSession.current) {
       setGate('unlocked');
       return;
     }
-    const has = await LocalAuthentication.hasHardwareAsync();
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-    if (!has || !enrolled) {
-      setGate('unlocked');
-      return;
-    }
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Unlock Connekta',
-      cancelLabel: 'Cancel',
-      disableDeviceFallback: false,
-    });
-    setGate(result.success ? 'unlocked' : 'locked');
-  }, [refreshPolicy]);
+
+    const ok = await promptBiometricUnlock();
+    setGate(ok ? 'unlocked' : 'locked');
+    if (ok) unlockedThisSession.current = true;
+  }, []);
 
   useEffect(() => {
-    void runUnlock().catch(() => setGate('unlocked'));
-  }, [runUnlock]);
+    void resolveInitialGate().catch(() => setGate('unlocked'));
+  }, [resolveInitialGate]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
       if (appState.current.match(/inactive|background/) && next === 'active') {
         void (async () => {
-          const { enabled, needsEnrollment } = await refreshPolicy();
-          if (needsEnrollment) {
+          const policy = await getBiometricPolicy();
+          if (policy.needsEnrollment) {
             setGate('enroll');
             return;
           }
-          if (enabled) {
-            setGate('loading');
-            await runUnlock();
+          if (policy.enabled) {
+            unlockedThisSession.current = false;
+            setGate('locked');
           }
         })();
       }
       appState.current = next;
     });
     return () => sub.remove();
-  }, [refreshPolicy, runUnlock]);
+  }, []);
+
+  const handleUnlock = async () => {
+    const ok = await promptBiometricUnlock();
+    if (ok) {
+      unlockedThisSession.current = true;
+      setGate('unlocked');
+    }
+  };
 
   const completeEnrollment = async () => {
-    const has = await LocalAuthentication.hasHardwareAsync();
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-    if (!has || !enrolled) {
-      await SecureStore.deleteItemAsync(NEEDS_ENROLL_KEY);
+    if (!(await deviceSupportsBiometric())) {
+      await enableBiometricAppLockOnly();
+      await clearPendingBiometricCredentials();
       setGate('unlocked');
+      unlockedThisSession.current = true;
       return;
     }
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Enable biometric unlock',
-      cancelLabel: 'Cancel',
-    });
-    if (!result.success) return;
-    await SecureStore.setItemAsync(BIO_ENABLED_KEY, '1');
-    await SecureStore.deleteItemAsync(NEEDS_ENROLL_KEY);
+
+    const pending = await consumePendingBiometricCredentials();
+    if (pending) {
+      const result = await enableBiometricUnlock(
+        pending.email,
+        pending.password,
+        'Enable biometric unlock'
+      );
+      if (!result.ok) {
+        if (result.reason === 'unavailable') {
+          Alert.alert(
+            'Unavailable',
+            'Biometrics are not set up on this device. You can enable them later in Settings.'
+          );
+          await skipEnrollment();
+        }
+        return;
+      }
+    } else {
+      const ok = await promptBiometricUnlock('Enable biometric unlock');
+      if (!ok) return;
+      await enableBiometricAppLockOnly();
+    }
+
     setGate('unlocked');
+    unlockedThisSession.current = true;
   };
 
   const skipEnrollment = async () => {
-    await SecureStore.deleteItemAsync(NEEDS_ENROLL_KEY);
+    await skipBiometricEnrollment();
     setGate('unlocked');
+    unlockedThisSession.current = true;
   };
 
   if (gate === 'unlocked') {
@@ -116,18 +146,31 @@ export function BiometricGate({ children }: Props) {
   if (gate === 'enroll') {
     return (
       <View style={[styles.fill, { backgroundColor: colors.bg, padding: 24 }]}>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <GlassCard intensity="medium" borderRadius={24} glowAccent style={{ paddingVertical: 28 }}>
-            <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 12 }]}>
+        <View style={styles.centered}>
+          <GlassCard intensity="medium" borderRadius={24} glowAccent style={styles.card}>
+            <View style={[styles.iconRing, { borderColor: accent.cyan }]}>
+              <Ionicons
+                name={Platform.OS === 'ios' ? 'scan-outline' : 'finger-print-outline'}
+                size={36}
+                color={accent.cyan}
+              />
+            </View>
+            <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 12, textAlign: 'center' }]}>
               Secure your account
             </Text>
-            <Text style={[Type.body, { color: colors.textMuted, marginBottom: 24 }]}>
-              Use {Platform.OS === 'ios' ? 'Face ID or Touch ID' : 'your fingerprint'} to unlock Connekta. Your
-              session stays in the secure keychain.
+            <Text style={[Type.body, { color: colors.textMuted, marginBottom: 24, textAlign: 'center' }]}>
+              Use {Platform.OS === 'ios' ? 'Face ID or Touch ID' : 'your fingerprint'} to unlock Connekta and sign
+              in quickly next time.
             </Text>
-            <GlassButton title="Enable biometrics" onPress={completeEnrollment} variant="primary" fullWidth size="large" />
+            <GlassButton
+              title="Enable biometrics"
+              onPress={() => void completeEnrollment()}
+              variant="primary"
+              fullWidth
+              size="large"
+            />
             <View style={{ height: 12 }} />
-            <GlassButton title="Not now" onPress={skipEnrollment} variant="tonal" fullWidth size="medium" />
+            <GlassButton title="Not now" onPress={() => void skipEnrollment()} variant="tonal" fullWidth size="medium" />
           </GlassCard>
         </View>
       </View>
@@ -136,25 +179,27 @@ export function BiometricGate({ children }: Props) {
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg, padding: 24 }]}>
-      <View style={{ flex: 1, justifyContent: 'center' }}>
-        <GlassCard intensity="medium" borderRadius={24} style={{ paddingVertical: 28 }}>
-          <Text style={[Type.title, { color: colors.textPrimary, marginBottom: 8 }]}>Locked</Text>
-          <Text style={[Type.body, { color: colors.textMuted, marginBottom: 24 }]}>
-            Biometric unlock is on. Authenticate to continue.
+      <View style={styles.centered}>
+        <GlassCard intensity="medium" borderRadius={24} glowAccent style={styles.card}>
+          <View style={[styles.iconRing, { borderColor: accent.cyan }]}>
+            <Ionicons name="lock-closed-outline" size={32} color={accent.cyan} />
+          </View>
+          <Text style={[Type.title, { color: colors.textPrimary, marginBottom: 8, textAlign: 'center' }]}>
+            Connekta is locked
           </Text>
-          <GlassButton
-            title="Unlock"
-            onPress={runUnlock}
-            variant="primary"
-            fullWidth
-            size="large"
-          />
+          <Text style={[Type.body, { color: colors.textMuted, marginBottom: 24, textAlign: 'center' }]}>
+            Use {Platform.OS === 'ios' ? 'Face ID or Touch ID' : 'biometrics'} to continue.
+          </Text>
+          <GlassButton title="Unlock" onPress={() => void handleUnlock()} variant="primary" fullWidth size="large" />
           <View style={{ height: 12 }} />
           <GlassButton
-            title="Turn off in Settings"
-            onPress={async () => {
-              await SecureStore.deleteItemAsync(BIO_ENABLED_KEY);
-              setGate('unlocked');
+            title="Turn off biometric lock"
+            onPress={() => {
+              void (async () => {
+                await disableBiometricAppLock();
+                unlockedThisSession.current = true;
+                setGate('unlocked');
+              })();
             }}
             variant="tonal"
             fullWidth
@@ -168,4 +213,15 @@ export function BiometricGate({ children }: Props) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  centered: { flex: 1, justifyContent: 'center' },
+  card: { paddingVertical: 28, paddingHorizontal: 8, alignItems: 'center' },
+  iconRing: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
 });

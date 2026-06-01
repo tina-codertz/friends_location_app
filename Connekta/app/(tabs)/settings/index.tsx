@@ -1,17 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Switch, Alert, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Switch,
+  Alert,
+  ScrollView,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as SecureStore from 'expo-secure-store';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassNavCard } from '@/components/ui/GlassNavCard';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { Font, Type } from '@/constants/typography';
-
-const BIO_KEY = 'biometric_unlock_enabled';
+import {
+  deviceSupportsBiometric,
+  disableBiometricAppLock,
+  enableBiometricLockFromStoredCredentials,
+  enableBiometricUnlock,
+  getBiometricPolicy,
+} from '@/services/biometric-unlock';
+import { verifyCurrentUserPassword } from '@/services/firebase-auth';
 
 export default function SettingsHomeScreen() {
   const insets = useSafeAreaInsets();
@@ -19,30 +34,78 @@ export default function SettingsHomeScreen() {
   const { colors, accent } = useAppTheme();
   const { logout, user } = useAuth();
   const [bio, setBio] = useState(false);
+  const [passwordModal, setPasswordModal] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const refreshBio = useCallback(async () => {
+    const policy = await getBiometricPolicy();
+    setBio(policy.enabled);
+  }, []);
 
   useEffect(() => {
-    void (async () => {
-      const v = await SecureStore.getItemAsync(BIO_KEY);
-      setBio(v === '1');
-    })();
-  }, []);
+    void refreshBio();
+  }, [refreshBio]);
+
+  const finishEnable = async (password: string) => {
+    const email = user?.email;
+    if (!email) {
+      Alert.alert('Error', 'No email on your account. Sign in again with email and password.');
+      return;
+    }
+
+    const valid = await verifyCurrentUserPassword(password);
+    if (!valid) {
+      Alert.alert('Incorrect password', 'Check your password and try again.');
+      return;
+    }
+
+    const result = await enableBiometricUnlock(email, password, 'Enable biometric unlock');
+    if (result.ok) {
+      setBio(true);
+      setPasswordModal(false);
+      setConfirmPassword('');
+      return;
+    }
+
+    if (result.reason === 'unavailable') {
+      Alert.alert('Unavailable', 'Biometrics are not set up on this device.');
+    } else if (result.reason === 'cancelled') {
+      /* user dismissed */
+    } else {
+      Alert.alert('Error', 'Could not save biometric unlock. Try again.');
+    }
+  };
 
   const toggleBio = async (value: boolean) => {
     if (value) {
-      const has = await LocalAuthentication.hasHardwareAsync();
-      const enrolled = await LocalAuthentication.isEnrolledAsync();
-      if (!has || !enrolled) {
+      if (!(await deviceSupportsBiometric())) {
         Alert.alert('Unavailable', 'Biometrics are not set up on this device.');
         return;
       }
-      const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Enable biometric unlock' });
-      if (!r.success) return;
-      await SecureStore.setItemAsync(BIO_KEY, '1');
-      setBio(true);
-    } else {
-      await SecureStore.deleteItemAsync(BIO_KEY);
-      setBio(false);
+
+      const policy = await getBiometricPolicy();
+      if (policy.hasStoredCredentials) {
+        const result = await enableBiometricLockFromStoredCredentials();
+        if (result.ok) {
+          setBio(true);
+        }
+        return;
+      }
+
+      setPasswordModal(true);
+      return;
     }
+
+    await disableBiometricAppLock();
+    setBio(false);
+  };
+
+  const onConfirmPassword = async () => {
+    if (confirmPassword.length < 6) {
+      Alert.alert('Password', 'Enter your account password (at least 6 characters).');
+      return;
+    }
+    await finishEnable(confirmPassword);
   };
 
   return (
@@ -73,20 +136,19 @@ export default function SettingsHomeScreen() {
         onPress={() => router.push('/(tabs)/settings/CircleManagement')}
       />
 
-  
       <GlassCard borderRadius={16} intensity="medium">
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
             <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>Biometric lock</Text>
             <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-              Require Face ID / Touch ID when opening the app.
+              Unlock the app and sign in with Face ID / Touch ID.
             </Text>
           </View>
           <Switch
             value={bio}
             onValueChange={toggleBio}
-            trackColor={{ false: colors.divider, true: `${accent.electricBlue}88` }}
-            thumbColor={bio ? accent.electricBlue : colors.textTertiary}
+            trackColor={{ false: colors.divider, true: `${accent.cyan}88` }}
+            thumbColor={bio ? accent.cyan : colors.textTertiary}
           />
         </View>
       </GlassCard>
@@ -116,10 +178,46 @@ export default function SettingsHomeScreen() {
           fullWidth
         />
       </GlassCard>
+
+      <Modal visible={passwordModal} transparent animationType="fade" onRequestClose={() => setPasswordModal(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
+        >
+          <GlassCard borderRadius={20} intensity="heavy" glowAccent style={styles.modalCard}>
+            <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Confirm password</Text>
+            <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 16 }]}>
+              Enter your password once to enable biometric sign-in on this device.
+            </Text>
+            <GlassInput
+              layout="stacked"
+              label="Password"
+              placeholder="Your password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              showSecureToggle
+            />
+            <GlassButton title="Enable" onPress={() => void onConfirmPassword()} variant="primary" fullWidth />
+            <View style={{ height: 10 }} />
+            <GlassButton
+              title="Cancel"
+              onPress={() => {
+                setPasswordModal(false);
+                setConfirmPassword('');
+              }}
+              variant="tonal"
+              fullWidth
+            />
+          </GlassCard>
+        </KeyboardAvoidingView>
+      </Modal>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  modalBackdrop: { flex: 1, justifyContent: 'center', padding: 24 },
+  modalCard: { padding: 20 },
 });
