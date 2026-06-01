@@ -245,7 +245,9 @@ export default function MapTabScreen() {
           />
         ))}
         {placeMarkers.map((p) => {
-          const isMine = user?.id === p.user_id;
+          const isMine =
+            user?.uid != null &&
+            (String(p.user_id) === user.uid || (p as { userId?: string }).userId === user.uid);
           return (
             <PlaceAreaMarker
               key={`place-${p.id}`}

@@ -89,9 +89,13 @@ export default function ProfileScreen() {
 
       <GlassCard borderRadius={22} intensity="medium">
         
-        <Row label="Verified" value={user?.verified ? 'Yes' : 'No'} colors={colors} />
-        <Row label="Device" value={user?.device_id ? 'Linked' : '—'} colors={colors} muted />
-        <Row label="Created" value={new Date(user?.created_at || '').toLocaleDateString()} colors={colors} muted />
+        <Row label="Account" value="Active" colors={colors} />
+        <Row
+          label="User ID"
+          value={user?.uid ? `${user.uid.slice(0, 8)}…` : '—'}
+          colors={colors}
+          muted
+        />
       </GlassCard>
 
       {isEditing && (

@@ -23,12 +23,12 @@ export default function LocationHistory() {
 
   useEffect(() => {
     loadLocationHistory();
-  }, [user?.id]);
+  }, [user?.uid]);
 
   const loadLocationHistory = async () => {
     setLoading(true);
     try {
-      if (user?.id) {
+      if (user?.uid) {
         // Placeholder: In a real app, you'd have a method to get location history
         // For now, just load empty list
         setLocations([]);

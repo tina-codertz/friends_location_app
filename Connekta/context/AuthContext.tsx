@@ -1,22 +1,33 @@
 /**
- * Authentication Context - JWT Token & User State Management
+ * Authentication Context — Firebase Auth + Firestore profile
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { authAPI, getApiErrorMessage, User, setApiAuthToken, setApiUnauthorizedHandler } from '@/services/api';
+import { auth } from '@/app/lib/firebase';
+import { setApiAuthToken } from '@/services/api';
+import {
+  firebaseAuthErrorMessage,
+  firebaseLogout,
+  loadAppUser,
+  loginWithEmail,
+  onAuthStateChanged,
+  registerWithEmail,
+} from '@/services/firebase-auth';
+import type { AppUser } from '@/types/user';
+
+export type { AppUser };
 
 export interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
+  /** Firebase ID token for legacy Cloudflare API (map/friends) until full migration */
   token: string | null;
   isLoading: boolean;
   isLoggedIn: boolean;
   error: string | null;
-  
-  // Auth methods
-  register: (email: string, username: string) => Promise<void>;
-  login: (username: string) => Promise<void>;
+  register: (email: string, password: string, username: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -24,172 +35,126 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get or create device ID
+  const syncIdToken = useCallback(async () => {
+    const fbUser = auth.currentUser;
+    if (!fbUser) {
+      setApiAuthToken(null);
+      setToken(null);
+      return;
+    }
+    try {
+      const idToken = await fbUser.getIdToken();
+      setApiAuthToken(idToken);
+      setToken(idToken);
+    } catch (err) {
+      console.warn('[AUTH] Failed to refresh ID token:', err);
+      setApiAuthToken(null);
+      setToken(null);
+    }
+  }, []);
+
   const getDeviceId = useCallback(async (): Promise<string> => {
     try {
-      // First: try to get from SecureStore (most reliable for persistence)
       let deviceId = await SecureStore.getItemAsync('device_id');
-      if (deviceId) {
-        console.log('[AUTH] Using device ID from SecureStore:', deviceId);
-        return deviceId;
-      }
+      if (deviceId) return deviceId;
 
-      // Legacy: expo-device no longer exposes deviceId; prefer persisted SecureStore id.
       try {
         deviceId = await AsyncStorage.getItem('device_id');
         if (deviceId) {
-          console.log('[AUTH] Using device ID from AsyncStorage:', deviceId);
           await SecureStore.setItemAsync('device_id', deviceId);
           return deviceId;
         }
-      } catch (storageErr) {
-        console.warn('[AUTH] AsyncStorage not available:', storageErr);
+      } catch {
+        /* ignore */
       }
 
-      // Final: generate and persist new ID
       deviceId = `device-${Date.now()}`;
-      console.log('[AUTH] Generated new device ID:', deviceId);
       await SecureStore.setItemAsync('device_id', deviceId);
-      
       return deviceId;
-    } catch (err) {
-      console.error('[AUTH] Failed to get device ID:', err);
+    } catch {
       return `device-${Date.now()}`;
     }
   }, []);
 
-  // Keep API client token in sync with React state
   useEffect(() => {
-    setApiAuthToken(token);
-  }, [token]);
-
-  useEffect(() => {
-    setApiUnauthorizedHandler(() => {
-      setToken(null);
-      setUser(null);
-    });
-    return () => setApiUnauthorizedHandler(null);
-  }, []);
-
-  // Restore token on app launch
-  useEffect(() => {
-    const restoreToken = async () => {
+    const unsub = onAuthStateChanged(auth, async (fbUser) => {
       setIsLoading(true);
       try {
-        const [storedToken, storedUser] = await Promise.all([
-          SecureStore.getItemAsync('auth_token'),
-          SecureStore.getItemAsync('user_data'),
-        ]);
-
-        if (storedToken && storedUser) {
-          let parsed: User | null = null;
-          try {
-            const raw = JSON.parse(storedUser) as Partial<User>;
-            if (
-              raw &&
-              typeof raw.id === 'number' &&
-              typeof raw.username === 'string' &&
-              typeof raw.email === 'string'
-            ) {
-              parsed = raw as User;
-            }
-          } catch {
-            await SecureStore.deleteItemAsync('user_data').catch(() => undefined);
-          }
-          if (parsed) {
-            setApiAuthToken(storedToken);
-            setToken(storedToken);
-            setUser(parsed);
+        if (fbUser) {
+          const profile = await loadAppUser(fbUser);
+          setUser(profile);
+          if (profile) {
+            await syncIdToken();
           } else {
-            await SecureStore.deleteItemAsync('auth_token').catch(() => undefined);
+            setApiAuthToken(null);
+            setToken(null);
           }
+        } else {
+          setUser(null);
+          setApiAuthToken(null);
+          setToken(null);
         }
       } catch (err) {
-        console.error('Failed to restore token:', err);
+        console.error('[AUTH] Session restore failed:', err);
+        setUser(null);
+        setApiAuthToken(null);
+        setToken(null);
       } finally {
         setIsLoading(false);
       }
-    };
+    });
+    return unsub;
+  }, [syncIdToken]);
 
-    restoreToken();
-  }, []);
-
-  // Register with email and username (no email verification)
   const register = useCallback(
-    async (email: string, username: string) => {
+    async (email: string, password: string, username: string) => {
       setIsLoading(true);
       setError(null);
       try {
         const deviceId = await getDeviceId();
-        const response = await authAPI.register(email, username, deviceId);
-
-        if (!response.success || !response.token || !response.user) {
-          throw new Error(response.message || 'Registration failed');
-        }
-
-        await Promise.all([
-          SecureStore.setItemAsync('auth_token', response.token),
-          SecureStore.setItemAsync('user_data', JSON.stringify(response.user)),
-          SecureStore.setItemAsync('needs_biometric_enrollment', '1'),
-        ]);
-        setApiAuthToken(response.token);
-        setToken(response.token);
-        setUser(response.user);
+        const profile = await registerWithEmail(email, password, username, deviceId);
+        setUser(profile);
+        await syncIdToken();
+        await SecureStore.setItemAsync('needs_biometric_enrollment', '1');
       } catch (err: unknown) {
-        const errorMsg = getApiErrorMessage(err, 'Registration failed');
+        const errorMsg = firebaseAuthErrorMessage(err);
         setError(errorMsg);
         throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [getDeviceId]
+    [getDeviceId, syncIdToken],
   );
 
-  // Login with username
   const login = useCallback(
-    async (username: string) => {
+    async (email: string, password: string) => {
       setIsLoading(true);
       setError(null);
       try {
-        const deviceId = await getDeviceId();
-        const response = await authAPI.login(username, deviceId);
-
-        if (!response.success || !response.token || !response.user) {
-          throw new Error(response.message || 'Login failed');
-        }
-
-        // Store token and user data securely
-        await Promise.all([
-          SecureStore.setItemAsync('auth_token', response.token),
-          SecureStore.setItemAsync('user_data', JSON.stringify(response.user)),
-        ]);
-
-        setApiAuthToken(response.token);
-        setToken(response.token);
-        setUser(response.user);
+        const profile = await loginWithEmail(email, password);
+        setUser(profile);
+        await syncIdToken();
       } catch (err: unknown) {
-        const errorMsg = getApiErrorMessage(err, 'Login failed');
+        const errorMsg = firebaseAuthErrorMessage(err);
         setError(errorMsg);
         throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [getDeviceId]
+    [syncIdToken],
   );
 
-  // Logout
   const logout = useCallback(async () => {
     try {
+      await firebaseLogout();
       await Promise.all([
-        SecureStore.deleteItemAsync('auth_token').catch(err => console.warn('Failed to delete auth token:', err)),
-        SecureStore.deleteItemAsync('user_data').catch(err => console.warn('Failed to delete user data:', err)),
         SecureStore.deleteItemAsync('needs_biometric_enrollment').catch(() => undefined),
         SecureStore.deleteItemAsync('biometric_unlock_enabled').catch(() => undefined),
       ]);
@@ -203,7 +168,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Clear error
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -212,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     token,
     isLoading,
-    isLoggedIn: Boolean(token && user),
+    isLoggedIn: Boolean(user),
     error,
     register,
     login,
