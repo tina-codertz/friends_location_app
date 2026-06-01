@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { GlassButton } from '@/components/ui/GlassButton';
 import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
 import { useAppTheme } from '@/context/ThemeContext';
 import { friendsAPI, type FriendUser } from '@/services/api';
@@ -36,7 +37,8 @@ export default function FriendsTabScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { invite: inviteParam } = useLocalSearchParams<{ invite?: string }>();
-  const { token, isLoggedIn } = useAuth();
+  const { user, isLoggedIn } = useAuth();
+  const uid = user?.uid ?? null;
   const { colors, accent } = useAppTheme();
   const mapRef = useRef<ConnektaMapRef>(null);
 
@@ -49,7 +51,7 @@ export default function FriendsTabScreen() {
 
   const { locations: friendLocations, refresh: refreshLocations } = useFriendLocationsPoll(
     focused && isLoggedIn,
-    token
+    uid,
   );
 
   const region: MapRegion | null = useMemo(() => {
@@ -68,7 +70,7 @@ export default function FriendsTabScreen() {
   );
 
   const loadLists = useCallback(async () => {
-    if (!token) return;
+    if (!uid) return;
     try {
       const [f, inc] = await Promise.all([friendsAPI.list(), friendsAPI.incoming()]);
       if (f.success && Array.isArray(f.friends)) setFriends(f.friends);
@@ -79,11 +81,11 @@ export default function FriendsTabScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token]);
+  }, [uid]);
 
   useFocusEffect(
     useCallback(() => {
-      if (!isLoggedIn || !token) return;
+      if (!isLoggedIn || !uid) return;
       setFocused(true);
       setLoading(true);
       void loadLists();
@@ -104,7 +106,7 @@ export default function FriendsTabScreen() {
         cancelled = true;
         setFocused(false);
       };
-    }, [isLoggedIn, token, loadLists])
+    }, [isLoggedIn, uid, loadLists])
   );
 
   useEffect(() => {
@@ -120,7 +122,7 @@ export default function FriendsTabScreen() {
     if (region) mapRef.current?.flyTo(region, 500);
   }, [region]);
 
-  const accept = async (id: number) => {
+  const accept = async (id: string) => {
     try {
       const res = await friendsAPI.accept(id);
       if (res.success) {
@@ -136,7 +138,7 @@ export default function FriendsTabScreen() {
     }
   };
 
-  const reject = async (id: number) => {
+  const reject = async (id: string) => {
     try {
       const res = await friendsAPI.reject(id);
       if (res.success) setIncoming((prev) => prev.filter((u) => u.id !== id));
@@ -159,22 +161,13 @@ export default function FriendsTabScreen() {
     <View style={{ gap: 14, marginBottom: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 }}>
         <Text style={[Type.hero, { color: colors.textPrimary }]}>My Circle</Text>
-        <TouchableOpacity
+        <GlassButton
+          title="Manage"
           onPress={() => router.push('/(tabs)/settings/CircleManagement')}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 4,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: colors.glassBorderMedium,
-          }}
-        >
-          <Ionicons name="people" size={16} color={accent.electricBlue} />
-          <Text style={[Type.caption, { color: accent.electricBlue, fontFamily: Font.semibold }]}>Manage</Text>
-        </TouchableOpacity>
+          variant="glass"
+          size="small"
+          icon={<Ionicons name="people" size={16} color={accent.cyan} />}
+        />
       </View>
 
       <View style={[styles.mapBox, { borderColor: colors.glassBorderMedium }]}>
@@ -208,22 +201,15 @@ export default function FriendsTabScreen() {
       </Text>
 
       {incoming.length > 0 ? (
-        <GlassCard borderRadius={22} intensity="heavy" glowAccent style={{ paddingVertical: 14 }}>
+        <GlassCard borderRadius={16} intensity="heavy" glowAccent padding={14}>
           <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 10 }]}>Pending requests</Text>
           {incoming.map((u) => (
             <View key={u.id} style={[styles.reqRow, { borderColor: colors.divider }]}>
               <Text style={[Type.body, { color: colors.textPrimary, flex: 1, fontFamily: Font.medium }]}>
                 {u.username}
               </Text>
-              <TouchableOpacity onPress={() => accept(u.id)} style={[styles.chip, { backgroundColor: accent.electricBlue }]}>
-                <Text style={{ color: '#fff', fontFamily: Font.semibold }}>Accept</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => reject(u.id)}
-                style={[styles.chip, { borderWidth: 1, borderColor: colors.glassBorderMedium }]}
-              >
-                <Text style={{ color: colors.textSecondary, fontFamily: Font.medium }}>Decline</Text>
-              </TouchableOpacity>
+              <GlassButton title="Accept" onPress={() => accept(u.id)} variant="chipActive" size="small" />
+              <GlassButton title="Decline" onPress={() => reject(u.id)} variant="chip" size="small" />
             </View>
           ))}
         </GlassCard>
@@ -267,7 +253,7 @@ export default function FriendsTabScreen() {
           />
         }
         renderItem={({ item }) => {
-          const isLive = friendLocations.some((f) => f.id === item.id);
+          const isLive = friendLocations.some((f) => f.username === item.username);
           return (
             <TouchableOpacity onPress={() => focusFriend(item.username)} activeOpacity={0.85}>
               <GlassCard borderRadius={20} intensity="light" style={{ paddingVertical: 14 }}>

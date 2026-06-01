@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PulseMap - Emergency SOS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-surface": "#e4e1e6",
+                    "error": "#ffb4ab",
+                    "on-secondary-fixed": "#002022",
+                    "inverse-on-surface": "#303033",
+                    "on-tertiary": "#223600",
+                    "on-primary": "#520071",
+                    "on-tertiary-fixed-variant": "#334f00",
+                    "primary-container": "#bd00ff",
+                    "outline": "#9d8ba0",
+                    "on-secondary-container": "#00686f",
+                    "tertiary": "#94db00",
+                    "tertiary-fixed-dim": "#94db00",
+                    "primary-fixed": "#f8d8ff",
+                    "on-primary-fixed-variant": "#74009f",
+                    "error-container": "#93000a",
+                    "on-tertiary-container": "#fffeff",
+                    "on-secondary": "#00363a",
+                    "surface-container-highest": "#353438",
+                    "on-primary-fixed": "#320047",
+                    "background": "#131316",
+                    "primary-fixed-dim": "#ecb2ff",
+                    "surface-tint": "#ecb2ff",
+                    "secondary": "#d3fbff",
+                    "on-error": "#690005",
+                    "surface-bright": "#39393c",
+                    "on-tertiary-fixed": "#121f00",
+                    "tertiary-fixed": "#a9f900",
+                    "surface-variant": "#353438",
+                    "secondary-container": "#00eefc",
+                    "surface-dim": "#131316",
+                    "surface-container-lowest": "#0e0e11",
+                    "surface-container-high": "#2a2a2d",
+                    "surface-container": "#1f1f22",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-container": "#568200",
+                    "on-primary-container": "#ffffff",
+                    "surface": "#131316",
+                    "on-surface-variant": "#d4c0d7",
+                    "on-background": "#e4e1e6",
+                    "primary": "#ecb2ff",
+                    "surface-container-low": "#1b1b1e",
+                    "on-surface": "#e4e1e6",
+                    "on-secondary-fixed-variant": "#004f54",
+                    "outline-variant": "#514255",
+                    "secondary-fixed": "#7df4ff",
+                    "secondary-fixed-dim": "#00dbe9",
+                    "inverse-primary": "#9900cf"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "20px",
+                    "sm": "12px",
+                    "lg": "32px",
+                    "xl": "48px",
+                    "base": "8px",
+                    "xs": "4px",
+                    "stack-gap": "12px",
+                    "edge-margin": "16px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Montserrat"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Montserrat"],
+                    "display-xl": ["Montserrat"],
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg": ["Montserrat"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "30px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "display-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>.glass-panel {
+    background: rgba(31, 31, 34, 0.4);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(255, 255, 255, 0.1)
+    }
+.sos-pulse {
+    animation: pulse-red 2s infinite
+    }
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 180, 171, 0.7);
+        transform: scale(1);
+        } 70% {
+        box-shadow: 0 0 0 40px rgba(255, 180, 171, 0);
+        transform: scale(1.05);
+        } 100% {
+        box-shadow: 0 0 0 0 rgba(255, 180, 171, 0);
+        transform: scale(1);
+        }
+    }
+.countdown-ring {
+    transition: stroke-dashoffset 0.1s linear;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%
+    }
+.map-bg {
+    background-image: linear-gradient(to bottom, rgba(19, 19, 22, 0.8), rgba(19, 19, 22, 0.4)), url(https://lh3.googleusercontent.com/aida-public/AB6AXuCJDfVziFuspQhW-USoiwVXQI1HY2Zt0Ga1s20oGPCaHyvUbuZNm80ny_nnk7xEKOGMenOCbKVW4kX4PdUVgwhP0T5tVgfQFjpib2KywxbdABhqlgPevuro6nFTxVlZRLkl1VjaYKfHCW8ISZxYg-iNegBf5dgVOf67FaiFEesZelEsU0LiiGQuIvN_29PR45kYH_z07z3mwK3IcX2XsUxnlzi1NhuOMYKtBUd_fX0vT01K5pabCuJ3mHxsNXHUYtUGne69p8jyS6Fv);
+    background-size: cover;
+    background-position: center
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md selection:bg-primary/30 overflow-hidden">
+<!-- Top Navigation Anchor -->
+<header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-edge-margin py-sm bg-surface/60 backdrop-blur-xl border border-white/10 rounded-xl mx-edge-margin mt-sm shadow-lg">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full border-2 border-error p-0.5 shadow-[0_0_12px_rgba(255,180,171,0.4)]">
+<img class="w-full h-full rounded-full object-cover" data-alt="A close-up portrait of a stylish Gen Z woman with subtle neon pink makeup accents, looking directly into the camera with a calm but serious expression. The lighting is low-key with a purple and cyan ambient glow, reflecting the high-end digital nightlife aesthetic of the app. The background is a soft-focus urban environment at night." src="https://lh3.googleusercontent.com/aida-public/AB6AXuChfmVKcfC1U2bnp65FaAbxlGpL_4RmPSeQK42-wrBfKYF2JHWfeGgIsq2bcQc5lIidcbMdqx0UB-3qlB29m4vzri9bG_X9U22D3UZ0-e0WS_keHVkhuHIHqCM8lY3vpkesmKEwpO4qT2wi_oSq70YPJwiPFFpYUvYr69P-My5X-8HH3jJIhxNr-ez7UGT653zOzHP60rTJLw6V-p-OnxqS7zug4yj78GADMih6dhIQBl1vIwahQUwa_IJSfAfNqCnKq6czbKRs3van"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">PulseMap</h1>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-white/5 transition-colors p-2 rounded-full active:scale-90" data-icon="close">close</button>
+</header>
+<!-- Map Background Context -->
+<div class="fixed inset-0 z-0 map-bg" data-location="London" style=""></div>
+<main class="relative z-10 flex flex-col items-center justify-center min-h-screen px-edge-margin pt-xl pb-32">
+<!-- Urgency Alert Header -->
+<div class="text-center mb-xl">
+<span class="inline-flex items-center gap-xs px-sm py-1 bg-error/20 border border-error/30 rounded-full text-error font-label-md mb-base animate-pulse">
+<span class="material-symbols-outlined text-[16px]" data-icon="emergency">emergency</span>
+                EMERGENCY MODE
+            </span>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-xs">Safety Assistance</h2>
+<p class="text-on-surface-variant font-body-md max-w-[280px] mx-auto">Hold the button for 5 seconds to broadcast your location to trusted contacts.</p>
+</div>
+<!-- Central SOS Button -->
+<div class="relative flex items-center justify-center">
+<!-- Progress Ring -->
+<svg class="absolute w-[240px] h-[240px]">
+<circle class="text-white/5" cx="120" cy="120" fill="transparent" r="110" stroke="currentColor" stroke-width="8"></circle>
+<circle class="countdown-ring text-error" cx="120" cy="120" fill="transparent" id="progress-circle" r="110" stroke="currentColor" stroke-dasharray="691" stroke-dashoffset="691" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<!-- Interaction Button -->
+<button class="sos-pulse w-48 h-48 rounded-full bg-gradient-to-br from-error to-on-error-container flex flex-col items-center justify-center text-on-primary shadow-[0_0_40px_rgba(255,180,171,0.5)] active:scale-95 transition-transform duration-75 select-none touch-none" id="sos-trigger">
+<span class="material-symbols-outlined text-[56px] mb-xs" data-icon="emergency_share" data-weight="fill">emergency_share</span>
+<span class="font-label-md tracking-widest font-bold" id="sos-label">HOLD SOS</span>
+<span class="hidden font-display-xl text-display-xl" id="countdown-text">5</span>
+</button>
+</div>
+<!-- Location Context Card -->
+<div class="mt-xl glass-panel p-md rounded-xl w-full max-w-sm flex items-center gap-md">
+<div class="w-16 h-16 rounded-lg overflow-hidden bg-surface-container border border-white/5 flex-shrink-0">
+<img class="w-full h-full object-cover opacity-60" data-alt="A small, stylized satellite map view of an urban intersection at night, showing glowing street lights and dark building blocks. The aesthetic is dark and high-contrast, with neon cyan and magenta highlights representing activity hotspots, matching the PulseMap app design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7U_VKELmMzJ5HPhpiNxrwuySLL0qKtfCR4Q7Q-6alu2pmpGFELQfNZ9Sh5fz01Sjn2hrBj3HClnrjchwfTU49Ih5-oB5Lq1JoIcsR0tyUvQ_DykImCokg0VKyeH31nV8OOuwV-l_ZWT1_xGio4gGpV27QsES4PKNfzM6n3zHmv5ap1O53Y6ZNFqEnKHM91GyjEpxwU1_zDRpDzJPFujAtng_XUs61Ne6o4VQvY8wUxmfNZCTtJf9qhfotCgTkFsS61fFhsf3T19e2"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-xs text-secondary mb-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
+<span class="font-label-sm">CURRENT LOCATION</span>
+</div>
+<p class="text-on-surface font-label-md">Shoreditch High St, E1 6JE</p>
+<p class="text-on-surface-variant font-label-sm">Accuracy: 3 meters</p>
+</div>
+</div>
+</main>
+<!-- Trusted Contacts Dock -->
+<section class="fixed bottom-0 left-0 w-full z-20 pb-10 pt-6 px-edge-margin glass-panel border-t border-white/10 rounded-t-3xl">
+<div class="max-w-sm mx-auto">
+<div class="flex justify-between items-center mb-md">
+<h3 class="font-label-md text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="group">group</span>
+                    NOTIFYING (4)
+                </h3>
+<button class="text-primary font-label-sm hover:underline">Edit List</button>
+</div>
+<div class="flex justify-between items-center gap-sm">
+<!-- Contact 1 -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-14 h-14 rounded-full border-2 border-primary/30 p-0.5 relative">
+<img class="w-full h-full rounded-full object-cover grayscale opacity-80" data-alt="Portrait of a young man with glasses and a friendly expression, set against a dark, moody background with subtle blue rim lighting. The image style is sharp and professional, fitting the high-end digital identity of the PulseMap security features." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGZV37RodXXgxaMK-Z5RgSkXfO3AP8_isgIazt6Be4BdATxrzZyAMp_wE4Lkpi91zE2wtQ4yi-niatLfRmgrV0wAzWJMJiXXrrHK54TiMRPVw51loBS6eAvdEaL1NTvNTRAvRvxwL-jTqtRclRzFIlv89Vh2uGNWgWYaTBW9QV6UydfrCNijbU7JocHQYiyf-95dgZ5WfvlL62JmIW81saf4c46mvmfeqAnuATeGMm30c37vBFViDU16cvdicOeCRex06wCQGvfzpc"/>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-tertiary rounded-full border-2 border-surface-container"></div>
+</div>
+<span class="text-on-surface-variant font-label-sm">Marcus</span>
+</div>
+<!-- Contact 2 -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-14 h-14 rounded-full border-2 border-primary/30 p-0.5 relative">
+<img class="w-full h-full rounded-full object-cover grayscale opacity-80" data-alt="Close-up portrait of a woman with a confident smile, illuminated by soft atmospheric neon lighting from the side. The background is a blurred night city scene with glowing purple and cyan bokeh, maintaining visual consistency with the app's brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2MJynuddWk0xbGOEjBt_nebAArePAEJdGV0EkmiuDsLX27QLzANBQ4kNeKP1yxx_6NFUERh7h7Q4iSOdZXrTvd3xkTeUATiaJDjmR7Y6l6--7KGjAo5PVUFyL8IkUd-PcG8nC7BT5hyDN95SKLErnyD0nu2fCckqni4BHIPXJ6Stcl4VQUwZEcKy_7SoK4RgDAT9axmLKAr8D8jeAqp4x6v3iqvtXQfBsk5BsPLTIdgXmWuOHC4KVGz37fMdNaVIFRdONHiVaC25-"/>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-tertiary rounded-full border-2 border-surface-container"></div>
+</div>
+<span class="text-on-surface-variant font-label-sm">Elena</span>
+</div>
+<!-- Contact 3 -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-14 h-14 rounded-full border-2 border-primary/30 p-0.5 relative">
+<img class="w-full h-full rounded-full object-cover grayscale opacity-80" data-alt="Portrait of a young adult man with dark hair, looking thoughtful. The lighting features high-contrast shadows and a neon glow reflecting on his face, evoking a modern digital nightlife atmosphere in line with the PulseMap premium aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXYe66QWh8Bv1O1umQyT6FWgZItcblvJpLXLBok0lcjyCQuqH7FfS883mTwxf2TXcFotqwPIEmGMnqpeRrAk8x8xRMdgGIROHh2TOIirGU_taIhlmImmMwVEy_FdE1FYLJ1xR38FuVruFOib0QuTk343SzdWHG68eKLgRgp2rt-fu5DkvJsKvp0laEqblQ-k2ASc3wT3oYJqTIgw8kataWb1Pd4dOdvCZzVqtOJbx1KeMtUccZgnM8nIKpdaxFe03l-vpIYGc7fOq-"/>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-tertiary rounded-full border-2 border-surface-container"></div>
+</div>
+<span class="text-on-surface-variant font-label-sm">David</span>
+</div>
+<!-- Emergency Services -->
+<div class="flex flex-col items-center gap-xs">
+<div class="w-14 h-14 rounded-full bg-error-container flex items-center justify-center border-2 border-error/50">
+<span class="material-symbols-outlined text-error" data-icon="local_police">local_police</span>
+</div>
+<span class="text-error font-label-sm">999</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom Navigation Shell (Suppressed as per task rules for task-focused page, but following structure if it were present) -->
+<!-- The BottomNavBar is suppressed here to prioritize the SOS action and avoid distractions -->
+<script>
+        const sosTrigger = document.getElementById('sos-trigger');
+        const progressCircle = document.getElementById('progress-circle');
+        const sosLabel = document.getElementById('sos-label');
+        const countdownText = document.getElementById('countdown-text');
+        
+        let timer;
+        let progress = 0;
+        const duration = 5000; // 5 seconds
+        const circleLength = 691; // 2 * PI * 110
+
+        function startTimer() {
+            sosLabel.classList.add('hidden');
+            countdownText.classList.remove('hidden');
+            progress = 0;
+            
+            const start = Date.now();
+            
+            timer = setInterval(() => {
+                const elapsed = Date.now() - start;
+                progress = Math.min(elapsed / duration, 1);
+                
+                // Update SVG progress
+                const offset = circleLength - (progress * circleLength);
+                progressCircle.style.strokeDashoffset = offset;
+                
+                // Update Countdown Number
+                const remaining = Math.ceil(5 - (progress * 5));
+                countdownText.textContent = remaining;
+
+                if (progress >= 1) {
+                    clearInterval(timer);
+                    triggerSOS();
+                }
+            }, 16);
+        }
+
+        function stopTimer() {
+            clearInterval(timer);
+            progress = 0;
+            progressCircle.style.strokeDashoffset = circleLength;
+            sosLabel.classList.remove('hidden');
+            countdownText.classList.add('hidden');
+            countdownText.textContent = '5';
+        }
+
+        function triggerSOS() {
+            // High urgency haptic simulation / UI state change
+            document.body.style.backgroundColor = '#690005';
+            sosTrigger.innerHTML = '<span class="material-symbols-outlined text-[64px]" style="font-variation-settings: \'FILL\' 1;">check_circle</span>';
+            sosTrigger.classList.remove('sos-pulse');
+            sosTrigger.style.boxShadow = '0 0 100px #ffb4ab';
+            sosLabel.textContent = 'ALERTS SENT';
+            sosLabel.classList.remove('hidden');
+            countdownText.classList.add('hidden');
+            
+            setTimeout(() => {
+                alert('Emergency alerts have been broadcast to your contacts and emergency services.');
+            }, 500);
+        }
+
+        // Support for both mouse and touch
+        sosTrigger.addEventListener('mousedown', startTimer);
+        sosTrigger.addEventListener('mouseup', stopTimer);
+        sosTrigger.addEventListener('mouseleave', stopTimer);
+        
+        sosTrigger.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startTimer();
+        });
+        sosTrigger.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            stopTimer();
+        });
+
+        // Prevention of context menu on long press
+        window.oncontextmenu = function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        };
+    </script>
+</body></html>

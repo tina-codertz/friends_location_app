@@ -1,11 +1,15 @@
 import { Context } from 'hono';
 import { AuthService } from '../services/auth.services';
+import type { WorkerEnv } from '../hono-app';
+
+function createAuthService(c: Context<{ Bindings: WorkerEnv }>) {
+  return new AuthService(c.env.database, c.env.JWT_SECRET);
+}
 
 export const register = async (c: Context) => {
   try {
     const { email, username, device_id } = await c.req.json();
 
-    // Validation
     if (!email || !username || !device_id) {
       return c.json(
         {
@@ -16,12 +20,7 @@ export const register = async (c: Context) => {
       );
     }
 
-    const authService = new AuthService(
-      c.env.database,
-      c.env.JWT_SECRET,
-      c.env.RESEND_API_KEY,
-      c.env.RESEND_FROM_EMAIL
-    );
+    const authService = createAuthService(c);
     const result = await authService.register(email, username, device_id);
 
     return c.json(result, result.success ? 201 : 400);
@@ -37,42 +36,6 @@ export const register = async (c: Context) => {
   }
 };
 
-export const verifyOTP = async (c: Context) => {
-  try {
-    const { email, code } = await c.req.json();
-
-    // Validation
-    if (!email || !code) {
-      return c.json(
-        {
-          success: false,
-          message: 'Email and OTP code are required',
-        },
-        400
-      );
-    }
-
-    const authService = new AuthService(
-      c.env.database,
-      c.env.JWT_SECRET,
-      c.env.RESEND_API_KEY,
-      c.env.RESEND_FROM_EMAIL
-    );
-    const result = await authService.verifyOTP(email, code);
-
-    return c.json(result, result.success ? 200 : 400);
-  } catch (error) {
-    console.error('Verify OTP handler error:', error);
-    return c.json(
-      {
-        success: false,
-        message: 'OTP verification failed',
-      },
-      500
-    );
-  }
-};
-
 export const checkUsername = async (c: Context) => {
   try {
     const username = c.req.query('username')?.trim();
@@ -80,12 +43,7 @@ export const checkUsername = async (c: Context) => {
       return c.json({ success: false, message: 'username query is required' }, 400);
     }
 
-    const authService = new AuthService(
-      c.env.database,
-      c.env.JWT_SECRET,
-      c.env.RESEND_API_KEY,
-      c.env.RESEND_FROM_EMAIL
-    );
+    const authService = createAuthService(c);
     const result = await authService.isUsernameAvailable(username);
 
     return c.json({
@@ -103,7 +61,6 @@ export const login = async (c: Context) => {
   try {
     const { username, device_id } = await c.req.json();
 
-    // Validation
     if (!username || !device_id) {
       return c.json(
         {
@@ -114,12 +71,7 @@ export const login = async (c: Context) => {
       );
     }
 
-    const authService = new AuthService(
-      c.env.database,
-      c.env.JWT_SECRET,
-      c.env.RESEND_API_KEY,
-      c.env.RESEND_FROM_EMAIL
-    );
+    const authService = createAuthService(c);
     const result = await authService.login(username, device_id);
 
     return c.json(result, result.success ? 200 : 401);

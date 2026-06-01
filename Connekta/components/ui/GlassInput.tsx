@@ -135,7 +135,7 @@ export const GlassInput: React.FC<GlassInputProps> = ({
             rest.style,
           ]}
           placeholderTextColor={colors.inputPlaceholder}
-          selectionColor={accent.electricBlue}
+          selectionColor={accent.cyan}
         />
 
         {showSecureToggle && (
@@ -146,7 +146,7 @@ export const GlassInput: React.FC<GlassInputProps> = ({
       </Animated.View>
 
       {error ? (
-        <Text style={[styles.errorText, { color: accent.coral, fontFamily: Font.medium }]}>{error}</Text>
+        <Text style={[styles.errorText, { color: accent.sos, fontFamily: Font.medium }]}>{error}</Text>
       ) : null}
     </View>
   );
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 12,
     paddingHorizontal: 16,
     overflow: 'hidden',
     minHeight: 56,

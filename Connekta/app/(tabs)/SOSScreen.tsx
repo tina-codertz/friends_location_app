@@ -96,7 +96,7 @@ export default function SOSScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
       {/* Background glow */}
-      <View style={[styles.glow, { backgroundColor: accent.coral }]} />
+      <View style={[styles.glow, { backgroundColor: accent.sos }]} />
 
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
         {/* Title */}
@@ -108,10 +108,10 @@ export default function SOSScreen() {
         <GlassCard 
           borderRadius={24} 
           intensity="medium" 
-          style={{ marginBottom: 40, borderColor: `${accent.coral}44`, borderWidth: 1 }}
+          style={{ marginBottom: 40, borderColor: `${accent.sos}44`, borderWidth: 1 }}
         >
           <View style={{ alignItems: 'center' }}>
-            <Ionicons name="alert-circle" size={48} color={accent.coral} style={{ marginBottom: 12 }} />
+            <Ionicons name="alert-circle" size={48} color={accent.sos} style={{ marginBottom: 12 }} />
             <Text style={[Type.body, { color: colors.textPrimary, textAlign: 'center', marginBottom: 8 }]}>
               Press the button below to send an emergency alert
             </Text>
@@ -129,7 +129,7 @@ export default function SOSScreen() {
             activeOpacity={0.8}
             style={[
               styles.sosButton,
-              { backgroundColor: accent.coral, opacity: triggering ? 0.6 : 1 },
+              { backgroundColor: accent.sos, opacity: triggering ? 0.6 : 1 },
             ]}
           >
             <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulseAnim }], opacity: 0.3 }]} />
@@ -152,13 +152,13 @@ export default function SOSScreen() {
           style={[
             styles.warningBox,
             {
-              backgroundColor: `${accent.coral}11`,
-              borderColor: `${accent.coral}44`,
+              backgroundColor: `${accent.sos}11`,
+              borderColor: `${accent.sos}44`,
               marginTop: 40,
             },
           ]}
         >
-          <Ionicons name="information-circle" size={20} color={accent.coral} style={{ marginRight: 10 }} />
+          <Ionicons name="information-circle" size={20} color={accent.sos} style={{ marginRight: 10 }} />
           <Text style={[Type.caption, { color: colors.textMuted, flex: 1 }]}>
             Only accepted emergency contacts will receive SOS alerts.
           </Text>

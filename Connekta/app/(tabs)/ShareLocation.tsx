@@ -72,7 +72,7 @@ export default function ShareLocationScreen() {
       </Text>
 
       {/* Live Sharing Toggle */}
-      <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 16, marginBottom: 16 }}>
+      <GlassCard borderRadius={16} intensity="medium" style={{ marginBottom: 16 }}>
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
             <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
@@ -93,7 +93,7 @@ export default function ShareLocationScreen() {
 
       {/* Current Location Card */}
       {currentLat && currentLng && (
-        <GlassCard borderRadius={22} intensity="light" style={{ marginBottom: 20, paddingVertical: 16 }}>
+        <GlassCard borderRadius={16} intensity="medium" style={{ marginBottom: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
             <Ionicons name="location" size={24} color={accent.electricBlue} />
             <Text style={[Type.section, { color: colors.textPrimary }]}>Current Location</Text>
@@ -114,7 +114,7 @@ export default function ShareLocationScreen() {
       <GlassButton
         title="Share My Location Now"
         onPress={handleShareLocation}
-        variant="secondary"
+        variant="primary"
         fullWidth
       />
 

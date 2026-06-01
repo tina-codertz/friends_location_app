@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PulseMap | Real-time Social Map</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-surface": "#e4e1e6",
+                    "error": "#ffb4ab",
+                    "on-secondary-fixed": "#002022",
+                    "inverse-on-surface": "#303033",
+                    "on-tertiary": "#223600",
+                    "on-primary": "#00363a",
+                    "on-tertiary-fixed-variant": "#334f00",
+                    "primary-container": "#004f54",
+                    "outline": "#9d8ba0",
+                    "on-secondary-container": "#00686f",
+                    "tertiary": "#94db00",
+                    "tertiary-fixed-dim": "#94db00",
+                    "primary-fixed": "#7df4ff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "error-container": "#93000a",
+                    "on-tertiary-container": "#fffeff",
+                    "on-secondary": "#00363a",
+                    "surface-container-highest": "#353438",
+                    "on-primary-fixed": "#002022",
+                    "background": "#131316",
+                    "primary-fixed-dim": "#00dbe9",
+                    "surface-tint": "#00dbe9",
+                    "secondary": "#d3fbff",
+                    "on-error": "#690005",
+                    "surface-bright": "#39393c",
+                    "on-tertiary-fixed": "#121f00",
+                    "tertiary-fixed": "#a9f900",
+                    "surface-variant": "#353438",
+                    "secondary-container": "#00eefc",
+                    "surface-dim": "#131316",
+                    "surface-container-lowest": "#0e0e11",
+                    "surface-container-high": "#2a2a2d",
+                    "surface-container": "#1f1f22",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-container": "#568200",
+                    "on-primary-container": "#ffffff",
+                    "surface": "#131316",
+                    "on-surface-variant": "#d4c0d7",
+                    "on-background": "#e4e1e6",
+                    "primary": "#00dbe9",
+                    "surface-container-low": "#1b1b1e",
+                    "on-surface": "#e4e1e6",
+                    "on-secondary-fixed-variant": "#004f54",
+                    "outline-variant": "#514255",
+                    "secondary-fixed": "#7df4ff",
+                    "secondary-fixed-dim": "#00dbe9",
+                    "inverse-primary": "#00686f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "20px",
+                    "sm": "12px",
+                    "lg": "32px",
+                    "xl": "48px",
+                    "base": "8px",
+                    "xs": "4px",
+                    "stack-gap": "12px",
+                    "edge-margin": "16px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Montserrat"],
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Montserrat"],
+                    "display-xl": ["Montserrat"],
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg": ["Montserrat"],
+                    "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "30px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "display-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #131316;
+            color: #e4e1e6;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(31, 31, 34, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .neon-glow-primary {
+            box-shadow: 0 0 20px rgba(0, 219, 233, 0.4);
+        }
+        .neon-glow-error {
+            box-shadow: 0 0 20px rgba(255, 180, 171, 0.5);
+        }
+        .map-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+        }
+        .marker-pulse::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 9999px;
+            border: 2px solid #00dbe9;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00dbe9, transparent);
+            animation: scan 4s linear infinite;
+        }
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="font-body-md text-body-md antialiased">
+<!-- Interactive Map Background -->
+<div class="map-container overflow-hidden">
+<div class="absolute inset-0 bg-background">
+<img class="w-full h-full object-cover opacity-40 grayscale contrast-125" data-alt="A cinematic, high-fidelity dark mode map of a futuristic city grid at night. The streets are defined by glowing cyber cyan light trails against a deep midnight black foundation. Soft atmospheric fog and digital scan lines add depth, while bright data points represent activity hubs. The visual style is premium glassmorphism with a heavy emphasis on high-contrast lighting and digital nightlife aesthetics." data-location="New York City" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzKs6_DSMkGNqKAxZImQAaaEEvlWIh7d6Ko49GQH1zP3vh1Zyeli8-KLu8eIst7L6DwxmWqJKSRD_g_D_ZNTlticygGbAsAM52cZIB2tY8zXkMbEg2SZDgfPKYrzaJgDEsP9sVasnWuXEmxS7JmsU9P1KZHprsoN8lMBFZsaL3X7hYSCaYOWUVUcQVGq950BP3vQJBp9L6Sby-Pexa4_kp179a7tPmqvU8wiFnHyBMiRDYtnhkk7ZIkSzgGlJY_fS9rfC95uyh5ERd"/>
+<div class="scan-line"></div>
+</div>
+<!-- Map Markers -->
+<div class="absolute top-[35%] left-[25%] marker-pulse flex flex-col items-center gap-xs">
+<div class="relative w-12 h-12 rounded-full border-2 border-primary overflow-hidden shadow-[0_0_12px_rgba(0,219,233,0.6)]">
+<img class="w-full h-full object-cover" data-alt="A portrait of a young man with a trendy aesthetic, wearing a neon-lit jacket in a dark environment. The lighting is dominated by electric cyber cyan tones, matching the high-energy social app theme. High-end digital photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTF7vGAhYRDQWt417cuz9HVmxEE3ByHIdmuSdUFJev63cHckWgkF9FXfxQJErBUzftu1dBifgVAeKFDhYrdFCCkIFRftcYojlvWTr2wkU6FmFA6Kg-_a0wI5TUerG11l7UJjaRgGkR3pOrQjFfTprLx-fULeSRcXUYP5mM34HEJUmKspXSo8v16UlQ3hAH7MYwbE7XeUW3yfPSfrk_mu9-dSRmJbvS4SpcR_CNMBdDP5Pnnh_dpkNDLveYb5oZwRDNjnRuqv5aPHYL"/>
+<div class="absolute bottom-0 right-0 bg-primary-container p-0.5 rounded-full">
+<span class="material-symbols-outlined text-[10px] text-on-primary-container" style="font-variation-settings: 'FILL' 1;">directions_walk</span>
+</div>
+</div>
+<span class="glass-panel px-2 py-0.5 rounded-full font-label-sm text-label-sm">Alex</span>
+</div>
+<div class="absolute top-[55%] left-[65%] flex flex-col items-center gap-xs">
+<div class="relative w-12 h-12 rounded-full border-2 border-tertiary overflow-hidden shadow-[0_0_12px_rgba(148,219,0,0.6)]">
+<img class="w-full h-full object-cover" data-alt="A portrait of a smiling young woman with vibrant features, captured in a stylish urban setting with neon reflections. The colors are punchy and saturated, emphasizing a Gen Z aesthetic of hyper-local connectivity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFIqbMrFssRBfn2DHj23KeU80UiGErGxmfUtE--Jp0dIZXcdKwOXmstGlTgPzkthHcDZqTmEiNhzXEFa52-TpnDwTPn687RiyefTekp7hVZuEd3JtGyS7J8q_Lz3legyyhy1etYBYzXjJtZSAWAjcKX_RXOiHbj8I4pEFOd-gC70iL0GRxsUB_0khoMIquFrEEy8VKUoCmh2dI88tfH4qkfqfUDv5jPhxhGd7ogwFDel8a81xRB4_CJgcwjjbn5Baxwfen9bU5wvS7"/>
+<div class="absolute bottom-0 right-0 bg-tertiary-container p-0.5 rounded-full">
+<span class="material-symbols-outlined text-[10px] text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">directions_car</span>
+</div>
+</div>
+<span class="glass-panel px-2 py-0.5 rounded-full font-label-sm text-label-sm">Tina</span>
+</div>
+</div>
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-md py-sm mx-edge-margin mt-sm floating rounded-xl glass-panel shadow-lg border border-white/10">
+<div class="flex items-center gap-sm">
+<div class="relative">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile avatar of a confident individual, set against a blurred city backdrop with cyan neon highlights. The image quality is sharp and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfFXjOtbvpYyEp4MGmEMk4fbHTZw4gGtND7CLE6m3FIVWU1mTmceHXkcUyIxNCJ8Az4yMwFDiDnlD79hnWXRQDG_EfZCyV1D5fiPemH_wvuz55lQfP2SPEW-B3wWOwrST7HQZP3DUBSKnWvFQ-scLD_Pu3Ff-3KBERMbVJVWXio4UdhTsFj--kBbtmFVavh5rWu8QaYPsfoPIqbTU-3hp7plMnAEveUq6DFl8sWaPIWVqyF_i6Xt9TlaDe-cbidMZMuKhxxvBfvv05"/>
+</div>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-tertiary rounded-full border-2 border-background shadow-[0_0_8px_#94db00]"></div>
+</div>
+<span class="font-headline-md text-headline-md font-bold text-primary">PulseMap</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-primary hover:bg-white/5 p-2 rounded-full transition-colors active:scale-90" data-icon="search">search</button>
+</div>
+</header>
+<!-- Side Content Layers -->
+<main class="relative z-10 h-full w-full pointer-events-none flex flex-col justify-end p-edge-margin pb-[100px]">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg items-end">
+<!-- Friend Activity Feed -->
+<section class="md:col-span-4 space-y-stack-gap pointer-events-auto">
+<h3 class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant px-sm">Live Feed</h3>
+<div class="glass-panel p-md rounded-xl space-y-md">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A portrait of a young woman laughing in a modern urban environment. Glowing cyan streetlights create a beautiful bokeh effect in the background, fitting the premium glassmorphism style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAekalNo5Iro_KDxh0XAmvRe4Nyo9yvjUguhVHsO1ZLbqrIq8bhknAsC0DBfLTnkDqTot0DwXPGzn4ogCv_rV0PYpn8fC0qapXpl5UgSMBxkW_3XSn4bZoNebX3UHlBIMja85gkUEz7Jj8MfMrgqMm6_Oy8vrMsypk-OmWaZkfigLhyeWqcsXKd4_2Q-oI0KQ-b_xOammFumOcfrU2zLWGPyn_rLh92Zlnoos5y6JsIwnMwtUTwKcP6PQWYZbbvA3bVMBsdVMdnH1pQ"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-md text-on-surface truncate"><span class="font-bold">Tina</span> just arrived at <span class="text-secondary font-medium">Campus</span></p>
+<p class="font-label-sm text-on-surface-variant">2 mins ago</p>
+</div>
+</div>
+<div class="flex items-center gap-sm opacity-80">
+<div class="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A stylish man wearing dark techwear in a minimalist dark environment with electric cyan lighting accents. High fashion, digital-first aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg5geQ6XbEmL_VU6FZiOh-6s2D4RW9dBwjGvmsbi8QE2LbecBFvkJ-xGU6RhZtrAURab773jFwDoGU1I7phxLefqqd1hc5GwxZeaQ9bYHJvpO7-GPym5jnI3SqC-FKQhJwvOIt9u0rQm84wcPAUj_-AU7yeNVtAZysXj_fn9KjYkR8GRZYRmK1veWBkmHVoDzdtnI_QT0hvq-XBnaHL4Ro1NV78pXM_xrb62Alf80Q-Me_fCt31UK1d85uXCAGXpRmiWQxl17EyWUl"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-md text-on-surface truncate"><span class="font-bold">Jordan</span> is heading to <span class="text-secondary font-medium">The Lab</span></p>
+<p class="font-label-sm text-on-surface-variant">15 mins ago</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Nearby Radar (Bento-style layout for desktop) -->
+<section class="hidden md:flex md:col-span-5 flex-col space-y-stack-gap pointer-events-auto">
+<h3 class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant px-sm">Nearby Radar</h3>
+<div class="glass-panel p-md rounded-xl grid grid-cols-4 gap-sm">
+<div class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-full border border-secondary p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="A high-end portrait of a woman with sophisticated features. The background is a dark, abstract texture with faint cyan light leaks. Professional lighting, Gen Z aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGonk4Mreo1h7FIxqvJqTx-S67XsDktcZvcUGqc5zCts0AJblq2qTld20lS1YEhG96uxKyDDYBPWzE4Y8Eya0C-OQRxCLKnxRWwBSA0U09XZ3mcKVwGtXHAMv6gXvfgFVggfcyX1hSuC7acWdZoSZf-vJPoOyntgEjoifnpWOA4Xv1qx40kX3Mu5MxQPoodExYn54b-6Frd0f5n9Hlx-5hPQgA9HvDab1vqUL77lk_4R9P3KO0nWI0F6D2Qfk9K3SIaH1RbHi0KNTE"/>
+</div>
+<span class="font-label-sm text-label-sm">Mia</span>
+</div>
+<div class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-full border border-secondary p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="A portrait of a young man with sharp features and a modern haircut. Neon accents in the background create a cool, digital nightlife vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeymKgvABrtjTYxyLpvXeL2IrrQVm0uR_DhTu9JSWYUy7FYe2dDWkKYO554mp5Ckp6eWCGb5WVXOGyf08hQwpu3Gb9CpcF5-aI432JLJ2iQD59VN5bboZWayaCErZ14bvjANL6MPmfhnG5qDHufYfmLK_BqcBoqKuUo8AQMc6cCQLp0FAHr7ZBPfSR_hzUpffcJhfrZPgmM-c54ZPRcPYaUD-uz_0ykNvih-xE53bOEWUMKuUZw-sTPmF2F7pY5IFkTprBh-uXQany"/>
+</div>
+<span class="font-label-sm text-label-sm">Leo</span>
+</div>
+<div class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-full border border-secondary p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="A portrait of a woman with an expressive face, shot in a setting with ambient purple and pink lighting. The mood is social and energetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuOTAACCx4Zwr3pOkUsMoo3EH9iv6DhtTXiZbbqnWBV_PkTMDmrUSNFjjywp9AgJpzHvKneWOkJXrMbQvWkZsSwhuyvrSoNkz3SJOW5sErE5AYnX1_Phs9mJjR_KBUnjdMRhuSOQo74DSiTpURCqlTh0AMzIjxCox24bc_lCRtVeo6QDLp_CkD1tRox2oHqh56Msmh1wmkrJPQq79Nd3eMZEMreb8EjAMBkUayWFPJ93O8BYKeHldZ_X0b76e_5vbQu6kvyW8mYPnr"/>
+</div>
+<span class="font-label-sm text-label-sm">Sara</span>
+</div>
+<div class="flex flex-col items-center justify-center border border-dashed border-outline-variant rounded-full w-12 h-12">
+<span class="material-symbols-outlined text-outline">add</span>
+</div>
+</div>
+</section>
+<!-- SOS & FAB Actions -->
+<section class="md:col-span-3 flex flex-col items-end gap-md pointer-events-auto">
+<button class="flex items-center justify-center w-16 h-16 rounded-full bg-error text-on-error shadow-[0_0_24px_rgba(255,180,171,0.6)] active:scale-90 transition-transform" id="sos-btn">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">emergency</span>
+</button>
+<button class="flex items-center justify-center w-14 h-14 rounded-full glass-panel text-primary shadow-lg hover:bg-white/10 active:scale-90 transition-all neon-glow-primary">
+<span class="material-symbols-outlined text-2xl">add</span>
+</button>
+<button class="flex items-center justify-center w-12 h-12 rounded-full glass-panel text-primary shadow-lg hover:bg-white/10 active:scale-90 transition-all">
+<span class="material-symbols-outlined text-xl">my_location</span>
+</button>
+</section>
+</div>
+</main>
+<!-- Search Overlay (Floating) -->
+<div class="fixed top-[88px] left-0 right-0 z-40 px-edge-margin pointer-events-none">
+<div class="max-w-lg mx-auto pointer-events-auto">
+<div class="glass-panel flex items-center px-md py-sm rounded-2xl shadow-xl border border-white/5">
+<span class="material-symbols-outlined text-on-surface-variant mr-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-on-surface-variant/50 w-full font-body-md" placeholder="Where to tonight?" type="text"/>
+<div class="flex gap-xs">
+<span class="px-2 py-1 bg-primary/10 text-primary text-[10px] rounded font-bold uppercase tracking-wider">Party</span>
+<span class="px-2 py-1 bg-secondary/10 text-secondary text-[10px] rounded font-bold uppercase tracking-wider">Food</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-lg pb-md pt-sm bg-surface-container/40 dark:bg-surface-container/40 backdrop-blur-3xl border-t border-white/10 shadow-[0_-8px_32px_0_rgba(0,0,0,0.3)]">
+<!-- Active Tab: Map -->
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container rounded-full w-12 h-12 shadow-[0_0_16px_rgba(0,219,233,0.4)] scale-110 transition-all duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">map</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">group</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">security</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">emergency</span>
+</a>
+</nav>
+<!-- Overlay Alerts (Hidden by default) -->
+<div class="fixed inset-0 z-[100] bg-error-container/20 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" id="sos-alert">
+<div class="glass-panel p-xl rounded-3xl max-w-sm w-full mx-md text-center border-2 border-error/50">
+<div class="w-20 h-20 bg-error text-on-error rounded-full flex items-center justify-center mx-auto mb-lg animate-pulse">
+<span class="material-symbols-outlined text-4xl">emergency</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-error-container mb-sm">Emergency Alert</h2>
+<p class="font-body-md text-on-surface-variant mb-xl">Your location and emergency status are being broadcast to your trusted circle.</p>
+<button class="w-full py-md rounded-xl bg-on-error-container text-error-container font-bold text-headline-md" id="cancel-sos">Cancel Alert</button>
+</div>
+</div>
+<script>
+        // Micro-interactions
+        const sosBtn = document.getElementById('sos-btn');
+        const sosAlert = document.getElementById('sos-alert');
+        const cancelSos = document.getElementById('cancel-sos');
+
+        sosBtn.addEventListener('click', () => {
+            sosAlert.classList.remove('opacity-0', 'pointer-events-none');
+            sosAlert.classList.add('opacity-100', 'pointer-events-auto');
+        });
+
+        cancelSos.addEventListener('click', () => {
+            sosAlert.classList.add('opacity-0', 'pointer-events-none');
+            sosAlert.classList.remove('opacity-100', 'pointer-events-auto');
+        });
+
+        // Simple map interaction simulation
+        document.querySelector('.map-container').addEventListener('mousedown', () => {
+            document.querySelector('.map-container').style.cursor = 'grabbing';
+        });
+        document.querySelector('.map-container').addEventListener('mouseup', () => {
+            document.querySelector('.map-container').style.cursor = 'default';
+        });
+    </script>
+</body></html>

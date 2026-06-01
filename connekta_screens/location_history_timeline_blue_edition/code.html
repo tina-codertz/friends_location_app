@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PulseMap - Journey Log</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(31, 31, 34, 0.4);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .neon-glow-blue {
+            box-shadow: 0 0 20px rgba(0, 209, 255, 0.2);
+        }
+        .timeline-line {
+            background: linear-gradient(to bottom, transparent, #00d1ff 15%, #3399ff 85%, transparent);
+        }
+        body {
+            background-color: #131316;
+            color: #e4e1e6;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 209, 255, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#568200",
+                        "on-error": "#690005",
+                        "inverse-primary": "#005a8d",
+                        "surface-container-highest": "#353438",
+                        "primary": "#00d1ff",
+                        "on-error-container": "#ffdad6",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#353438",
+                        "on-surface-variant": "#c0d7d7",
+                        "on-primary-fixed": "#003547",
+                        "primary-fixed-dim": "#00d1ff",
+                        "surface-container": "#1f1f22",
+                        "tertiary": "#94db00",
+                        "primary-fixed": "#d8f5ff",
+                        "on-primary-fixed-variant": "#007ea7",
+                        "tertiary-fixed": "#a9f900",
+                        "primary-container": "#3399ff",
+                        "secondary": "#d3fbff",
+                        "on-surface": "#e4e1e6",
+                        "on-primary-container": "#ffffff",
+                        "surface-bright": "#39393c",
+                        "on-tertiary": "#223600",
+                        "on-primary": "#003547",
+                        "tertiary-fixed-dim": "#94db00",
+                        "surface": "#131316",
+                        "on-background": "#e4e1e6",
+                        "surface-dim": "#131316",
+                        "surface-container-low": "#1b1b1e",
+                        "outline-variant": "#425055",
+                        "secondary-fixed": "#7df4ff",
+                        "inverse-on-surface": "#303033",
+                        "on-secondary-fixed": "#002022",
+                        "on-tertiary-fixed": "#121f00",
+                        "background": "#131316",
+                        "surface-tint": "#00d1ff",
+                        "inverse-surface": "#e4e1e6",
+                        "surface-container-high": "#2a2a2d",
+                        "on-tertiary-fixed-variant": "#334f00",
+                        "on-secondary": "#00363a",
+                        "error-container": "#93000a",
+                        "secondary-container": "#00eefc",
+                        "surface-container-lowest": "#0e0e11",
+                        "outline": "#8ba0a0",
+                        "secondary-fixed-dim": "#00dbe9",
+                        "on-tertiary-container": "#fffeff",
+                        "on-secondary-fixed-variant": "#004f54",
+                        "on-secondary-container": "#00686f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "edge-margin": "16px",
+                        "xs": "4px",
+                        "sm": "12px",
+                        "xl": "48px",
+                        "stack-gap": "12px",
+                        "md": "20px",
+                        "lg": "32px"
+                    },
+                    "fontFamily": {
+                        "display-xl": ["Montserrat"],
+                        "headline-lg": ["Montserrat"],
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Montserrat"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Montserrat"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "30px", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-md py-sm bg-surface/60 backdrop-blur-xl border border-white/10 floating rounded-xl mx-edge-margin mt-sm shadow-lg">
+<div class="flex items-center gap-sm">
+<div class="relative">
+<img alt="User Profile" class="w-10 h-10 rounded-full border-2 border-primary shadow-[0_0_12px_rgba(0,209,255,0.5)]" data-alt="A close-up portrait of a stylish young adult with a friendly expression, set against a blurred urban neon background. The image has a high-end digital aesthetic with soft purple and cyan rim lighting that emphasizes a modern, social-media-ready look. The skin texture is realistic, and the overall mood is vibrant and energetic, fitting a Gen Z social mapping app identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUV88Bt24aeZXokCObekCHm3QJCi-LO86wqItrFUCCfe2pU67ReEpab5Gns0bD5-Clvd3Kj31kBdjxm05LUhyKVaphbxSx5Ybtf0T2nuJhXhdII0G15-l7sm20E8dhKAB35bFSKz6K056mhfpxy4fIIOTFIC0UW7Xie3OWIdsnWPWOrDYFN_bd0pH-qbHXZ9veZGZnGBE3ZlfBXJFjAMvwRcQLE48iWdaumuL3Vvn_TSoIm8BppbUd2PNqCJRH5016wiUmabsn6P8M"/>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-tertiary rounded-full border-2 border-surface shadow-[0_0_8px_rgba(148,219,0,0.8)]"></div>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Journey Log</h1>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-white/5 transition-colors p-sm rounded-full active:scale-90 transition-transform" data-icon="search">search</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-32 pb-32 px-edge-margin min-h-screen relative">
+<!-- Timeline vertical spine -->
+<div class="fixed left-[38px] top-0 bottom-0 w-[2px] timeline-line z-0"></div>
+<div class="flex flex-col gap-lg relative z-10">
+<!-- Timeline Item 1 -->
+<div class="flex gap-md group">
+<div class="flex-shrink-0 w-11 h-11 rounded-full bg-primary-container flex items-center justify-center neon-glow-blue border border-primary/30 z-20">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<div class="flex-grow glass-card rounded-xl overflow-hidden group-hover:border-primary/30 transition-all duration-300">
+<div class="h-32 w-full relative overflow-hidden">
+<img class="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]" data-alt="A stylized aerial view of a city map at night, featuring glowing purple and cyan arterial roads and neon landmarks. The map uses a dark, minimalist aesthetic with deep blacks and vibrant digital accents, perfectly matching a premium glassmorphism UI. The perspective is slightly isometric, creating a sense of three-dimensional depth and hyper-local connectivity." data-location="San Francisco" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBE5gF2xJdBMJaExco_HKInmMLPAsg-NdtzBN935Jl_CFmpmajfAp64t8vGy258ojzoz0NkicpSoS_YfdaWqjM0wJdtrhEsMBXvSb0Wo5YDBjrf-KgtezMCuhHDTIXHcFIbdx9uAyQxUTZ9RiJJmne30IzaBhhJWTBqkAVkj-gHlGufWl-Sz3EKHpzDkTO1bthzmvjeHUoyOKhJPhmXGi0OIJ88n7s-GL4qbrTtz2ckFqaDtnYYIoLDT73kCFFFdM-oWZLHZDT4us8i"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+</div>
+<div class="p-md flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-md text-headline-md text-primary">Blue Bottle Coffee</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant opacity-70">Today, 10:15 AM</p>
+</div>
+<span class="px-sm py-1 rounded-full bg-tertiary-container/20 text-tertiary font-label-sm text-label-sm border border-tertiary/20">Just left</span>
+</div>
+<div class="relative">
+<textarea class="w-full bg-surface-container-lowest/50 border-0 border-b border-outline-variant focus:border-secondary focus:ring-0 text-body-md font-body-md placeholder:text-on-surface-variant/40 rounded-t-lg transition-all" placeholder="How was the vibe?"></textarea>
+</div>
+<div class="flex justify-between items-center">
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="add_a_photo">add_a_photo</span>
+<span class="font-label-sm text-label-sm">Add Moment</span>
+</button>
+<button class="material-symbols-outlined text-on-surface-variant" data-icon="more_vert">more_vert</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2 (With Photo & Note) -->
+<div class="flex gap-md group">
+<div class="flex-shrink-0 w-11 h-11 rounded-full bg-surface-container flex items-center justify-center border border-white/10 z-20">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+</div>
+<div class="flex-grow glass-card rounded-xl overflow-hidden group-hover:border-primary/30 transition-all duration-300">
+<div class="h-32 w-full relative overflow-hidden">
+<img class="w-full h-full object-cover opacity-60 grayscale-[0.5]" data-alt="A dark-themed city map snippet showcasing a dense urban intersection with glowing neon light trails representing traffic. The color palette is dominated by midnight blues and electric purples, providing a sophisticated backdrop for a location history card. Subtle frosted glass effects are applied to certain regions to simulate digital depth and high-end map styling." data-location="Tokyo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZK90peBr0wZdHi9Qb3KaN2NJJjoEEwOr1sXrvDCH5l8FKkQpTc-NTPiZu7fZvkhf8SmSD6-fMvtByuwxA-17290jOE4VbTAm_fnWx4r9inFr-mIzqYmVSEk3T6e8tDOWQRgyuaNZYDnCFGd0BK9tQA3tpGC7ExghXoNm9fdgqOr7-Qg8QyH8LBa8N9c5qitog-d43JMeaAbnZHog7DB00173rRuk-J5t_7CPmS_07CAOoOe7EfRYciDr5u-B7NjY1NgiacteHTeX_"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+</div>
+<div class="p-md flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">The Lab Kitchen</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant opacity-70">Yesterday, 8:45 PM</p>
+</div>
+<span class="px-sm py-1 rounded-full bg-surface-variant/50 text-on-surface-variant font-label-sm text-label-sm border border-white/10">3 hrs</span>
+</div>
+<div class="p-sm bg-primary-container/10 border-l-2 border-primary rounded-r-lg">
+<p class="text-body-md font-body-md text-on-surface-variant italic">"Best spicy ramen in the city. The neon decor is perfect for photos! 🍜✨"</p>
+</div>
+<div class="flex gap-sm overflow-x-auto pb-xs">
+<div class="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-white/10 relative group/photo">
+<img alt="Food Photo" class="w-full h-full object-cover transition-transform group-hover/photo:scale-110" data-alt="A vibrant, close-up shot of a steaming bowl of ramen under dramatic neon lighting. The image features rich textures of noodles, vibrant green onions, and a perfectly soft-boiled egg. The lighting consists of pink and blue hues that reflect off the glossy surface of the broth, creating a high-energy, digital-nightlife food photography aesthetic suitable for a Gen Z social platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBV7lrApzvF86-cJysZWQgJpW74vO4u9lcyLdoIJBO8iw9L2vOx8BgIhiBV3r8vQiYhYw8igNi1JDutPPkoFPLUKXSRxZH7SmHROdzw052FO8gp4DtKk6kJd0vAF3hLcHUjPOz159XpZ-XTkPyV_vKrXffiD0cJAyHyWo-bJypw8SpPkTUHrxoqMgQeklBm7a4qu3DgdhCM1JMci6VpwPxeCMKrYR-ybGDE2AsOexvEdygf7qI6UkPgAJaxNf9gh_9srM1qqpNADy-Q"/>
+</div>
+<div class="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-white/10 bg-surface-container flex items-center justify-center hover:bg-white/5 cursor-pointer">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="add">add</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-sm border-t border-white/5">
+<div class="flex -space-x-2">
+<img class="w-6 h-6 rounded-full border border-surface" data-alt="Small avatar of a smiling young woman with purple hair accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcbst2mvm7ivCoQPYaeVnptywN9Ft2YyoxIFpM2MvaFkdxlSFWNLsav7N1PnU5JbCuYLr8RlZr8VMxQQg8UKIgcxBSS1VcNfAQ08jnSdGip6oFfVMmHDa18XOoe2BroGyaECwImGxIw-NzbY7rVByeAXl2kW38I97RIDF5qgrL3JObqU30yiDqLKrdIt2rbTcrMtBK0KoW7rbFERSX7cNw3ou4XIEyAvYmq-SylSW_GkEnSB_EoTdn-3SV1fsLiDEOUrQM4oUQW9Zu"/>
+<img class="w-6 h-6 rounded-full border border-surface" data-alt="Small avatar of a man with trendy glasses and soft cyan lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSW3VFrvfoRE8xqnJeAin7gGFoUhAnhu2XQu1izjVMECxqywVeuhHlDPMMOxf-Jv5ZyYC2f5vy9D9H9QtTmJ3PxcHTmh3ZIUoi8klUg12Dvw-CIOB8YxIQeYwFlYZX7Pql3la3HeqHSI1N2YMYlvAYf-oNprB7QkB0bFKxjvJX1W7NOlkKiIUePgWe_mwzgZgDYkFj7GwaavORjwmSUYs55th5d_SWzuj655ed4ArP1NYUTI69J3av2IR4283T_Cr5ASRcZ_ElEydh"/>
+<div class="w-6 h-6 rounded-full bg-surface-container border border-white/10 flex items-center justify-center text-[10px] font-bold">+3</div>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">with Sarah and 4 others</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="flex gap-md group">
+<div class="flex-shrink-0 w-11 h-11 rounded-full bg-surface-container flex items-center justify-center border border-white/10 z-20">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 1;">park</span>
+</div>
+<div class="flex-grow glass-card rounded-xl overflow-hidden group-hover:border-primary/30 transition-all duration-300">
+<div class="h-32 w-full relative overflow-hidden">
+<img class="w-full h-full object-cover opacity-60 grayscale-[0.5]" data-alt="A digital map visualization showing a vast park area within a city grid. The park is rendered in a deep, glowing green against a dark midnight background. The map features minimal labels and crisp, neon-accented pathways, creating a sense of clean digital design and hyper-local environmental data. The mood is calm yet technologically advanced." data-location="New York" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkx8CBOH3Nyul6LGXkyDH3gSted76WUahLvL7JDqjO0JEPrjy3Rx38PjkYh6BGSZbHOlnvu63rfnFCoYJ2PcLhmjY9ltCmWsMnuuPkZ7jFaKvV6l8RJNsFtLwkf7gH1iSRQACAed-KO_8Ih_jeioZOhFoXTQFT0ftphnSvKfXK5TVp6Sb0s9w5SjzGTGpOORghvVeUFLbSf5kQ4E2ULwVgG3c7OYBr8xEpQ9jVTKVZ0K1jGpFny0XbITPFTmhJpW20YOOr0Cof5o_k"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+</div>
+<div class="p-md flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Central Park</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant opacity-70">Yesterday, 4:20 PM</p>
+</div>
+</div>
+<div class="relative">
+<textarea class="w-full bg-surface-container-lowest/50 border-0 border-b border-outline-variant focus:border-secondary focus:ring-0 text-body-md font-body-md placeholder:text-on-surface-variant/40 rounded-t-lg transition-all" placeholder="How was the vibe?"></textarea>
+</div>
+<div class="flex justify-between items-center">
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="add_a_photo">add_a_photo</span>
+<span class="font-label-sm text-label-sm">Add Moment</span>
+</button>
+<button class="material-symbols-outlined text-on-surface-variant" data-icon="share">share</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-lg pb-md pt-sm bg-surface-container/40 backdrop-blur-3xl border-t border-white/10 rounded-t-xl shadow-[0_-8px_32px_0_rgba(0,0,0,0.3)]">
+<!-- Map Destination (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full w-12 h-12 shadow-[0_0_16px_rgba(0,209,255,0.4)] scale-110 transition-all duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" data-icon="map" style="font-variation-settings: 'FILL' 1;">map</span>
+</a>
+<!-- Social Destination -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-sm text-label-sm mt-1">Social</span>
+</a>
+<!-- Security/Activity -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="font-label-sm text-label-sm mt-1">Safe</span>
+</a>
+<!-- Emergency -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined text-error" data-icon="emergency">emergency</span>
+<span class="font-label-sm text-label-sm mt-1 text-error">Alert</span>
+</a>
+</nav>
+<!-- Contextual FAB - Hidden as per prompt "Details/Timeline" usually suppresses FAB, but can be added if needed -->
+<!-- <button class="fixed bottom-24 right-edge-margin w-14 h-14 bg-primary-container rounded-2xl flex items-center justify-center shadow-[0_8px_24px_rgba(51,153,255,0.4)] z-40 active:scale-90 transition-transform">
+        <span class="material-symbols-outlined text-on-primary-container text-3xl" data-icon="add">add</span>
+    </button> -->
+<script>
+        // Atmospheric Micro-interaction: Tilt cards on hover
+        const cards = document.querySelectorAll('.glass-card');
+        cards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = (y - centerY) / 20;
+                const rotateY = (centerX - x) / 20;
+                
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+            });
+        });
+
+        // Pulsing animation for the active icon
+        const activeNav = document.querySelector('.bg-primary-container');
+        if (activeNav) {
+            setInterval(() => {
+                activeNav.style.boxShadow = '0 0 24px rgba(0, 209, 255, 0.6)';
+                setTimeout(() => {
+                    activeNav.style.boxShadow = '0 0 16px rgba(0, 209, 255, 0.4)';
+                }, 1000);
+            }, 2000);
+        }
+    </script>
+</body></html>

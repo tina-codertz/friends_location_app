@@ -127,7 +127,7 @@ export function BiometricGate({ children }: Props) {
             </Text>
             <GlassButton title="Enable biometrics" onPress={completeEnrollment} variant="primary" fullWidth size="large" />
             <View style={{ height: 12 }} />
-            <GlassButton title="Not now" onPress={skipEnrollment} variant="ghost" fullWidth size="medium" />
+            <GlassButton title="Not now" onPress={skipEnrollment} variant="tonal" fullWidth size="medium" />
           </GlassCard>
         </View>
       </View>
@@ -156,10 +156,9 @@ export function BiometricGate({ children }: Props) {
               await SecureStore.deleteItemAsync(BIO_ENABLED_KEY);
               setGate('unlocked');
             }}
-            variant="ghost"
+            variant="tonal"
             fullWidth
             size="medium"
-            textStyle={{ color: accent.coral }}
           />
         </GlassCard>
       </View>

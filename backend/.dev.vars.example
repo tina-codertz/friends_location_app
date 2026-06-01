@@ -1,0 +1,2 @@
+# Copy to .dev.vars (gitignored) for: npx wrangler dev
+JWT_SECRET=your-local-jwt-secret-min-32-chars

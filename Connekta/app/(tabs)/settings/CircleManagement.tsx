@@ -34,7 +34,7 @@ export default function CircleManagement() {
   const [generating, setGenerating] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [joining, setJoining] = useState(false);
-  const [removingId, setRemovingId] = useState<number | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -151,7 +151,7 @@ export default function CircleManagement() {
     );
   };
 
-  const removeMember = async (friendId: number) => {
+  const removeMember = async (friendId: string) => {
     setRemovingId(friendId);
     try {
       const res = await friendsAPI.remove(friendId);
@@ -221,7 +221,7 @@ export default function CircleManagement() {
         Generate a code, share your invite link, or join another circle with a code. View friends and the map on the My Circle tab.
       </Text>
 
-      <GlassCard borderRadius={22} intensity="heavy" glowAccent>
+      <GlassCard borderRadius={16} intensity="heavy" glowAccent>
         <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Your invite code</Text>
         <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 14 }]}>
           Share this code or link so others can request to join your circle.
@@ -271,7 +271,7 @@ export default function CircleManagement() {
             fullWidth
             disabled={generating}
           />
-          <GlassButton title="Share invite link" onPress={shareInvite} variant="secondary" fullWidth disabled={!inviteCode} />
+          <GlassButton title="Share invite link" onPress={shareInvite} variant="tonal" fullWidth disabled={!inviteCode} />
         </View>
 
         {inviteCode ? (
@@ -281,7 +281,7 @@ export default function CircleManagement() {
         ) : null}
       </GlassCard>
 
-      <GlassCard borderRadius={22} intensity="medium">
+      <GlassCard borderRadius={16} intensity="medium">
         <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Join a circle</Text>
         <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 12 }]}>
           Enter a friend&apos;s invite code to request joining their circle.
@@ -308,7 +308,7 @@ export default function CircleManagement() {
         <GlassButton
           title={joining ? 'Joining…' : 'Join with code'}
           onPress={joinCircle}
-          variant="secondary"
+          variant="tonal"
           fullWidth
           disabled={joining}
         />

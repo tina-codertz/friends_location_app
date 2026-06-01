@@ -23,7 +23,7 @@ export default function EmergencyContactsDetails() {
         onPress: async () => {
           try {
             if (id) {
-              await emergencyAPI.remove(parseInt(id));
+              await emergencyAPI.remove(id);
               Alert.alert('Success', 'Contact deleted.');
               router.back();
             }
@@ -44,7 +44,7 @@ export default function EmergencyContactsDetails() {
         paddingBottom: insets.bottom + 40,
       }}
     >
-      <GlassCard borderRadius={24} intensity="heavy" glowAccent style={{ paddingVertical: 28, alignItems: 'center' }}>
+      <GlassCard borderRadius={16} intensity="heavy" glowAccent style={{ paddingVertical: 28, alignItems: 'center' }}>
         <View style={[styles.avatar, { borderColor: colors.tealBorder }]}>
           <Text style={{ fontSize: 36, color: colors.textPrimary, fontFamily: Font.bold }}>
             {(name ?? '?').slice(0, 1).toUpperCase()}
@@ -56,7 +56,7 @@ export default function EmergencyContactsDetails() {
 
       <View style={{ height: 20 }} />
 
-      <GlassCard borderRadius={22} intensity="medium">
+      <GlassCard borderRadius={16} intensity="medium">
         <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 12 }]}>Contact Information</Text>
         <Row label="Name" value={name ?? '—'} colors={colors} />
         <Row label="Phone" value={phone ?? '—'} colors={colors} />
@@ -64,20 +64,10 @@ export default function EmergencyContactsDetails() {
 
       <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
         <View style={{ flex: 1 }}>
-          <GlassButton
-            title="Close"
-            onPress={() => router.back()}
-            variant="secondary"
-            fullWidth
-          />
+          <GlassButton title="Close" onPress={() => router.back()} variant="tonal" fullWidth />
         </View>
         <View style={{ flex: 1 }}>
-          <GlassButton
-            title="Delete"
-            onPress={handleDelete}
-            variant="ghost"
-            fullWidth
-          />
+          <GlassButton title="Delete" onPress={handleDelete} variant="danger" fullWidth />
         </View>
       </View>
     </ScrollView>

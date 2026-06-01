@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Montserrat_700Bold, Montserrat_800ExtraBold } from '@expo-google-fonts/montserrat';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -97,6 +98,8 @@ function FontBootstrap({ children }: { children: React.ReactNode }) {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    Montserrat_700Bold,
+    Montserrat_800ExtraBold,
   });
 
   useEffect(() => {

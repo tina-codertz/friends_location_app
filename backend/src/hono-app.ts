@@ -12,8 +12,7 @@ import { handlePublicWebSocket } from './realtime/ws-gateway';
 export type WorkerEnv = {
   database: D1Database;
   JWT_SECRET: string;
-  RESEND_API_KEY: string;
-  /** After verifying a domain in Resend, e.g. "Connekta <noreply@yourdomain.com>" */
+  RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   REALTIME_HUB: DurableObjectNamespace;
 };
@@ -33,7 +32,7 @@ app.use('*', cors({
 app.get('/', (c) => {
   return c.json({
     message: 'Friends Location API is live!',
-    version: '1.1.0',
+    version: '1.3.0',
     realtime: 'GET wss? /realtime/ws?token=JWT',
   });
 });

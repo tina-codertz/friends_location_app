@@ -8,6 +8,12 @@ export const Font = {
   bold: 'Inter_700Bold',
 } as const;
 
+/** Montserrat — brand headlines (load in app/_layout.tsx) */
+export const FontBrand = {
+  bold: 'Montserrat_700Bold',
+  extrabold: 'Montserrat_800ExtraBold',
+} as const;
+
 export const Type = {
   /** Large airy headings */
   hero: { fontFamily: Font.bold, fontSize: 34, letterSpacing: 0.6, lineHeight: 40 },

@@ -10,7 +10,6 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -22,24 +21,21 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import FloatingWords from '@/components/background/FloatingWords';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { authAPI } from '@/services/api';
+import { isUsernameAvailable } from '@/services/firebase-auth';
 import { validateUsername } from '@/utils/username';
 
-const { width: SW, height: SH } = Dimensions.get('window');
+const { width: SW } = Dimensions.get('window');
 
 export default function AuthScreen() {
   const router = useRouter();
   const { colors, accent } = useAppTheme();
-  const { register, verifyOTP, login, isLoading, error, clearError } = useAuth();
-  
+  const { register, login, isLoading, error, clearError } = useAuth();
+
   const [isLogin, setIsLogin] = useState(true);
-  const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [otp, setOTP] = useState('');
-  const [tempEmail, setTempEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  // ── Entrance animations ──────────────────────────────────────────────────
   const logoScale = useRef(new Animated.Value(0)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -82,23 +78,34 @@ export default function AuthScreen() {
     ]).start();
   }, []);
 
-  // ── Error alert ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (error) {
       Alert.alert('Error', error, [{ text: 'OK', onPress: clearError }]);
     }
-  }, [error]);
+  }, [error, clearError]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
+  const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+  const validatePassword = (value: string) => {
+    if (value.length < 6) {
+      return { ok: false as const, message: 'Password must be at least 6 characters' };
+    }
+    return { ok: true as const };
+  };
+
   const handleLogin = async () => {
-    const usernameCheck = validateUsername(username);
-    if (!usernameCheck.ok) {
-      Alert.alert('Username', usernameCheck.message);
+    if (!validateEmail(email)) {
+      Alert.alert('Validation', 'Please enter a valid email');
+      return;
+    }
+    const pw = validatePassword(password);
+    if (!pw.ok) {
+      Alert.alert('Validation', pw.message);
       return;
     }
 
     try {
-      await login(usernameCheck.value);
+      await login(email.trim().toLowerCase(), password);
       router.replace('/(tabs)/map');
     } catch (err) {
       console.error('Login error:', err);
@@ -106,7 +113,7 @@ export default function AuthScreen() {
   };
 
   const handleRegister = async () => {
-    if (!username.trim() || !email.trim()) {
+    if (!username.trim() || !email.trim() || !password) {
       Alert.alert('Validation', 'Please fill in all fields');
       return;
     }
@@ -117,67 +124,49 @@ export default function AuthScreen() {
       return;
     }
 
-    // Simple email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!validateEmail(email)) {
       Alert.alert('Validation', 'Please enter a valid email');
       return;
     }
 
-    try {
-      const availability = await authAPI.checkUsername(usernameCheck.value);
-      if (!availability.available) {
-        Alert.alert('Username taken', availability.message ?? 'This username is already taken');
-        return;
-      }
-
-      await register(email.trim().toLowerCase(), usernameCheck.value);
-      setTempEmail(email);
-      setIsVerifyingOTP(true);
-      Alert.alert('Success', 'OTP sent to your email. Please check your inbox.');
-    } catch (err) {
-      console.error('Register error:', err);
-    }
-  };
-
-  const handleVerifyOTP = async () => {
-    if (!otp.trim()) {
-      Alert.alert('Validation', 'Please enter the OTP');
+    const pw = validatePassword(password);
+    if (!pw.ok) {
+      Alert.alert('Validation', pw.message);
       return;
     }
 
     try {
-      await verifyOTP(tempEmail, otp.trim());
-      setIsVerifyingOTP(false);
-      setOTP('');
+      const available = await isUsernameAvailable(usernameCheck.value);
+      if (!available) {
+        Alert.alert('Username taken', 'This username is already taken');
+        return;
+      }
+
+      await register(email.trim().toLowerCase(), password, usernameCheck.value);
       setEmail('');
       setUsername('');
+      setPassword('');
       router.replace('/(tabs)/map');
     } catch (err) {
-      console.error('OTP verification error:', err);
+      console.error('Register error:', err);
     }
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
     clearError();
+    setPassword('');
   };
 
   const handleBack = () => {
-    if (isVerifyingOTP) {
-      setIsVerifyingOTP(false);
-      setOTP('');
-    } else {
-      router.back();
-    }
+    router.back();
   };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      {/* ── Background layers ── */}
       <View style={[styles.bgBase, { backgroundColor: colors.bg }]} />
       <FloatingWords />
 
-      {/* ── Glow circles ── */}
       <View style={[styles.glowTop, { backgroundColor: colors.tealGlow }]} />
       <View style={[styles.glowBottom, { backgroundColor: colors.purpleGlow }]} />
 
@@ -190,18 +179,8 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Back button ── */}
-          <TouchableOpacity
-            style={[styles.backBtn, { backgroundColor: colors.surface, borderColor: colors.glassBorderLight }]}
-            onPress={handleBack}
-            activeOpacity={0.7}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Text style={[styles.backArrow, { color: accent.teal }]}>←</Text>
-            <Text style={[styles.backText, { color: colors.textPrimary }]}>Back</Text>
-          </TouchableOpacity>
+          <GlassButton title="Back" onPress={handleBack} variant="glass" size="small" style={{ alignSelf: 'flex-start', marginBottom: 12 }} />
 
-          {/* ── Logo / Brand ── */}
           <Animated.View
             style={[
               styles.logoWrap,
@@ -214,13 +193,12 @@ export default function AuthScreen() {
             <View style={[styles.logoRing, { backgroundColor: colors.tealGlow, borderColor: accent.teal }]}>
               <View style={[styles.logoDot, { backgroundColor: accent.teal }]} />
             </View>
-            <Text style={[styles.brandName, { color: colors.textPrimary }]}>Connekta</Text>
+            <Text style={[styles.brandName, { color: accent.cyan }]}>Connekta</Text>
             <Text style={[styles.brandSub, { color: colors.textSecondary }]}>
               {isLogin ? 'Welcome back' : 'Create your account'}
             </Text>
           </Animated.View>
 
-          {/* ── Auth Card ── */}
           <Animated.View
             style={{
               opacity: cardOpacity,
@@ -233,59 +211,54 @@ export default function AuthScreen() {
               borderRadius={24}
               style={styles.authCard}
             >
-              {/* Card header - Hide during OTP verification */}
-              {!isVerifyingOTP && (
-                <View style={[styles.cardHeader, { backgroundColor: colors.surface }]}>
-                  <TouchableOpacity
-                    onPress={() => setIsLogin(true)}
-                    style={[
-                      styles.modeTab,
-                      isLogin && [styles.modeTabActive, { backgroundColor: colors.tealGlass, borderColor: colors.tealBorder }],
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.modeTabText,
-                        { color: colors.textTertiary },
-                        isLogin && { color: accent.teal },
-                      ]}
-                    >
-                      Sign In
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setIsLogin(false)}
-                    style={[
-                      styles.modeTab,
-                      !isLogin && [styles.modeTabActive, { backgroundColor: colors.tealGlass, borderColor: colors.tealBorder }],
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                  <Text
-                    style={[
-                      styles.modeTabText,
-                      { color: colors.textTertiary },
-                      !isLogin && { color: accent.teal },
-                    ]}
-                  >
-                    Sign Up
-                  </Text>
-                </TouchableOpacity>
+              <View style={styles.modeRow}>
+                <GlassButton
+                  title="Sign In"
+                  onPress={() => setIsLogin(true)}
+                  variant={isLogin ? 'chipActive' : 'chip'}
+                  size="small"
+                  style={{ flex: 1 }}
+                />
+                <GlassButton
+                  title="Sign Up"
+                  onPress={() => setIsLogin(false)}
+                  variant={!isLogin ? 'chipActive' : 'chip'}
+                  size="small"
+                  style={{ flex: 1 }}
+                />
               </View>
+
+              {!isLogin && (
+                <GlassInput
+                  label="Username"
+                  placeholder="Choose a username"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  icon={<Text style={[styles.inputIcon, { color: colors.textSecondary }]}>@</Text>}
+                />
               )}
 
-              {/* Username field */}
               <GlassInput
-                label="Username"
-                placeholder="Enter your username"
-                value={username}
-                onChangeText={setUsername}
+                label="Email"
+                placeholder="Enter your email"
+                value={email}
+                onChangeText={setEmail}
                 autoCapitalize="none"
-                icon={<Text style={[styles.inputIcon, { color: colors.textSecondary }]}>@</Text>}
+                keyboardType="email-address"
+                icon={<Text style={[styles.inputIcon, { color: colors.textSecondary }]}>✉</Text>}
               />
 
-              {/* Biometric login option (login only) */}
+              <GlassInput
+                label="Password"
+                placeholder={isLogin ? 'Enter your password' : 'At least 6 characters'}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                showSecureToggle
+                icon={<Text style={[styles.inputIcon, { color: colors.textSecondary }]}>🔒</Text>}
+              />
+
               {isLogin && (
                 <TouchableOpacity
                   style={[styles.biometricIconBtn, { borderColor: accent.teal, backgroundColor: colors.surface }]}
@@ -297,86 +270,36 @@ export default function AuthScreen() {
                 </TouchableOpacity>
               )}
 
-              {/* Email field (sign-up only) */}
-              {!isLogin && !isVerifyingOTP && (
-                <GlassInput
-                  label="Email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  icon={<Text style={[styles.inputIcon, { color: colors.textSecondary }]}>✉</Text>}
-                />
-              )}
+              <GlassButton
+                title={isLogin ? 'Sign In' : 'Create Account'}
+                onPress={isLogin ? handleLogin : handleRegister}
+                variant="primary"
+                size="large"
+                fullWidth
+                loading={isLoading}
+                disabled={isLoading}
+                style={{ marginTop: 8 }}
+              />
 
-              {/* OTP verification (after signup) */}
-              {isVerifyingOTP && (
-                <>
-                  <Text style={[styles.otpLabel, { color: colors.textSecondary }]}>
-                    Enter the OTP sent to {tempEmail}
-                  </Text>
-                  <GlassInput
-                    label="One-Time Password"
-                    placeholder="Enter 6-digit OTP"
-                    value={otp}
-                    onChangeText={setOTP}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    icon={<Text style={[styles.inputIcon, { color: colors.textSecondary }]}>🔐</Text>}
-                  />
-                  <GlassButton
-                    title="Verify OTP"
-                    onPress={handleVerifyOTP}
-                    variant="primary"
-                    size="large"
-                    fullWidth
-                    loading={isLoading}
-                    disabled={isLoading}
-                    style={{ marginTop: 16 }}
-                  />
-                </>
-              )}
-
-              {/* Submit button */}
-              {!isVerifyingOTP && (
-                <GlassButton
-                  title={isLogin ? 'Sign In' : 'Create Account'}
-                  onPress={isLogin ? handleLogin : handleRegister}
-                  variant="primary"
-                  size="large"
-                  fullWidth
-                  loading={isLoading}
-                  disabled={isLoading}
-                  style={{ marginTop: 8 }}
-                />
-              )}
-
-              {/* Divider - Hide during OTP verification */}
-              {!isVerifyingOTP && (
-                <View style={styles.divider}>
-                  <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
-                  <Text style={[styles.dividerText, { color: colors.textTertiary }]}>or</Text>
-                  <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
-                </View>
-              )}
+              <View style={styles.divider}>
+                <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
+                <Text style={[styles.dividerText, { color: colors.textTertiary }]}>or</Text>
+                <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
+              </View>
             </GlassCard>
           </Animated.View>
 
-          {/* ── Footer toggle - Hide during OTP verification ── */}
-          {!isVerifyingOTP && (
-            <Animated.View style={[styles.footer, { opacity: footerOpacity }]}>
-              <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-                {isLogin ? "Don't have an account? " : 'Already have an account? '}
+          <Animated.View style={[styles.footer, { opacity: footerOpacity }]}>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+              {isLogin ? "Don't have an account? " : 'Already have an account? '}
+            </Text>
+            <TouchableOpacity onPress={toggleMode} activeOpacity={0.7}>
+              <Text style={[styles.footerLink, { color: accent.teal }]}>
+                {isLogin ? 'Sign Up' : 'Sign In'}
               </Text>
-              <TouchableOpacity onPress={toggleMode} activeOpacity={0.7}>
-                <Text style={[styles.footerLink, { color: accent.teal }]}>
-                  {isLogin ? 'Sign Up' : 'Sign In'}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-          )}
+            </TouchableOpacity>
+          </Animated.View>
 
-          {/* ── Terms ── */}
           <Animated.View style={{ opacity: footerOpacity }}>
             <Text style={[styles.termsText, { color: colors.textTertiary }]}>
               By continuing, you agree to our{' '}
@@ -391,7 +314,6 @@ export default function AuthScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -399,8 +321,6 @@ const styles = StyleSheet.create({
   bgBase: {
     ...StyleSheet.absoluteFillObject,
   },
-
-  // ── Glow effects ───────────────────────────────────────────────────────────
   glowTop: {
     position: 'absolute',
     top: -80,
@@ -417,16 +337,12 @@ const styles = StyleSheet.create({
     height: 260,
     borderRadius: 130,
   },
-
-  // ── Layout ─────────────────────────────────────────────────────────────────
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
-
-  // ── Back button ────────────────────────────────────────────────────────────
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -445,8 +361,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-
-  // ── Logo ───────────────────────────────────────────────────────────────────
   logoWrap: {
     alignItems: 'center',
     marginBottom: 32,
@@ -480,46 +394,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 6,
   },
-
-  // ── Auth card ──────────────────────────────────────────────────────────────
   authCard: {
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 24,
   },
-
-  // ── Mode tabs ──────────────────────────────────────────────────────────────
-  cardHeader: {
+  modeRow: {
     flexDirection: 'row',
-    marginBottom: 24,
-    borderRadius: 12,
-    padding: 4,
+    gap: 8,
+    marginBottom: 20,
   },
-  modeTab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  modeTabActive: {
-    borderWidth: 1,
-  },
-  modeTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // ── Input icon ─────────────────────────────────────────────────────────────
   inputIcon: {
     fontSize: 16,
   },
-  // ── OTP label ──────────────────────────────────────────────────────────────
-  otpLabel: {
-    fontSize: 13,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  // ── Biometric icon button ─────────────────────────────────────────────────
   biometricIconBtn: {
     width: 60,
     height: 60,
@@ -530,8 +417,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginVertical: 12,
   },
-
-  // ── Divider ────────────────────────────────────────────────────────────────
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -546,8 +431,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     fontWeight: '500',
   },
-
-  // ── Footer ─────────────────────────────────────────────────────────────────
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -561,8 +444,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-
-  // ── Terms ──────────────────────────────────────────────────────────────────
   termsText: {
     fontSize: 11,
     textAlign: 'center',
