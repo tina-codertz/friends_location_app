@@ -43,7 +43,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1.5,
-    maxWidth: 160,
+    maxWidth: 188,
+    overflow: 'visible',
   },
   dot: {
     width: 8,
@@ -54,6 +55,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: Font.semibold,
     fontSize: 13,
-    flexShrink: 0,
+    flexShrink: 1,
+    maxWidth: 150,
   },
 });

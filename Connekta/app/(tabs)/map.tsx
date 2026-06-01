@@ -21,6 +21,7 @@ import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
 import { useCirclePlaces } from '@/hooks/useCirclePlaces';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
+import { placeKindLabel, resolvePlaceKind } from '@/utils/place-kind';
 import { locationAPI } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 import type { MapRegion } from '@/types/map';
@@ -273,6 +274,8 @@ export default function MapTabScreen() {
           {showPlaceMarkers &&
             placeMarkers.map((p) => {
               const isMine = user?.uid != null && p.userId === user.uid;
+              const kind = resolvePlaceKind(p);
+              const kindLabel = placeKindLabel(kind);
               return (
                 <PlaceAreaMarker
                   key={`place-${p.id}`}
@@ -280,7 +283,12 @@ export default function MapTabScreen() {
                   latitude={p.lat}
                   longitude={p.lng}
                   label={p.name.trim()}
-                  subtitle={isMine ? 'Your saved place' : `Shared by ${p.username}`}
+                  placeKind={kind}
+                  subtitle={
+                    isMine
+                      ? `${kindLabel} · Your saved place`
+                      : `${kindLabel} · ${p.username}`
+                  }
                   accentColor={isMine ? accent.cyan : accent.green}
                 />
               );

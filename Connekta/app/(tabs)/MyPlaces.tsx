@@ -31,7 +31,13 @@ import {
   deletePlace,
   listMyPlaces,
 } from '@/connekta-firebase/firestore/places';
-import type { SavedPlace } from '@/types/places';
+import type { PlaceKind, SavedPlace } from '@/types/places';
+import { PlaceKindPicker } from '@/components/places/PlaceKindPicker';
+import {
+  PLACE_KIND_META,
+  inferPlaceKindFromName,
+  resolvePlaceKind,
+} from '@/utils/place-kind';
 
 const DEFAULT_REGION: MapRegion = {
   latitude: 37.7749,
@@ -51,6 +57,7 @@ export default function MyPlacesScreen() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [placeName, setPlaceName] = useState('');
+  const [placeKind, setPlaceKind] = useState<PlaceKind>('home');
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const [region, setRegion] = useState<MapRegion>(DEFAULT_REGION);
   const [saving, setSaving] = useState(false);
@@ -97,8 +104,16 @@ export default function MyPlacesScreen() {
 
   const openAdd = () => {
     setPlaceName('');
+    setPlaceKind('home');
     setPin((p) => p ?? { lat: region.latitude, lng: region.longitude });
     setAddOpen(true);
+  };
+
+  const onPlaceKindChange = (kind: PlaceKind) => {
+    setPlaceKind(kind);
+    if (!placeName.trim() && kind !== 'other') {
+      setPlaceName(PLACE_KIND_META[kind].label);
+    }
   };
 
   const savePlace = async () => {
@@ -117,12 +132,15 @@ export default function MyPlacesScreen() {
     }
     setSaving(true);
     try {
+      const kind =
+        placeKind !== 'other' ? placeKind : inferPlaceKindFromName(name);
       const place = await createPlace(
         user.uid,
         user.username,
         name,
         pin.lat,
         pin.lng,
+        kind,
       );
       setPlaces((prev) => [place, ...prev]);
       setAddOpen(false);
@@ -171,20 +189,32 @@ export default function MyPlacesScreen() {
 
   const previewMarkers = useMemo(() => {
     const capped = capList(places, MAX_PLACE_MARKERS_MAIN);
-    return capped.map((p) => (
-      <PlaceAreaMarker
-        key={`mine-${p.id}`}
-        id={`mine-${p.id}`}
-        latitude={p.lat}
-        longitude={p.lng}
-        label={p.name}
-        subtitle="Your saved place"
-        accentColor={accent.cyan}
-      />
-    ));
+    return capped.map((p) => {
+      const kind = resolvePlaceKind(p);
+      return (
+        <PlaceAreaMarker
+          key={`mine-${p.id}`}
+          id={`mine-${p.id}`}
+          latitude={p.lat}
+          longitude={p.lng}
+          label={p.name}
+          placeKind={kind}
+          subtitle="Your saved place"
+          accentColor={accent.cyan}
+        />
+      );
+    });
   }, [places, accent.cyan]);
 
-  const renderPlaceItem = ({ item }: { item: SavedPlace }) => (
+  const draftKind = useMemo(
+    () => (placeKind !== 'other' ? placeKind : inferPlaceKindFromName(placeName)),
+    [placeKind, placeName]
+  );
+
+  const renderPlaceItem = ({ item }: { item: SavedPlace }) => {
+    const kind = resolvePlaceKind(item);
+    const meta = PLACE_KIND_META[kind];
+    return (
     <TouchableOpacity onPress={() => focusPlace(item)} activeOpacity={0.85}>
       <GlassCard borderRadius={16} intensity="light" style={{ marginBottom: 12, paddingVertical: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -193,17 +223,17 @@ export default function MyPlacesScreen() {
               width: 44,
               height: 44,
               borderRadius: 22,
-              backgroundColor: `${accent.electricBlue}22`,
+              backgroundColor: `${accent.cyan}22`,
               justifyContent: 'center',
               alignItems: 'center',
             }}
           >
-            <Ionicons name="location" size={22} color={accent.electricBlue} />
+            <Ionicons name={meta.icon} size={22} color={accent.cyan} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>{item.name}</Text>
             <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-              {item.lat.toFixed(4)}, {item.lng.toFixed(4)}
+              {meta.label} · {item.lat.toFixed(4)}, {item.lng.toFixed(4)}
             </Text>
           </View>
           <TouchableOpacity
@@ -223,6 +253,7 @@ export default function MyPlacesScreen() {
       </GlassCard>
     </TouchableOpacity>
   );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -248,6 +279,7 @@ export default function MyPlacesScreen() {
               latitude={pin.lat}
               longitude={pin.lng}
               label={placeName.trim() || 'New place'}
+              placeKind={draftKind}
               subtitle="Tap map to move pin"
               accentColor={accent.cyan}
             />
@@ -308,8 +340,17 @@ export default function MyPlacesScreen() {
           >
             <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>New place</Text>
             <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 12 }]}>
-              Tap the map above to move the pin, then name this spot.
+              Pick Home or Office (or another type), then name the spot and move the pin on the map.
             </Text>
+            <PlaceKindPicker
+              value={placeKind}
+              onChange={onPlaceKindChange}
+              accentColor={accent.cyan}
+              textColor={colors.textPrimary}
+              mutedColor={colors.textMuted}
+              borderColor={colors.glassBorderMedium}
+              chipBg={colors.inputBg}
+            />
             <TextInput
               placeholder="e.g. Home, Office, Gym"
               placeholderTextColor={colors.inputPlaceholder}

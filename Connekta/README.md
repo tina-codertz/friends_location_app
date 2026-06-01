@@ -25,6 +25,20 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Native builds (APK + iOS)
+
+This app uses **Mapbox native SDK** on both Android and iOS. To install on real devices, use **EAS Build** — see **[BUILD.md](./BUILD.md)**.
+
+Quick start:
+
+```bash
+npm install
+eas login
+# set EAS secrets (Mapbox + Firebase) — see BUILD.md
+npm run build:android:apk   # Android APK
+npm run build:ios           # iOS (Apple Developer account)
+```
+
 ## Project layout
 
 - `app/` — Expo Router screens
