@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed": "#002022",
+                        "tertiary-fixed": "#a9f900",
+                        "surface-container": "#1f1f22",
+                        "inverse-surface": "#e4e1e6",
+                        "background": "#131316",
+                        "on-secondary-fixed-variant": "#004f54",
+                        "primary-fixed-dim": "#ecb2ff",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#568200",
+                        "primary-container": "#bd00ff",
+                        "surface-dim": "#131316",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#94db00",
+                        "tertiary": "#94db00",
+                        "secondary-fixed-dim": "#00dbe9",
+                        "primary-fixed": "#f8d8ff",
+                        "secondary-container": "#00eefc",
+                        "surface-container-high": "#2a2a2d",
+                        "on-background": "#e4e1e6",
+                        "on-surface": "#e4e1e6",
+                        "surface-tint": "#ecb2ff",
+                        "primary": "#ecb2ff",
+                        "secondary": "#d3fbff",
+                        "surface-container-lowest": "#0e0e11",
+                        "outline": "#9d8ba0",
+                        "secondary-fixed": "#7df4ff",
+                        "on-tertiary-container": "#fffeff",
+                        "inverse-on-surface": "#303033",
+                        "on-tertiary-fixed-variant": "#334f00",
+                        "on-surface-variant": "#d4c0d7",
+                        "inverse-primary": "#9900cf",
+                        "surface-container-low": "#1b1b1e",
+                        "on-primary-fixed-variant": "#74009f",
+                        "error-container": "#93000a",
+                        "on-primary-container": "#ffffff",
+                        "on-tertiary-fixed": "#121f00",
+                        "on-tertiary": "#223600",
+                        "surface-variant": "#353438",
+                        "on-secondary-container": "#00686f",
+                        "on-primary-fixed": "#320047",
+                        "on-primary": "#520071",
+                        "surface-container-highest": "#353438",
+                        "outline-variant": "#514255",
+                        "on-secondary": "#00363a",
+                        "surface": "#131316",
+                        "surface-bright": "#39393c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "48px",
+                        "base": "8px",
+                        "sm": "12px",
+                        "md": "20px",
+                        "edge-margin": "16px",
+                        "xs": "4px",
+                        "stack-gap": "12px",
+                        "lg": "32px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Montserrat"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-xl": ["Montserrat"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Montserrat"],
+                        "headline-lg-mobile": ["Montserrat"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-xl": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "30px", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(31, 31, 34, 0.4);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-glow-primary {
+            box-shadow: 0 0 20px rgba(236, 178, 255, 0.4);
+        }
+        .neon-gradient-btn {
+            background: linear-gradient(135deg, #00dbe9 0%, #ecb2ff 100%);
+            transition: all 0.3s ease;
+        }
+        .neon-gradient-btn:hover {
+            box-shadow: 0 0 25px rgba(0, 219, 233, 0.6);
+            transform: translateY(-2px);
+        }
+        .map-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            filter: brightness(0.4) contrast(1.2);
+        }
+        .step-transition {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .hidden-step {
+            display: none;
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        .active-step {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex items-center justify-center p-edge-margin overflow-hidden">
+<!-- Background Map Atmosphere -->
+<div class="map-bg">
+<img class="w-full h-full object-cover" data-alt="A dark, stylized aerial view of a vibrant neon city map at night. The streets are illuminated with electric purple and cyan light trails, reflecting off glass skyscrapers. The atmosphere is high-tech, futuristic, and immersive, with a deep midnight blue sky providing high contrast for the glowing urban geometry." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDq6xDWIUYttElkUsXm0shijcmwjIEFgATDH2gsR6kO8CNc3qSoZsb1GrcngNUfd_hLbtBVt3DHgCWZp1ih2cEAXUcwNbijB5pXe4DbXHZa5DQuvx41armcRGO2q8ebbvLxegyudd3eDmiOHvr-0S_Y9Z6jdaPImZQoGSU79KuCiJdb3Kb5V8pqyUyuAr5H91Ya5U82BXGBZDfCJvPVO3aCa_keHWlX6y_WOJC7-92Sa8KK4mcm-mHEk8kyPJ9RQOj6uoUVj5zO4gKV"/>
+</div>
+<!-- Registration Container -->
+<main class="w-full max-w-[480px] z-10">
+<div class="glass-panel rounded-xl p-lg flex flex-col gap-lg shadow-2xl relative overflow-hidden">
+<!-- Logo / Top Info -->
+<div class="flex flex-col items-center gap-xs">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary tracking-tighter">PulseMap</h1>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-[0.2em]">Join the Rhythm</p>
+</div>
+<!-- Progress Bar -->
+<div class="flex gap-xs h-1 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container transition-all duration-500" id="progress-bar" style="width: 33%"></div>
+</div>
+<!-- Form Multi-step Content -->
+<form class="flex flex-col gap-md" id="registration-form">
+<!-- Step 1: Identity -->
+<div class="step-transition active-step space-y-md" id="step-1">
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-xs">Full Name</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-secondary-fixed-dim focus:ring-0 text-on-surface p-md rounded-t-lg transition-all outline-none" placeholder="Alex Rivera" type="text"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-xs">Username</label>
+<div class="relative">
+<span class="absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">@</span>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-secondary-fixed-dim focus:ring-0 text-on-surface py-md pl-lg pr-md rounded-t-lg transition-all outline-none" placeholder="neon_pulse" type="text"/>
+</div>
+</div>
+<button class="w-full py-md px-lg glass-panel rounded-full font-label-md text-label-md text-primary flex items-center justify-center gap-xs hover:bg-white/10 transition-all active:scale-95" onclick="goToStep(2)" type="button">
+                        Continue
+                        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<!-- Step 2: Security -->
+<div class="step-transition hidden-step space-y-md" id="step-2">
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-xs">Email Address</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-secondary-fixed-dim focus:ring-0 text-on-surface p-md rounded-t-lg transition-all outline-none" placeholder="alex@vibemail.com" type="email"/>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-xs">Create Password</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-secondary-fixed-dim focus:ring-0 text-on-surface p-md rounded-t-lg transition-all outline-none" placeholder="••••••••" type="password"/>
+</div>
+<div class="flex gap-md">
+<button class="w-1/3 py-md px-lg border border-outline-variant rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-white/5 transition-all" onclick="goToStep(1)" type="button">
+                            Back
+                        </button>
+<button class="flex-1 py-md px-lg glass-panel rounded-full font-label-md text-label-md text-primary flex items-center justify-center gap-xs hover:bg-white/10 transition-all active:scale-95" onclick="goToStep(3)" type="button">
+                            Next
+                            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Step 3: Permissions -->
+<div class="step-transition hidden-step space-y-lg" id="step-3">
+<div class="glass-panel p-md rounded-xl space-y-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary-fixed-dim shadow-[0_0_15px_rgba(0,219,233,0.2)]">
+<span class="material-symbols-outlined">location_on</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Enable Location Sharing</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary-container"></div>
+</label>
+</div>
+<p class="text-label-sm font-label-sm text-on-surface-variant leading-relaxed">
+                            PulseMap thrives on connection. We use your location to show you nearby events and friends. Your data is end-to-end encrypted and we never sell your movement patterns to third parties.
+                        </p>
+</div>
+<div class="space-y-md">
+<button class="neon-gradient-btn w-full py-md px-lg rounded-full font-label-md text-label-md text-on-secondary-fixed font-bold flex items-center justify-center gap-xs shadow-lg active:scale-95" type="submit">
+                            Create Account
+                            <span class="material-symbols-outlined">rocket_launch</span>
+</button>
+<div class="flex gap-md">
+<button class="w-full py-sm px-md rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" onclick="goToStep(2)" type="button">
+                                Adjust Details
+                            </button>
+</div>
+</div>
+</div>
+</form>
+<!-- Bottom Link -->
+<div class="flex flex-col items-center gap-sm pt-md border-t border-white/5">
+<a class="font-label-md text-label-md text-secondary-fixed-dim hover:underline decoration-secondary-container underline-offset-4 flex items-center gap-xs group" href="#">
+<span class="material-symbols-outlined text-[16px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                    Back to Login
+                </a>
+</div>
+<!-- Visual Flare -->
+<div class="absolute -bottom-12 -right-12 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none"></div>
+<div class="absolute -top-12 -left-12 w-32 h-32 bg-secondary-container/20 blur-[60px] rounded-full pointer-events-none"></div>
+</div>
+</main>
+<script>
+        function goToStep(step) {
+            const steps = [1, 2, 3];
+            const progressBar = document.getElementById('progress-bar');
+            
+            steps.forEach(s => {
+                const stepEl = document.getElementById(`step-${s}`);
+                if (s === step) {
+                    stepEl.classList.remove('hidden-step');
+                    stepEl.classList.add('active-step');
+                } else {
+                    stepEl.classList.add('hidden-step');
+                    stepEl.classList.remove('active-step');
+                }
+            });
+
+            // Update Progress Bar
+            const progress = (step / steps.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        document.getElementById('registration-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Simulation of success state
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Creating...';
+            btn.style.opacity = '0.7';
+            setTimeout(() => {
+                alert('Welcome to PulseMap! Redirecting to your personalized map...');
+                window.location.reload();
+            }, 1500);
+        });
+    </script>
+</body></html>

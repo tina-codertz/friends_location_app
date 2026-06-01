@@ -1,184 +1,166 @@
 /**
- * Connekta Theme System
+ * Connekta Theme — Blue edition (cyan hero, glass on dark midnight).
+ * Reference: connekta_screens/*_blue_edition + pulsemap_core/DESIGN.md
  *
- * Comprehensive dark + light palettes that the ThemeContext reads.
- * Every colour used across the app lives here so a single
- * source-of-truth drives both modes automatically.
- *
- * Color-scheme detection happens in `context/ThemeContext.tsx`.
+ * Rules: no pink/purple brand accents; real Mapbox only on (tabs)/map.
  */
 
 import { Platform } from 'react-native';
 
-// ─── Shared accent colours (same in both modes) ──────────────────────────────
+/** Cyan-led accents — no pink or purple in brand UI */
 const ACCENT = {
-  electricBlue: '#1E90FF',
-  electricBlueDeep: '#187bcd',
-  coral: '#FF6F61',
-  teal: '#1E90FF',
-  tealDark: '#187bcd',
-  purple: '#a78bfa',
-  orange: '#fb923c',
-  green: '#22c55e',
-  error: '#f87171',
-  errorDark: '#ef4444',
+  /** Primary brand / CTAs / active tab */
+  cyan: '#00DBE9',
+  cyanDeep: '#00A8B8',
+  /** Aliases used across existing components */
+  electricBlue: '#00DBE9',
+  electricBlueDeep: '#00A8B8',
+  teal: '#00DBE9',
+  tealDark: '#00A8B8',
+  /** Live / online only */
+  green: '#94DB00',
+  greenDark: '#6BB800',
+  /** SOS / critical only (not pink) */
+  sos: '#FF453A',
+  sosMuted: 'rgba(255,69,58,0.35)',
+  orange: '#38BDF8',
+  /** Errors */
+  error: '#FF6B6B',
+  errorDark: '#EF4444',
+  /** Deprecated aliases — map to cyan so old refs stay blue */
+  coral: '#00DBE9',
+  purple: '#00DBE9',
 };
 
-// ─── Dark palette ────────────────────────────────────────────────────────────
 const dark = {
-  // Backgrounds
-  bg: '#121212',
-  bgCard: '#1A1A1C',
-  bgCardBorder: 'rgba(255,255,255,0.08)',
+  bg: '#131316',
+  bgCard: '#1F1F22',
+  bgCardBorder: 'rgba(0,219,233,0.12)',
   surface: 'rgba(255,255,255,0.06)',
   surfaceHover: 'rgba(255,255,255,0.10)',
 
-  // Text
-  textPrimary: 'rgba(255,255,255,0.94)',
-  textSecondary: 'rgba(255,255,255,0.62)',
-  textMuted: '#B0B0B0',
-  textTertiary: 'rgba(255,255,255,0.28)',
+  textPrimary: '#E4E1E6',
+  textSecondary: 'rgba(228,225,230,0.72)',
+  textMuted: '#9D8BA0',
+  textTertiary: 'rgba(228,225,230,0.38)',
 
-  // Glassmorphism
-  glassBgLight: 'rgba(255,255,255,0.08)',
-  glassBgMedium: 'rgba(255,255,255,0.12)',
-  glassBgHeavy: 'rgba(255,255,255,0.18)',
-  glassBorderLight: 'rgba(255,255,255,0.12)',
-  glassBorderMedium: 'rgba(255,255,255,0.18)',
-  glassBorderHeavy: 'rgba(255,255,255,0.26)',
-  glassHighlight: 'rgba(255,255,255,0.14)',
-  glassShadow: 'rgba(0,0,0,0.55)',
+  glassBgLight: 'rgba(19,19,22,0.72)',
+  glassBgMedium: 'rgba(31,31,34,0.82)',
+  glassBgHeavy: 'rgba(42,42,45,0.88)',
+  glassBorderLight: 'rgba(0,219,233,0.14)',
+  glassBorderMedium: 'rgba(0,219,233,0.22)',
+  glassBorderHeavy: 'rgba(0,219,233,0.32)',
+  glassHighlight: 'rgba(0,219,233,0.08)',
+  glassShadow: 'rgba(0,0,0,0.5)',
 
-  // Accent glass variants
-  tealGlow: 'rgba(30,144,255,0.18)',
-  tealGlass: 'rgba(30,144,255,0.12)',
-  tealBorder: 'rgba(30,144,255,0.38)',
-  tealBorderFocus: 'rgba(30,144,255,0.55)',
-  purpleGlow: 'rgba(167,139,250,0.08)',
+  tealGlow: 'rgba(0,219,233,0.22)',
+  tealGlass: 'rgba(0,219,233,0.14)',
+  tealBorder: 'rgba(0,219,233,0.42)',
+  tealBorderFocus: 'rgba(0,219,233,0.65)',
+  purpleGlow: 'rgba(0,219,233,0.12)',
 
-  // Input
   inputBg: 'rgba(255,255,255,0.06)',
-  inputBgFocus: 'rgba(255,255,255,0.10)',
+  inputBgFocus: 'rgba(0,219,233,0.08)',
   inputBorder: 'rgba(255,255,255,0.14)',
-  inputBorderFocus: 'rgba(30,144,255,0.55)',
-  inputPlaceholder: 'rgba(255,255,255,0.45)',
+  inputBorderFocus: 'rgba(0,219,233,0.55)',
+  inputPlaceholder: 'rgba(228,225,230,0.4)',
 
-  // Error
-  errorBg: 'rgba(255,111,97,0.10)',
-  errorBorder: 'rgba(255,111,97,0.55)',
+  errorBg: 'rgba(255,69,58,0.12)',
+  errorBorder: 'rgba(255,69,58,0.5)',
 
-  // Misc
-  pill: 'rgba(255,255,255,0.16)',
+  pill: 'rgba(0,219,233,0.16)',
   divider: 'rgba(255,255,255,0.08)',
-  overlay: 'rgba(0,0,0,0.45)',
-  liveGreenBg: 'rgba(34,197,94,0.15)',
-  phoneTabBg: 'rgba(18,18,18,0.72)',
-  mapBg: '#121212',
+  overlay: 'rgba(0,0,0,0.55)',
+  liveGreenBg: 'rgba(148,219,0,0.18)',
+  phoneTabBg: 'rgba(19,19,22,0.85)',
+  mapBg: '#131316',
 
-  // StatusBar
   statusBarStyle: 'light' as 'light' | 'dark',
 
-  // Navigation theme overrides
-  navBackground: '#141416',
-  navCard: '#1A1A1C',
-  navText: '#ffffff',
-  navBorder: 'rgba(255,255,255,0.08)',
-  navPrimary: '#1E90FF',
+  navBackground: '#131316',
+  navCard: 'rgba(31,31,34,0.92)',
+  navText: '#E4E1E6',
+  navBorder: 'rgba(0,219,233,0.12)',
+  navPrimary: ACCENT.cyan,
 };
 
-// ─── Light palette ───────────────────────────────────────────────────────────
 const light = {
-  // Backgrounds
-  bg: '#f0f4f8',
-  bgCard: '#ffffff',
-  bgCardBorder: '#e2e8f0',
+  bg: '#E8F4F8',
+  bgCard: '#FFFFFF',
+  bgCardBorder: 'rgba(0,168,184,0.15)',
   surface: 'rgba(0,0,0,0.04)',
   surfaceHover: 'rgba(0,0,0,0.07)',
 
-  // Text
   textPrimary: 'rgba(0,0,0,0.87)',
   textSecondary: 'rgba(0,0,0,0.55)',
-  textMuted: '#5c5c5c',
+  textMuted: '#5C5C5C',
   textTertiary: 'rgba(0,0,0,0.35)',
 
-  // Glassmorphism
-  glassBgLight: 'rgba(255,255,255,0.60)',
-  glassBgMedium: 'rgba(255,255,255,0.75)',
-  glassBgHeavy: 'rgba(255,255,255,0.85)',
-  glassBorderLight: 'rgba(0,0,0,0.06)',
-  glassBorderMedium: 'rgba(0,0,0,0.10)',
-  glassBorderHeavy: 'rgba(0,0,0,0.15)',
-  glassHighlight: 'rgba(255,255,255,0.90)',
+  glassBgLight: 'rgba(255,255,255,0.65)',
+  glassBgMedium: 'rgba(255,255,255,0.78)',
+  glassBgHeavy: 'rgba(255,255,255,0.88)',
+  glassBorderLight: 'rgba(0,168,184,0.12)',
+  glassBorderMedium: 'rgba(0,168,184,0.2)',
+  glassBorderHeavy: 'rgba(0,168,184,0.28)',
+  glassHighlight: 'rgba(255,255,255,0.9)',
   glassShadow: 'rgba(0,0,0,0.08)',
 
-  // Accent glass variants
-  tealGlow: 'rgba(45,212,191,0.12)',
-  tealGlass: 'rgba(45,212,191,0.08)',
-  tealBorder: 'rgba(20,184,166,0.35)',
-  tealBorderFocus: 'rgba(20,184,166,0.55)',
-  purpleGlow: 'rgba(167,139,250,0.08)',
+  tealGlow: 'rgba(0,168,184,0.15)',
+  tealGlass: 'rgba(0,168,184,0.1)',
+  tealBorder: 'rgba(0,168,184,0.35)',
+  tealBorderFocus: 'rgba(0,168,184,0.55)',
+  purpleGlow: 'rgba(0,168,184,0.1)',
 
-  // Input
   inputBg: 'rgba(0,0,0,0.04)',
-  inputBgFocus: 'rgba(0,0,0,0.06)',
-  inputBorder: 'rgba(0,0,0,0.10)',
-  inputBorderFocus: 'rgba(20,184,166,0.50)',
-  inputPlaceholder: 'rgba(0,0,0,0.40)',
+  inputBgFocus: 'rgba(0,168,184,0.06)',
+  inputBorder: 'rgba(0,0,0,0.1)',
+  inputBorderFocus: 'rgba(0,168,184,0.5)',
+  inputPlaceholder: 'rgba(0,0,0,0.4)',
 
-  // Error
   errorBg: 'rgba(239,68,68,0.08)',
   errorBorder: 'rgba(239,68,68,0.5)',
 
-  // Misc
-  pill: 'rgba(0,0,0,0.15)',
+  pill: 'rgba(0,168,184,0.2)',
   divider: 'rgba(0,0,0,0.08)',
   overlay: 'rgba(0,0,0,0.15)',
-  liveGreenBg: 'rgba(34,197,94,0.12)',
-  phoneTabBg: 'rgba(255,255,255,0.85)',
-  mapBg: '#e8f0fe',
+  liveGreenBg: 'rgba(148,219,0,0.15)',
+  phoneTabBg: 'rgba(255,255,255,0.9)',
+  mapBg: '#D6EEF2',
 
-  // StatusBar
   statusBarStyle: 'dark' as 'light' | 'dark',
 
-  // Navigation theme overrides
-  navBackground: '#f0f4f8',
-  navCard: '#ffffff',
+  navBackground: '#E8F4F8',
+  navCard: '#FFFFFF',
   navText: '#11181C',
-  navBorder: '#e2e8f0',
-  navPrimary: '#14b8a6',
+  navBorder: 'rgba(0,168,184,0.12)',
+  navPrimary: ACCENT.cyanDeep,
 };
 
-// ─── Exports ─────────────────────────────────────────────────────────────────
-
-/** Full colour palette type */
 export type ThemeColors = typeof dark;
 
-/** Both palettes keyed by scheme */
 export const ThemeColors = {
   dark,
   light,
 } as const;
 
-/** Shared accents accessible without context */
 export const Accent = ACCENT;
 
-/** Legacy Colors export (used by tabs layout, etc.) */
 export const Colors = {
   light: {
     text: '#11181C',
     background: light.bg,
-    tint: ACCENT.electricBlue,
+    tint: ACCENT.cyan,
     icon: '#687076',
     tabIconDefault: '#687076',
-    tabIconSelected: ACCENT.electricBlue,
+    tabIconSelected: ACCENT.cyan,
   },
   dark: {
-    text: '#ECEDEE',
+    text: '#E4E1E6',
     background: dark.bg,
-    tint: ACCENT.electricBlue,
+    tint: ACCENT.cyan,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
-    tabIconSelected: ACCENT.electricBlue,
+    tabIconSelected: ACCENT.cyan,
   },
 };
 

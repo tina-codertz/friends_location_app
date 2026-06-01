@@ -48,7 +48,7 @@ function LiveBadge() {
 function MockMap() {
   const { colors, accent } = useAppTheme();
   const pins = [
-    { label: 'Alex', color: accent.purple, top: SH * 0.28, left: SW * 0.15 },
+    { label: 'Alex', color: accent.cyan, top: SH * 0.28, left: SW * 0.15 },
     { label: 'You',  color: accent.teal,   top: SH * 0.35, left: SW * 0.25 },
     { label: 'Sam',  color: accent.orange, top: SH * 0.45, left: SW * 0.30 },
   ];
@@ -91,7 +91,7 @@ function Slide0() {
 function Slide1() {
   const { colors, accent } = useAppTheme();
   const friends = [
-    { initials: 'A', name: 'Alex K.',    sub: 'Sharing loc…', color: accent.purple, sharing: true },
+    { initials: 'A', name: 'Alex K.',    sub: 'Sharing loc…', color: accent.cyan, sharing: true },
     { initials: 'S', name: 'Sam T.',     sub: 'Sharing loc…', color: accent.green,  sharing: true },
     { initials: 'J', name: 'Jordan R.',  sub: 'Location off', color: accent.orange, sharing: false },
   ];

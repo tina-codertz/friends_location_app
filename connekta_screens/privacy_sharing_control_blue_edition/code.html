@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PulseMap | Security &amp; Privacy</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        body {
+            background-color: #131316;
+            color: #e4e1e6;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(31, 31, 34, 0.4);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .neon-glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 238, 252, 0.4);
+        }
+
+        .neon-glow-blue {
+            box-shadow: 0 0 20px rgba(0, 238, 252, 0.4);
+        }
+
+        /* Custom toggle styling */
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #00eefc;
+        }
+        .toggle-checkbox:checked + .toggle-label .toggle-dot {
+            transform: translateX(100%);
+        }
+
+        .map-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+            filter: grayscale(100%) brightness(0.5);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#e4e1e6",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#002022",
+                        "inverse-on-surface": "#303033",
+                        "on-tertiary": "#223600",
+                        "on-primary": "#520071",
+                        "on-tertiary-fixed-variant": "#334f00",
+                        "primary-container": "#00eefc",
+                        "outline": "#9d8ba0",
+                        "on-secondary-container": "#00686f",
+                        "tertiary": "#94db00",
+                        "tertiary-fixed-dim": "#94db00",
+                        "primary-fixed": "#f8d8ff",
+                        "on-primary-fixed-variant": "#74009f",
+                        "error-container": "#93000a",
+                        "on-tertiary-container": "#fffeff",
+                        "on-secondary": "#00363a",
+                        "surface-container-highest": "#353438",
+                        "on-primary-fixed": "#320047",
+                        "background": "#131316",
+                        "primary-fixed-dim": "#ecb2ff",
+                        "surface-tint": "#00eefc",
+                        "secondary": "#d3fbff",
+                        "on-error": "#690005",
+                        "surface-bright": "#39393c",
+                        "on-tertiary-fixed": "#121f00",
+                        "tertiary-fixed": "#a9f900",
+                        "surface-variant": "#353438",
+                        "secondary-container": "#00eefc",
+                        "surface-dim": "#131316",
+                        "surface-container-lowest": "#0e0e11",
+                        "surface-container-high": "#2a2a2d",
+                        "surface-container": "#1f1f22",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#568200",
+                        "on-primary-container": "#00363a",
+                        "surface": "#131316",
+                        "on-surface-variant": "#d4c0d7",
+                        "on-background": "#e4e1e6",
+                        "primary": "#00eefc",
+                        "surface-container-low": "#1b1b1e",
+                        "on-surface": "#e4e1e6",
+                        "on-secondary-fixed-variant": "#004f54",
+                        "outline-variant": "#514255",
+                        "secondary-fixed": "#7df4ff",
+                        "secondary-fixed-dim": "#00dbe9",
+                        "inverse-primary": "#9900cf"
+                    },
+                    "spacing": {
+                        "md": "20px",
+                        "sm": "12px",
+                        "lg": "32px",
+                        "xl": "48px",
+                        "base": "8px",
+                        "xs": "4px",
+                        "edge-margin": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Montserrat"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Montserrat"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "30px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased">
+<!-- Background Map Layer -->
+<div class="map-bg" data-location="Los Angeles Night" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBWWNnA7Mcvnj-UnSKbBZT3qJil5EhknwsVdByl2a535TU7Ceht4qO7D6LzBa2YzZ4HN3bh1gGyt5YCMuu1o9hhRymruyfAdh5BdRjRykjUbIWmiMJxUnjNcH7ToKhnPogaBRPNZNrnlizapvJon14pa-LuxbEpr2CmkROqzkI2irw53p2cex3WfSqdfQYqfRjR7lwuc0K6Y1nfH8ZANA1Vxqo8lty411rNYYO_MlOtXl9dpIEDBh6zj7tg8c5yyLDwD19JS7jGeOL7'); background-size: cover; background-position: center;"></div>
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-md py-sm bg-surface/60 backdrop-blur-xl floating rounded-xl mx-edge-margin mt-sm border border-white/10 shadow-lg">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden neon-glow-blue">
+<img alt="Profile" data-alt="A close-up portrait of a stylish young adult male with a neon violet glow highlighting his features. The background is a dark, tech-inspired environment with soft bokeh effects. The lighting is moody and expressive, featuring deep purples and high-contrast shadows to match a premium digital nightlife aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoJkJAybLQ995h_OlEsirckIGHqwVIeYA-BPoWla_GcQ8CFwFuPWFmdIehBz6EnnxWEfrRvOxRJzRufrSh0w1nA-DNr_MHjze1G_37vHFeTKsJ35QgHNznzs8Ij_Z_7pq6CBChR5uAz9mr68SLRFEmcvEb5kzRyi3S6u4ZrQQ9li2VQBjSi7ltXlfNG0RbUQ0C62ka8OMYllfxu3sewDu33e-5NHAIKwUM7qsNfCRsuVJEBZB-kLzO0F8coSfqBUyMHOxaI6urxQ-k"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">PulseMap</h1>
+</div>
+<div class="flex items-center gap-sm">
+<button class="material-symbols-outlined text-primary p-2 hover:bg-white/5 rounded-full transition-colors active:scale-90" data-icon="search">search</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-32 pb-32 px-edge-margin max-w-2xl mx-auto space-y-md">
+<!-- Ghost Mode Section -->
+<section class="glass-panel p-md rounded-xl neon-glow-cyan border-[#00eefc]/30">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary-container text-3xl" data-icon="visibility_off">visibility_off</span>
+<div>
+<h2 class="font-headline-md text-headline-md text-secondary-container">Ghost Mode</h2>
+<p class="font-body-md text-on-surface-variant text-sm">Become invisible to everyone on the map.</p>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="ghost-toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest cursor-pointer transition-colors duration-300" for="ghost-toggle"></label>
+</div>
+</div>
+</section>
+<!-- Temporary Sharing -->
+<section class="glass-panel p-md rounded-xl space-y-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" data-icon="timer">timer</span>
+<h3 class="font-label-md text-label-md uppercase tracking-widest text-primary">Temporary Sharing</h3>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm">Broadcast your live location for a limited time.</p>
+<div class="grid grid-cols-4 gap-sm pt-xs">
+<button class="bg-surface-container-high py-sm rounded-lg border border-white/5 hover:bg-primary/20 hover:border-primary/50 transition-all font-label-sm text-label-sm">15m</button>
+<button class="bg-primary-container text-on-primary-container py-sm rounded-lg shadow-lg font-label-sm text-label-sm">1h</button>
+<button class="bg-surface-container-high py-sm rounded-lg border border-white/5 hover:bg-primary/20 hover:border-primary/50 transition-all font-label-sm text-label-sm">4h</button>
+<button class="bg-surface-container-high py-sm rounded-lg border border-white/5 hover:bg-primary/20 hover:border-primary/50 transition-all font-label-sm text-label-sm">8h</button>
+</div>
+</section>
+<!-- Geofence Management -->
+<section class="glass-panel p-md rounded-xl space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-tertiary" data-icon="distance">distance</span>
+<h3 class="font-label-md text-label-md uppercase tracking-widest text-tertiary">Geofence Alerts</h3>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" data-icon="add_circle">add_circle</button>
+</div>
+<div class="space-y-sm">
+<!-- Alert Item -->
+<div class="flex items-center justify-between p-sm bg-white/5 rounded-lg border border-white/5 group hover:border-tertiary/30 transition-all">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-tertiary/10">
+<span class="material-symbols-outlined text-tertiary" data-icon="home">home</span>
+</div>
+<div>
+<p class="font-body-md text-on-surface font-semibold">Arrive at Home</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Notify Inner Circle</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-error cursor-pointer" data-icon="delete">delete</span>
+</div>
+<!-- Alert Item -->
+<div class="flex items-center justify-between p-sm bg-white/5 rounded-lg border border-white/5 group hover:border-primary/30 transition-all">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-primary/10">
+<span class="material-symbols-outlined text-primary" data-icon="school">school</span>
+</div>
+<div>
+<p class="font-body-md text-on-surface font-semibold">Leave Campus</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Notify Squad</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-error cursor-pointer" data-icon="delete">delete</span>
+</div>
+</div>
+</section>
+<!-- Battery Optimization -->
+<section class="glass-panel p-md rounded-xl">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary-fixed" data-icon="battery_saver">battery_saver</span>
+<div>
+<h2 class="font-body-lg text-body-lg font-semibold text-on-surface">Battery Saving Mode</h2>
+<p class="font-body-md text-on-surface-variant text-sm">Reduce update frequency to save power.</p>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="battery-toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest cursor-pointer transition-colors duration-300" for="battery-toggle"></label>
+</div>
+</div>
+</section>
+<!-- Privacy Policy Card -->
+<section class="p-md text-center opacity-60">
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-xs">Your data is encrypted end-to-end.</p>
+<a class="text-primary font-label-sm underline" href="#">Review Privacy Policy</a>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-lg pb-md pt-sm bg-surface-container/40 backdrop-blur-3xl border-t border-white/10 shadow-[0_-8px_32px_0_rgba(0,0,0,0.3)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-label-sm text-label-sm mt-1">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-sm text-label-sm mt-1">Social</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full w-12 h-12 shadow-[0_0_16px_rgba(0,238,252,0.4)] scale-110 transition-all duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" data-icon="security" style="font-variation-settings: 'FILL' 1;">security</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="emergency">emergency</span>
+<span class="font-label-sm text-label-sm mt-1">Safety</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for sliders/buttons
+        const durationButtons = document.querySelectorAll('button[class*="bg-surface-container-high"], button[class*="bg-primary-container"]');
+        durationButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                durationButtons.forEach(b => {
+                    b.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-lg');
+                    b.classList.add('bg-surface-container-high', 'text-on-surface');
+                });
+                btn.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-lg');
+                btn.classList.remove('bg-surface-container-high');
+            });
+        });
+
+        // Toggle state change handler
+        const ghostToggle = document.getElementById('ghost-toggle');
+        const ghostPanel = ghostToggle.closest('section');
+        ghostToggle.addEventListener('change', () => {
+            if(ghostToggle.checked) {
+                ghostPanel.classList.remove('border-[#00eefc]/30');
+                ghostPanel.classList.add('bg-secondary-container/10', 'border-[#00eefc]');
+            } else {
+                ghostPanel.classList.add('border-[#00eefc]/30');
+                ghostPanel.classList.remove('bg-secondary-container/10', 'border-[#00eefc]');
+            }
+        });
+    </script>
+</body></html>
