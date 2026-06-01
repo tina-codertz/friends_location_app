@@ -16,8 +16,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
 import { Font, FontBrand, Type } from '@/constants/typography';
 import type { FriendLocation } from '@/types/location';
-import type { ThemeColors } from '@/constants/theme';
-import type { Accent } from '@/constants/theme';
+import { Accent, type ThemeColors } from '@/constants/theme';
 
 export type MapFilterChip = 'all' | 'friends' | 'places';
 
@@ -52,8 +51,6 @@ export type MapTabChromeProps = {
   username: string;
   sharing: boolean;
   onToggleShare: (v: boolean) => void;
-  friendCount: number;
-  placeCount: number;
   locations: FriendLocation[];
   searchQuery: string;
   onSearchQueryChange: (q: string) => void;
@@ -73,8 +70,6 @@ export function MapTabChrome({
   username,
   sharing,
   onToggleShare,
-  friendCount,
-  placeCount,
   locations,
   searchQuery,
   onSearchQueryChange,
@@ -224,7 +219,7 @@ export function MapTabChrome({
                     <Text style={{ fontFamily: Font.regular }}> is live on the map</Text>
                   </Text>
                   <Text style={[Type.caption, { color: colors.textMuted, marginTop: 2, fontFamily: Font.regular }]}>
-                    {relativeTime(f.updated_at)} · {friendCount} friends · {placeCount} places
+                    {relativeTime(f.updated_at)}
                   </Text>
                 </View>
               </View>

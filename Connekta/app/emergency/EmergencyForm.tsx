@@ -9,7 +9,7 @@ import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
 import { emergencyAPI } from '@/services/api';
-import { TouchableOpacity } from 'react-native';
+import { GlassIconButton } from '@/components/ui/GlassIconButton';
 
 export default function EmergencyForm() {
   const router = useRouter();
@@ -71,7 +71,7 @@ export default function EmergencyForm() {
         Add a trusted contact who can be reached in case of emergency.
       </Text>
 
-      <GlassCard borderRadius={22} intensity="heavy" style={{ gap: 16 }}>
+      <GlassCard borderRadius={16} intensity="heavy" glowAccent style={{ gap: 16 }}>
         <View>
           <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 8 }]}>Full Name</Text>
           <TextInput
@@ -103,32 +103,28 @@ export default function EmergencyForm() {
           />
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, alignItems: 'center' }}>
-          <View style={{ flex: 1 }}>
-            <GlassButton title="Save Contact" onPress={handleSubmit} variant="secondary" fullWidth />
-          </View>
-          <TouchableOpacity
-            onPress={pickContact}
-            disabled={loading}
-            style={{
-              width: 48,
-              height: 48,
-              backgroundColor: accent.electricBlue,
-              borderRadius: 12,
-              justifyContent: 'center',
-              alignItems: 'center',
-              opacity: loading ? 0.5 : 1,
-            }}
-          >
-            <Ionicons name="person-add-outline" size={22} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        <GlassButton
+          title="Pick from contacts"
+          onPress={pickContact}
+          variant="tonal"
+          fullWidth
+          disabled={loading}
+          icon={<Ionicons name="person-add-outline" size={18} color={accent.cyan} />}
+        />
+        <GlassButton
+          title={loading ? 'Saving…' : 'Save contact'}
+          onPress={handleSubmit}
+          variant="primary"
+          fullWidth
+          disabled={loading}
+          loading={loading}
+        />
       </GlassCard>
 
       <GlassButton
         title="Cancel"
         onPress={() => router.back()}
-        variant="ghost"
+        variant="tonal"
         fullWidth
         style={{ marginTop: 12 }}
       />

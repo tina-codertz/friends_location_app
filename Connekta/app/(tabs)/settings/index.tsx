@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Switch, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Switch, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { GlassNavCard } from '@/components/ui/GlassNavCard';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { Font, Type } from '@/constants/typography';
@@ -57,22 +58,23 @@ export default function SettingsHomeScreen() {
       <Text style={[Type.hero, { color: colors.textPrimary }]}>Profile</Text>
       <Text style={[Type.body, { color: colors.textMuted }]}>Manage your account, security, and preferences.</Text>
 
-      <TouchableOpacity onPress={() => router.push('/(tabs)/settings/profile')} activeOpacity={0.85}>
-        <GlassCard borderRadius={22} intensity="medium" glowAccent style={{ paddingVertical: 18 }}>
-          <Text style={[Type.section, { color: colors.textPrimary }]}>Profile</Text>
-          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>View account details</Text>
-        </GlassCard>
-      </TouchableOpacity>
+      <GlassNavCard
+        title="Profile"
+        subtitle="View account details"
+        icon="person-circle-outline"
+        glow
+        onPress={() => router.push('/(tabs)/settings/profile')}
+      />
 
-      <TouchableOpacity onPress={() => router.push('/(tabs)/settings/CircleManagement')} activeOpacity={0.85}>
-        <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 18 }}>
-          <Text style={[Type.section, { color: colors.textPrimary }]}>Circle management</Text>
-          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>Invite codes, share link, join with code</Text>
-        </GlassCard>
-      </TouchableOpacity>
+      <GlassNavCard
+        title="Circle management"
+        subtitle="Invite codes, share link, join with code"
+        icon="people-outline"
+        onPress={() => router.push('/(tabs)/settings/CircleManagement')}
+      />
 
   
-      <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 16 }}>
+      <GlassCard borderRadius={16} intensity="medium">
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
             <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>Biometric lock</Text>
@@ -89,7 +91,7 @@ export default function SettingsHomeScreen() {
         </View>
       </GlassCard>
 
-      <GlassCard borderRadius={22} intensity="light" style={{ paddingVertical: 16 }}>
+      <GlassCard borderRadius={16} intensity="light">
         <Text style={[Type.caption, { color: colors.textMuted }]}>Session</Text>
         <Text style={[Type.body, { color: colors.textPrimary, marginTop: 8, fontFamily: Font.medium }]}>
           {user?.username}
@@ -110,7 +112,7 @@ export default function SettingsHomeScreen() {
               },
             ]);
           }}
-          variant="outline"
+          variant="tonal"
           fullWidth
         />
       </GlassCard>

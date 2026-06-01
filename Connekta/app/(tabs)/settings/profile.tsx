@@ -36,26 +36,23 @@ export default function ProfileScreen() {
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <Text style={[Type.hero, { color: colors.textPrimary }]}>Profile</Text>
-        <TouchableOpacity
-          onPress={() => setIsEditing(!isEditing)}
-          style={{
-            backgroundColor: colors.inputBg,
-            borderWidth: 1,
-            borderColor: colors.inputBorder,
-            borderRadius: 12,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
+        <GlassButton
+          title={isEditing ? 'Cancel' : 'Edit profile'}
+          onPress={() => {
+            if (isEditing) {
+              setEditUsername(user?.username || '');
+            }
+            setIsEditing(!isEditing);
           }}
-        >
-          <Ionicons
-            name={isEditing ? 'close' : 'pencil'}
-            size={18}
-            color={accent.electricBlue}
-          />
-        </TouchableOpacity>
+          variant="glass"
+          size="small"
+          icon={
+            <Ionicons name={isEditing ? 'close' : 'pencil'} size={16} color={accent.cyan} />
+          }
+        />
       </View>
 
-      <GlassCard borderRadius={24} intensity="heavy" glowAccent style={{ paddingVertical: 28, alignItems: 'center' }}>
+      <GlassCard borderRadius={16} intensity="heavy" glowAccent style={{ paddingVertical: 28, alignItems: 'center' }}>
         <View style={[styles.avatar, { borderColor: colors.tealBorder }]}>
           <Text style={{ fontSize: 36, color: colors.textPrimary, fontFamily: Font.bold }}>
             {(editUsername ?? '?').slice(0, 1).toUpperCase()}
@@ -87,7 +84,7 @@ export default function ProfileScreen() {
 
       <View style={{ height: 20 }} />
 
-      <GlassCard borderRadius={22} intensity="medium">
+      <GlassCard borderRadius={16} intensity="medium">
         
         <Row label="Account" value="Active" colors={colors} />
         <Row
@@ -100,23 +97,20 @@ export default function ProfileScreen() {
 
       {isEditing && (
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
-          <GlassButton
-            title="Save"
-            onPress={handleSave}
-            variant="primary"
-            fullWidth
-            // flex={1}
-          />
-          <GlassButton
-            title="Cancel"
-            onPress={() => {
-              setEditUsername(user?.username || '');
-              setIsEditing(false);
-            }}
-            variant="ghost"
-            fullWidth
-            // flex={1}
-          />
+          <View style={{ flex: 1 }}>
+            <GlassButton title="Save" onPress={handleSave} variant="primary" fullWidth />
+          </View>
+          <View style={{ flex: 1 }}>
+            <GlassButton
+              title="Cancel"
+              onPress={() => {
+                setEditUsername(user?.username || '');
+                setIsEditing(false);
+              }}
+              variant="tonal"
+              fullWidth
+            />
+          </View>
         </View>
       )}
     </ScrollView>

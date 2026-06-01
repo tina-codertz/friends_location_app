@@ -4,9 +4,7 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  Switch,
   TouchableOpacity,
-  Animated,
   Modal,
 } from 'react-native';
 import * as Location from 'expo-location';
@@ -15,6 +13,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
+import { MapTabChrome, type MapFilterChip } from '@/components/map/MapTabChrome';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { ENABLE_MAP_LOCATION_TRACKING } from '@/constants/features';
@@ -56,6 +55,9 @@ export default function MapTabScreen() {
   const [permission, setPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
   const [sharing, setSharing] = useState(false);
   const [showPlaces, setShowPlaces] = useState(true);
+  const [filter, setFilter] = useState<MapFilterChip>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -63,7 +65,6 @@ export default function MapTabScreen() {
   const lastSent = useRef<{ lat: number; lng: number } | null>(null);
   const sharingRef = useRef(false);
   const mapRef = useRef<ConnektaMapRef>(null);
-  const overlayShift = useRef(new Animated.Value(0)).current;
 
   sharingRef.current = sharing;
 
@@ -80,13 +81,16 @@ export default function MapTabScreen() {
     };
   }, [me]);
 
-  const friendMarkers = useMemo(
-    () => capList(locations, MAX_FRIEND_MARKERS_MAIN),
-    [locations]
-  );
+  const q = searchQuery.trim().toLowerCase();
+
+  const friendMarkers = useMemo(() => {
+    let list = capList(locations, MAX_FRIEND_MARKERS_MAIN);
+    if (q) list = list.filter((f) => f.username.toLowerCase().includes(q));
+    return list;
+  }, [locations, q]);
 
   const placeMarkers = useMemo(() => {
-    if (!showPlaces) return [];
+    if (!showPlaces || filter === 'friends') return [];
     const valid = circlePlaces.filter(
       (p) =>
         Number.isFinite(p.lat) &&
@@ -95,10 +99,19 @@ export default function MapTabScreen() {
         p.lat <= 90 &&
         p.lng >= -180 &&
         p.lng <= 180 &&
-        p.name?.trim()
+        p.name?.trim() &&
+        (!q || p.name.trim().toLowerCase().includes(q))
     );
     return capList(valid, MAX_PLACE_MARKERS_MAIN);
-  }, [circlePlaces, showPlaces]);
+  }, [circlePlaces, showPlaces, filter, q]);
+
+  const showFriendMarkers = filter !== 'places';
+  const showPlaceMarkers = filter !== 'friends' && showPlaces;
+
+  const feedLocations = useMemo(() => {
+    if (!q) return friendMarkers;
+    return friendMarkers;
+  }, [friendMarkers, q]);
 
   useFocusEffect(
     useCallback(() => {
@@ -190,10 +203,19 @@ export default function MapTabScreen() {
     }
   };
 
+  const onRecenter = () => {
+    if (region) mapRef.current?.flyTo(region, 500);
+  };
+
+  const onFilterChange = (chip: MapFilterChip) => {
+    setFilter(chip);
+    if (chip === 'places') setShowPlaces(true);
+  };
+
   if (!isLoggedIn) {
     return (
       <View style={[styles.center, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator color={accent.electricBlue} />
+        <ActivityIndicator color={accent.cyan} />
       </View>
     );
   }
@@ -201,7 +223,7 @@ export default function MapTabScreen() {
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator color={accent.electricBlue} />
+        <ActivityIndicator color={accent.cyan} />
         <Text style={[Type.body, { color: colors.textMuted, marginTop: 12, fontFamily: Font.regular }]}>
           Loading map…
         </Text>
@@ -212,7 +234,7 @@ export default function MapTabScreen() {
   if (permission !== 'granted' || !region) {
     return (
       <View style={[styles.center, { backgroundColor: colors.bg, padding: 24 }]}>
-        <GlassCard borderRadius={22}>
+        <GlassCard borderRadius={16} glowAccent>
           <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Location needed</Text>
           <Text style={[Type.body, { color: colors.textMuted }]}>
             Enable location in system settings to see the live map and optional sharing.
@@ -223,101 +245,63 @@ export default function MapTabScreen() {
   }
 
   return (
-    <View style={styles.fill}>
+    <View style={[styles.fill, { backgroundColor: colors.bg }]}>
       <ConnektaMap
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         initialRegion={region}
         showUserLocation
-        onPress={undefined}
       >
-        {friendMarkers.map((f) => (
-          <PlaceLabelMarker
-            key={`live-${f.id}`}
-            id={`live-${f.id}`}
-            latitude={f.lat}
-            longitude={f.lng}
-            label={f.username}
-            subtitle="Live"
-            accentColor={accent.coral}
-            backgroundColor={colors.glassBgHeavy}
-            textColor={colors.textPrimary}
-            borderColor={accent.coral}
-          />
-        ))}
-        {placeMarkers.map((p) => {
-          const isMine = user?.uid != null && p.userId === user.uid;
-          return (
-            <PlaceAreaMarker
-              key={`place-${p.id}`}
-              id={`place-${p.id}`}
-              latitude={p.lat}
-              longitude={p.lng}
-              label={p.name.trim()}
-              subtitle={isMine ? 'Your saved place' : `Shared by ${p.username}`}
-              accentColor={isMine ? accent.electricBlue : accent.teal}
+        {showFriendMarkers &&
+          friendMarkers.map((f) => (
+            <PlaceLabelMarker
+              key={`live-${f.id}`}
+              id={`live-${f.id}`}
+              latitude={f.lat}
+              longitude={f.lng}
+              label={f.username}
+              subtitle="Live"
+              accentColor={accent.cyan}
+              backgroundColor={colors.glassBgHeavy}
+              textColor={colors.textPrimary}
+              borderColor={accent.cyan}
             />
-          );
-        })}
+          ))}
+        {showPlaceMarkers &&
+          placeMarkers.map((p) => {
+            const isMine = user?.uid != null && p.userId === user.uid;
+            return (
+              <PlaceAreaMarker
+                key={`place-${p.id}`}
+                id={`place-${p.id}`}
+                latitude={p.lat}
+                longitude={p.lng}
+                label={p.name.trim()}
+                subtitle={isMine ? 'Your saved place' : `Shared by ${p.username}`}
+                accentColor={isMine ? accent.cyan : accent.green}
+              />
+            );
+          })}
       </ConnektaMap>
 
-      <Animated.View
-        pointerEvents="box-none"
-        style={[
-          styles.overlay,
-          {
-            paddingTop: insets.top + 12,
-            paddingHorizontal: 20,
-            paddingBottom: insets.bottom + 8,
-            transform: [{ translateY: overlayShift }],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={() => setMenuOpen(true)}
-          activeOpacity={0.85}
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 22,
-            backgroundColor: colors.glassBgMedium,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 14,
-            borderWidth: 1,
-            borderColor: colors.glassBorderMedium,
-            elevation: 8,
-          }}
-        >
-          <Ionicons name="menu-outline" size={26} color={colors.textPrimary} />
-        </TouchableOpacity>
-
-        <GlassCard intensity="medium" borderRadius={22} style={{ paddingVertical: 16 }}>
-          <View style={styles.row}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={[Type.section, { color: colors.textPrimary }]}>Live map</Text>
-              <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-                {friendMarkers.length} friends · {showPlaces ? placeMarkers.length : 0} places shown
-              </Text>
-            </View>
-            <Switch
-              value={sharing}
-              onValueChange={onToggleShare}
-              trackColor={{ false: colors.divider, true: `${accent.electricBlue}88` }}
-              thumbColor={sharing ? accent.electricBlue : colors.textTertiary}
-            />
-          </View>
-          <View style={[styles.row, { marginTop: 10 }]}>
-            <Text style={[Type.caption, { color: colors.textMuted, flex: 1 }]}>Show saved places</Text>
-            <Switch
-              value={showPlaces}
-              onValueChange={setShowPlaces}
-              trackColor={{ false: colors.divider, true: `${accent.teal}88` }}
-              thumbColor={showPlaces ? accent.teal : colors.textTertiary}
-            />
-          </View>
-        </GlassCard>
-      </Animated.View>
+      <MapTabChrome
+        colors={colors}
+        accent={accent}
+        username={user?.username ?? 'You'}
+        sharing={sharing}
+        onToggleShare={onToggleShare}
+        locations={feedLocations}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        searchOpen={searchOpen}
+        onToggleSearch={() => setSearchOpen((v) => !v)}
+        filter={filter}
+        onFilterChange={onFilterChange}
+        onOpenMenu={() => setMenuOpen(true)}
+        onSOS={() => router.push('/(tabs)/SOSScreen')}
+        onAddPlace={() => router.push('/(tabs)/MyPlaces')}
+        onRecenter={onRecenter}
+      />
 
       <Modal visible={menuOpen} animationType="fade" transparent onRequestClose={() => setMenuOpen(false)}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
@@ -326,6 +310,7 @@ export default function MapTabScreen() {
             borderRadius={24}
             intensity="heavy"
             blur={false}
+            glowAccent
             style={{
               borderBottomLeftRadius: 0,
               borderBottomRightRadius: 0,
@@ -344,11 +329,41 @@ export default function MapTabScreen() {
             <TouchableOpacity
               onPress={() => {
                 setMenuOpen(false);
+                setShowPlaces((v) => !v);
+              }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                paddingVertical: 14,
+                borderBottomColor: colors.divider,
+                borderBottomWidth: 1,
+              }}
+            >
+              <Ionicons name="layers-outline" size={24} color={accent.cyan} />
+              <View>
+                <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+                  {showPlaces ? 'Hide saved places' : 'Show saved places'}
+                </Text>
+                <Text style={[Type.caption, { color: colors.textMuted }]}>Toggle place markers on the map</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setMenuOpen(false);
                 router.push('/(tabs)/MyPlaces');
               }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomColor: colors.divider, borderBottomWidth: 1 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                paddingVertical: 14,
+                borderBottomColor: colors.divider,
+                borderBottomWidth: 1,
+              }}
             >
-              <Ionicons name="location" size={24} color={accent.electricBlue} />
+              <Ionicons name="location" size={24} color={accent.cyan} />
               <View>
                 <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>My Places</Text>
                 <Text style={[Type.caption, { color: colors.textMuted }]}>Save favorite locations</Text>
@@ -360,9 +375,16 @@ export default function MapTabScreen() {
                 setMenuOpen(false);
                 router.push('/(tabs)/ShareLocation');
               }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomColor: colors.divider, borderBottomWidth: 1 }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                paddingVertical: 14,
+                borderBottomColor: colors.divider,
+                borderBottomWidth: 1,
+              }}
             >
-              <Ionicons name="share-social" size={24} color={accent.teal} />
+              <Ionicons name="share-social" size={24} color={accent.cyan} />
               <View>
                 <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>Share Location</Text>
                 <Text style={[Type.caption, { color: colors.textMuted }]}>Quick share your location</Text>
@@ -372,14 +394,14 @@ export default function MapTabScreen() {
             <TouchableOpacity
               onPress={() => {
                 setMenuOpen(false);
-                router.push('/(tabs)/SOSScreen');
+                router.push('/(tabs)/settings');
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 }}
             >
-              <Ionicons name="alert-circle" size={24} color={accent.coral} />
+              <Ionicons name="person-circle-outline" size={24} color={accent.cyan} />
               <View>
-                <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>Emergency SOS</Text>
-                <Text style={[Type.caption, { color: colors.textMuted }]}>Send emergency alert</Text>
+                <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>Profile</Text>
+                <Text style={[Type.caption, { color: colors.textMuted }]}>Account and settings</Text>
               </View>
             </TouchableOpacity>
           </GlassCard>
@@ -390,13 +412,6 @@ export default function MapTabScreen() {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: '#121212' },
+  fill: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  row: { flexDirection: 'row', alignItems: 'center' },
 });

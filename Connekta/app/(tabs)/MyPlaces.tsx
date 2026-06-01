@@ -314,7 +314,7 @@ export default function MyPlacesScreen() {
               </Text>
             ) : null}
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-              <GlassButton title="Cancel" onPress={() => setAddOpen(false)} variant="secondary" style={{ flex: 1 }} />
+              <GlassButton title="Cancel" onPress={() => setAddOpen(false)} variant="tonal" style={{ flex: 1 }} />
               <GlassButton
                 title={saving ? 'Saving…' : 'Save place'}
                 onPress={savePlace}

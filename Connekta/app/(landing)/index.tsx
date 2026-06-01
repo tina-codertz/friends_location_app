@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import FloatingWords from '@/components/background/FloatingWords';
+import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
 
 const { width: SW, height: SH } = Dimensions.get('window');
@@ -296,30 +297,13 @@ export default function LandingPage() {
             ))}
           </View>
 
-          {/* CTA — always visible */}
-          <TouchableOpacity
-            style={[
-              styles.joinBtn,
-              { backgroundColor: accent.teal },
-              !isLast && {
-                backgroundColor: colors.tealGlass,
-                borderWidth: 1,
-                borderColor: colors.tealBorder,
-              },
-            ]}
+          <GlassButton
+            title={isLast ? 'Get Started' : 'Next'}
             onPress={isLast ? handleJoin : advance}
-            activeOpacity={0.85}
-          >
-            <Text
-              style={[
-                styles.joinBtnText,
-                { color: colors.bg },
-                !isLast && { color: accent.teal },
-              ]}
-            >
-              {isLast ? 'Get Started' : 'Next'}
-            </Text>
-          </TouchableOpacity>
+            variant={isLast ? 'primary' : 'tonal'}
+            size="large"
+            fullWidth
+          />
 
           {/* Tap hint */}
           {!isLast && (

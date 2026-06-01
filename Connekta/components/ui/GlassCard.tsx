@@ -19,6 +19,8 @@ interface GlassCardProps {
   animationDelay?: number;
   /** Disable blur (e.g. web fallback) */
   blur?: boolean;
+  /** Override default inner padding (default 16) */
+  padding?: number;
 }
 
 const BLUR_INTENSITY = { light: 28, medium: 40, heavy: 52 } as const;
@@ -27,11 +29,12 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   children,
   intensity = 'medium',
   glowAccent = false,
-  borderRadius = 22,
+  borderRadius = 16,
   style,
   animated = false,
   animationDelay = 0,
   blur = true,
+  padding = 16,
 }) => {
   const { colors, isDark } = useAppTheme();
   const opacity = React.useRef(new Animated.Value(animated ? 0 : 1)).current;
@@ -74,7 +77,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     shadowOpacity: isDark ? 0.35 : 0.12,
     shadowRadius: 24,
     elevation: 12,
-    padding: 20,
+    padding,
   };
 
   const innerGlow = (

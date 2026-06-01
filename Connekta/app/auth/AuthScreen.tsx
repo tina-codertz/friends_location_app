@@ -179,15 +179,7 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <TouchableOpacity
-            style={[styles.backBtn, { backgroundColor: colors.surface, borderColor: colors.glassBorderLight }]}
-            onPress={handleBack}
-            activeOpacity={0.7}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Text style={[styles.backArrow, { color: accent.teal }]}>←</Text>
-            <Text style={[styles.backText, { color: colors.textPrimary }]}>Back</Text>
-          </TouchableOpacity>
+          <GlassButton title="Back" onPress={handleBack} variant="glass" size="small" style={{ alignSelf: 'flex-start', marginBottom: 12 }} />
 
           <Animated.View
             style={[
@@ -201,7 +193,7 @@ export default function AuthScreen() {
             <View style={[styles.logoRing, { backgroundColor: colors.tealGlow, borderColor: accent.teal }]}>
               <View style={[styles.logoDot, { backgroundColor: accent.teal }]} />
             </View>
-            <Text style={[styles.brandName, { color: colors.textPrimary }]}>Connekta</Text>
+            <Text style={[styles.brandName, { color: accent.cyan }]}>Connekta</Text>
             <Text style={[styles.brandSub, { color: colors.textSecondary }]}>
               {isLogin ? 'Welcome back' : 'Create your account'}
             </Text>
@@ -219,43 +211,21 @@ export default function AuthScreen() {
               borderRadius={24}
               style={styles.authCard}
             >
-              <View style={[styles.cardHeader, { backgroundColor: colors.surface }]}>
-                <TouchableOpacity
+              <View style={styles.modeRow}>
+                <GlassButton
+                  title="Sign In"
                   onPress={() => setIsLogin(true)}
-                  style={[
-                    styles.modeTab,
-                    isLogin && [styles.modeTabActive, { backgroundColor: colors.tealGlass, borderColor: colors.tealBorder }],
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.modeTabText,
-                      { color: colors.textTertiary },
-                      isLogin && { color: accent.teal },
-                    ]}
-                  >
-                    Sign In
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                  variant={isLogin ? 'chipActive' : 'chip'}
+                  size="small"
+                  style={{ flex: 1 }}
+                />
+                <GlassButton
+                  title="Sign Up"
                   onPress={() => setIsLogin(false)}
-                  style={[
-                    styles.modeTab,
-                    !isLogin && [styles.modeTabActive, { backgroundColor: colors.tealGlass, borderColor: colors.tealBorder }],
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.modeTabText,
-                      { color: colors.textTertiary },
-                      !isLogin && { color: accent.teal },
-                    ]}
-                  >
-                    Sign Up
-                  </Text>
-                </TouchableOpacity>
+                  variant={!isLogin ? 'chipActive' : 'chip'}
+                  size="small"
+                  style={{ flex: 1 }}
+                />
               </View>
 
               {!isLogin && (
@@ -429,24 +399,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 24,
   },
-  cardHeader: {
+  modeRow: {
     flexDirection: 'row',
-    marginBottom: 24,
-    borderRadius: 12,
-    padding: 4,
-  },
-  modeTab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  modeTabActive: {
-    borderWidth: 1,
-  },
-  modeTabText: {
-    fontSize: 14,
-    fontWeight: '600',
+    gap: 8,
+    marginBottom: 20,
   },
   inputIcon: {
     fontSize: 16,

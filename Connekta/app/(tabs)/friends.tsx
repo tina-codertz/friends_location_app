@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { GlassButton } from '@/components/ui/GlassButton';
 import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
 import { useAppTheme } from '@/context/ThemeContext';
 import { friendsAPI, type FriendUser } from '@/services/api';
@@ -160,22 +161,13 @@ export default function FriendsTabScreen() {
     <View style={{ gap: 14, marginBottom: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 }}>
         <Text style={[Type.hero, { color: colors.textPrimary }]}>My Circle</Text>
-        <TouchableOpacity
+        <GlassButton
+          title="Manage"
           onPress={() => router.push('/(tabs)/settings/CircleManagement')}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 4,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: colors.glassBorderMedium,
-          }}
-        >
-          <Ionicons name="people" size={16} color={accent.electricBlue} />
-          <Text style={[Type.caption, { color: accent.electricBlue, fontFamily: Font.semibold }]}>Manage</Text>
-        </TouchableOpacity>
+          variant="glass"
+          size="small"
+          icon={<Ionicons name="people" size={16} color={accent.cyan} />}
+        />
       </View>
 
       <View style={[styles.mapBox, { borderColor: colors.glassBorderMedium }]}>
@@ -209,22 +201,15 @@ export default function FriendsTabScreen() {
       </Text>
 
       {incoming.length > 0 ? (
-        <GlassCard borderRadius={22} intensity="heavy" glowAccent style={{ paddingVertical: 14 }}>
+        <GlassCard borderRadius={16} intensity="heavy" glowAccent padding={14}>
           <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 10 }]}>Pending requests</Text>
           {incoming.map((u) => (
             <View key={u.id} style={[styles.reqRow, { borderColor: colors.divider }]}>
               <Text style={[Type.body, { color: colors.textPrimary, flex: 1, fontFamily: Font.medium }]}>
                 {u.username}
               </Text>
-              <TouchableOpacity onPress={() => accept(u.id)} style={[styles.chip, { backgroundColor: accent.electricBlue }]}>
-                <Text style={{ color: '#fff', fontFamily: Font.semibold }}>Accept</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => reject(u.id)}
-                style={[styles.chip, { borderWidth: 1, borderColor: colors.glassBorderMedium }]}
-              >
-                <Text style={{ color: colors.textSecondary, fontFamily: Font.medium }}>Decline</Text>
-              </TouchableOpacity>
+              <GlassButton title="Accept" onPress={() => accept(u.id)} variant="chipActive" size="small" />
+              <GlassButton title="Decline" onPress={() => reject(u.id)} variant="chip" size="small" />
             </View>
           ))}
         </GlassCard>

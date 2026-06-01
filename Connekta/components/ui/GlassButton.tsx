@@ -1,5 +1,5 @@
 /**
- * GlassButton — Floating glass / gradient button with press scale.
+ * GlassButton — Stitch blue-edition CTAs (cyan container, glass tonal, pill glass).
  */
 
 import React, { useRef } from 'react';
@@ -12,11 +12,21 @@ import {
   TextStyle,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font } from '@/constants/typography';
+import { Radius, StitchShadow } from '@/constants/ui';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'tonal'
+  | 'outline'
+  | 'ghost'
+  | 'glass'
+  | 'danger'
+  | 'chip'
+  | 'chipActive';
+
 type ButtonSize = 'small' | 'medium' | 'large';
 
 interface GlassButtonProps {
@@ -48,110 +58,159 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   const scale = useRef(new Animated.Value(1)).current;
 
   const pressIn = () => {
-    Animated.spring(scale, { toValue: 0.96, tension: 140, friction: 9, useNativeDriver: true }).start();
+    Animated.spring(scale, { toValue: 0.94, tension: 200, friction: 12, useNativeDriver: true }).start();
   };
   const pressOut = () => {
-    Animated.spring(scale, { toValue: 1, tension: 140, friction: 9, useNativeDriver: true }).start();
+    Animated.spring(scale, { toValue: 1, tension: 200, friction: 12, useNativeDriver: true }).start();
   };
 
   const sizeStyles: Record<ButtonSize, ViewStyle> = {
-    small: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 18 },
-    medium: { paddingVertical: 14, paddingHorizontal: 28, borderRadius: 20 },
-    large: { paddingVertical: 18, paddingHorizontal: 36, borderRadius: 22 },
+    small: { paddingVertical: 8, paddingHorizontal: 14, minHeight: 36 },
+    medium: { paddingVertical: 12, paddingHorizontal: 20, minHeight: 44 },
+    large: { paddingVertical: 16, paddingHorizontal: 24, minHeight: 52 },
   };
 
-  const sizeText: Record<ButtonSize, number> = { small: 13, medium: 15, large: 17 };
+  const sizeText: Record<ButtonSize, number> = { small: 12, medium: 14, large: 16 };
 
-  const isPrimary = variant === 'primary';
+  const isChip = variant === 'chip' || variant === 'chipActive';
+  const isGlassPill = variant === 'glass';
 
-  const shellStyle: ViewStyle = {
-    ...sizeStyles[size],
-    overflow: 'hidden',
-    borderWidth: variant === 'outline' ? 1.5 : variant === 'secondary' || variant === 'ghost' ? 1 : 0,
-    borderColor:
-      variant === 'outline'
-        ? colors.glassBorderMedium
-        : variant === 'secondary'
-          ? colors.tealBorder
-          : colors.glassBorderLight,
-    backgroundColor:
-      variant === 'secondary'
-        ? colors.tealGlass
-        : variant === 'ghost'
-          ? colors.glassBgLight
-          : variant === 'outline'
-            ? 'transparent'
-            : 'transparent',
-    shadowColor: isPrimary ? accent.electricBlue : '#000',
-    shadowOffset: { width: 0, height: isPrimary ? 8 : 4 },
-    shadowOpacity: isPrimary ? 0.35 : 0.2,
-    shadowRadius: isPrimary ? 16 : 10,
-    elevation: isPrimary ? 10 : 5,
-    ...(fullWidth ? { width: '100%' } : {}),
-    ...(disabled || loading ? { opacity: 0.45 } : {}),
-  };
+  const borderRadius = isGlassPill ? Radius.pill : isChip ? Radius.sm : Radius.md;
 
-  const labelColor =
-    variant === 'primary'
-      ? '#FFFFFF'
-      : variant === 'secondary'
-        ? accent.electricBlue
-        : colors.textPrimary;
+  const variantStyle: ViewStyle = (() => {
+    switch (variant) {
+      case 'primary':
+        return {
+          backgroundColor: accent.cyan,
+          borderWidth: 0,
+          ...StitchShadow.cyanGlow,
+        };
+      case 'danger':
+        return {
+          backgroundColor: accent.sos,
+          borderWidth: 0,
+          shadowColor: accent.sos,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.4,
+          shadowRadius: 14,
+          elevation: 10,
+        };
+      case 'chipActive':
+        return {
+          backgroundColor: accent.cyanDeep,
+          borderWidth: 0,
+          ...StitchShadow.cyanGlow,
+        };
+      case 'chip':
+        return {
+          backgroundColor: colors.bgCard,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.08)',
+        };
+      case 'secondary':
+      case 'tonal':
+        return {
+          backgroundColor: colors.bgCard,
+          borderWidth: 1,
+          borderColor: colors.glassBorderLight,
+        };
+      case 'outline':
+        return {
+          backgroundColor: 'transparent',
+          borderWidth: 1,
+          borderColor: colors.tealBorder,
+        };
+      case 'ghost':
+        return {
+          backgroundColor: 'rgba(255,255,255,0.04)',
+          borderWidth: 1,
+          borderColor: colors.glassBorderLight,
+        };
+      case 'glass':
+        return {
+          backgroundColor: colors.glassBgMedium,
+          borderWidth: 1,
+          borderColor: colors.glassBorderMedium,
+        };
+      default:
+        return {};
+    }
+  })();
+
+  const labelColor = (() => {
+    switch (variant) {
+      case 'primary':
+        return '#002022';
+      case 'chipActive':
+        return '#FFFFFF';
+      case 'danger':
+        return '#FFFFFF';
+      case 'chip':
+        return colors.textMuted;
+      case 'secondary':
+      case 'tonal':
+        return accent.cyan;
+      case 'outline':
+      case 'glass':
+        return accent.cyan;
+      case 'ghost':
+        return colors.textSecondary;
+      default:
+        return colors.textPrimary;
+    }
+  })();
+
+  const fontFamily =
+    variant === 'chip' || variant === 'chipActive' ? Font.semibold : Font.bold;
+
+  const letterSpacing = isChip ? 0.8 : 0.2;
 
   return (
-    <Animated.View style={[{ transform: [{ scale }] }, fullWidth && { width: '100%' }]}>
+    <Animated.View style={[{ transform: [{ scale }] }, fullWidth && { width: '100%' }, style]}>
       <TouchableOpacity
         onPress={onPress}
         onPressIn={pressIn}
         onPressOut={pressOut}
         disabled={disabled || loading}
-        activeOpacity={0.92}
-        style={[shellStyle, style]}
+        activeOpacity={0.88}
+        style={[
+          sizeStyles[size],
+          variantStyle,
+          {
+            borderRadius,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            opacity: disabled || loading ? 0.45 : 1,
+          },
+          fullWidth && { width: '100%' },
+        ]}
       >
-        {isPrimary ? (
-          <LinearGradient
-            colors={[accent.electricBlue, accent.electricBlueDeep]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-        ) : null}
-        {variant !== 'primary' && (
-          <View style={[styles.innerHighlight, { backgroundColor: colors.glassHighlight }]} />
-        )}
-        <View style={styles.content}>
-          {icon && <View style={styles.iconWrap}>{icon}</View>}
-          <Text
-            style={[
-              styles.text,
-              { color: labelColor, fontSize: sizeText[size], fontFamily: Font.semibold },
-              textStyle,
-            ]}
-          >
-            {loading ? 'Loading…' : title}
-          </Text>
-        </View>
+        {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
+        <Text
+          style={[
+            styles.text,
+            {
+              color: labelColor,
+              fontSize: sizeText[size],
+              fontFamily,
+              letterSpacing,
+              textTransform: isChip ? 'uppercase' : 'none',
+            },
+            textStyle,
+          ]}
+        >
+          {loading ? 'Loading…' : title}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  iconWrap: { marginRight: 2 },
-  text: { letterSpacing: 0.35 },
-  innerHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 1,
-  },
+  iconWrap: { marginRight: -2 },
+  text: { textAlign: 'center' },
 });
 
 export default GlassButton;

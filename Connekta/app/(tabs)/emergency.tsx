@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { GlassIconButton } from '@/components/ui/GlassIconButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { emergencyAPI, type EmergencyContact } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
@@ -132,19 +133,39 @@ export default function EmergencyTabScreen() {
             </Text>
 
 
-            <GlassCard borderRadius={22} intensity="heavy">
-              <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 12 }]}>Safety Contacts</Text>
-             
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: 14, alignItems: 'center' }}>
-               
-               
-              </View>
-              <View style={{ marginTop: 12 }}>
-                <GlassButton 
-                  title="Add from form" 
-                  onPress={() => router.push('/emergency/EmergencyForm')} 
-                  variant="ghost" 
-                  fullWidth 
+            <GlassCard borderRadius={16} intensity="heavy" glowAccent>
+              <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Safety contacts</Text>
+              <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 16 }]}>
+                Add people who can be reached in an emergency.
+              </Text>
+              <View style={{ gap: 10 }}>
+                <GlassButton
+                  title="Add from contacts"
+                  onPress={pickContact}
+                  variant="primary"
+                  fullWidth
+                  icon={<Ionicons name="person-add" size={18} color="#002022" />}
+                />
+                <GlassButton
+                  title="Add manually"
+                  onPress={() => router.push('/emergency/EmergencyForm')}
+                  variant="tonal"
+                  fullWidth
+                  icon={<Ionicons name="create-outline" size={18} color={accent.cyan} />}
+                />
+                <GlassButton
+                  title="Share safety link"
+                  onPress={shareLiveLink}
+                  variant="tonal"
+                  fullWidth
+                  icon={<Ionicons name="share-outline" size={18} color={accent.cyan} />}
+                />
+                <GlassButton
+                  title="Emergency SOS"
+                  onPress={() => router.push('/(tabs)/SOSScreen')}
+                  variant="danger"
+                  fullWidth
+                  icon={<Ionicons name="warning" size={18} color="#fff" />}
                 />
               </View>
             </GlassCard>
@@ -164,19 +185,19 @@ export default function EmergencyTabScreen() {
               })
             }
           >
-            <GlassCard borderRadius={22} intensity="medium" style={{ paddingVertical: 14 }}>
+            <GlassCard borderRadius={16} intensity="medium" padding={14}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View
                   style={{
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: `${accent.electricBlue}22`,
+                    backgroundColor: `${accent.cyan}22`,
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}
                 >
-                  <Ionicons name="person" size={20} color={accent.electricBlue} />
+                  <Ionicons name="person" size={20} color={accent.cyan} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
@@ -184,20 +205,7 @@ export default function EmergencyTabScreen() {
                   </Text>
                   <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>{item.phone}</Text>
                 </View>
-                <TouchableOpacity
-                  onPress={() => remove(item.id)}
-                  hitSlop={12}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: 'rgba(255,111,97,0.15)',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Ionicons name="trash-outline" size={18} color={accent.coral} />
-                </TouchableOpacity>
+                <GlassIconButton name="trash-outline" onPress={() => remove(item.id)} danger />
               </View>
             </GlassCard>
           </TouchableOpacity>
