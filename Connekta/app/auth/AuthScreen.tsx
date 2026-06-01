@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -13,18 +12,24 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassInput } from '@/components/ui/GlassInput';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import FloatingWords from '@/components/background/FloatingWords';
+import { GlassIconButton } from '@/components/ui/GlassIconButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { isUsernameAvailable } from '@/services/firebase-auth';
 import { validateUsername } from '@/utils/username';
+import { Font, FontBrand } from '@/constants/typography';
 
 const { width: SW } = Dimensions.get('window');
+
+function FieldIcon({ name, color }: { name: keyof typeof Ionicons.glyphMap; color: string }) {
+  return <Ionicons name={name} size={20} color={color} />;
+}
 
 export default function AuthScreen() {
   const router = useRouter();
@@ -36,47 +41,19 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const logoScale = useRef(new Animated.Value(0)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const heroOpacity = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardTranslate = useRef(new Animated.Value(30)).current;
-  const footerOpacity = useRef(new Animated.Value(0)).current;
+  const cardTranslate = useRef(new Animated.Value(24)).current;
 
   useEffect(() => {
-    Animated.stagger(200, [
+    Animated.stagger(120, [
+      Animated.timing(heroOpacity, { toValue: 1, duration: 420, useNativeDriver: true }),
       Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          tension: 60,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
+        Animated.timing(cardOpacity, { toValue: 1, duration: 480, useNativeDriver: true }),
+        Animated.spring(cardTranslate, { toValue: 0, tension: 52, friction: 9, useNativeDriver: true }),
       ]),
-      Animated.parallel([
-        Animated.timing(cardOpacity, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.spring(cardTranslate, {
-          toValue: 0,
-          tension: 50,
-          friction: 9,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.timing(footerOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
     ]).start();
-  }, []);
+  }, [heroOpacity, cardOpacity, cardTranslate]);
 
   useEffect(() => {
     if (error) {
@@ -158,20 +135,15 @@ export default function AuthScreen() {
     setPassword('');
   };
 
-  const handleBack = () => {
-    router.back();
-  };
+  const iconMuted = colors.textMuted;
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      <View style={[styles.bgBase, { backgroundColor: colors.bg }]} />
-      <FloatingWords />
-
       <View style={[styles.glowTop, { backgroundColor: colors.tealGlow }]} />
-      <View style={[styles.glowBottom, { backgroundColor: colors.purpleGlow }]} />
+      <View style={[styles.glowBottom, { backgroundColor: colors.tealGlow }]} />
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
@@ -179,23 +151,22 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <GlassButton title="Back" onPress={handleBack} variant="glass" size="small" style={{ alignSelf: 'flex-start', marginBottom: 12 }} />
+          <GlassIconButton name="chevron-back" onPress={() => router.back()} style={styles.backBtn} />
 
-          <Animated.View
-            style={[
-              styles.logoWrap,
-              {
-                opacity: logoOpacity,
-                transform: [{ scale: logoScale }],
-              },
-            ]}
-          >
-            <View style={[styles.logoRing, { backgroundColor: colors.tealGlow, borderColor: accent.teal }]}>
-              <View style={[styles.logoDot, { backgroundColor: accent.teal }]} />
-            </View>
-            <Text style={[styles.brandName, { color: accent.cyan }]}>Connekta</Text>
-            <Text style={[styles.brandSub, { color: colors.textSecondary }]}>
-              {isLogin ? 'Welcome back' : 'Create your account'}
+          <Animated.View style={[styles.hero, { opacity: heroOpacity }]}>
+            <LinearGradient
+              colors={[`${accent.cyan}33`, `${accent.cyanDeep}11`]}
+              style={[styles.logoRing, { borderColor: colors.tealBorder }]}
+            >
+              <View style={[styles.logoInner, { backgroundColor: accent.cyan }]}>
+                <Ionicons name="radio-outline" size={28} color={colors.bg} />
+              </View>
+            </LinearGradient>
+            <Text style={[styles.brandName, { color: accent.cyan, fontFamily: FontBrand.extrabold }]}>
+              Connekta
+            </Text>
+            <Text style={[styles.brandSub, { color: colors.textSecondary, fontFamily: Font.regular }]}>
+              {isLogin ? 'Sign in to see your circle on the map' : 'Create your account'}
             </Text>
           </Animated.View>
 
@@ -205,70 +176,59 @@ export default function AuthScreen() {
               transform: [{ translateY: cardTranslate }],
             }}
           >
-            <GlassCard
-              intensity="medium"
-              glowAccent
-              borderRadius={24}
-              style={styles.authCard}
-            >
+            <GlassCard intensity="medium" glowAccent borderRadius={24} style={styles.authCard}>
               <View style={styles.modeRow}>
                 <GlassButton
                   title="Sign In"
                   onPress={() => setIsLogin(true)}
                   variant={isLogin ? 'chipActive' : 'chip'}
                   size="small"
-                  style={{ flex: 1 }}
+                  style={styles.modeBtn}
                 />
                 <GlassButton
                   title="Sign Up"
                   onPress={() => setIsLogin(false)}
                   variant={!isLogin ? 'chipActive' : 'chip'}
                   size="small"
-                  style={{ flex: 1 }}
+                  style={styles.modeBtn}
                 />
               </View>
 
               {!isLogin && (
                 <GlassInput
+                  layout="stacked"
                   label="Username"
-                  placeholder="Choose a username"
+                  placeholder="yourname"
                   value={username}
                   onChangeText={setUsername}
                   autoCapitalize="none"
-                  icon={<Text style={[styles.inputIcon, { color: colors.textSecondary }]}>@</Text>}
+                  autoCorrect={false}
+                  icon={<FieldIcon name="at" color={iconMuted} />}
                 />
               )}
 
               <GlassInput
+                layout="stacked"
                 label="Email"
-                placeholder="Enter your email"
+                placeholder="you@example.com"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                icon={<Text style={[styles.inputIcon, { color: colors.textSecondary }]}>✉</Text>}
+                autoCorrect={false}
+                icon={<FieldIcon name="mail-outline" color={iconMuted} />}
               />
 
               <GlassInput
+                layout="stacked"
                 label="Password"
-                placeholder={isLogin ? 'Enter your password' : 'At least 6 characters'}
+                placeholder={isLogin ? 'Your password' : 'Min. 6 characters'}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
                 showSecureToggle
-                icon={<Text style={[styles.inputIcon, { color: colors.textSecondary }]}>🔒</Text>}
+                icon={<FieldIcon name="lock-closed-outline" color={iconMuted} />}
               />
-
-              {isLogin && (
-                <TouchableOpacity
-                  style={[styles.biometricIconBtn, { borderColor: accent.teal, backgroundColor: colors.surface }]}
-                  onPress={() => {}}
-                  activeOpacity={0.6}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <IconSymbol name="fingerprint.fill" size={32} color={accent.teal} />
-                </TouchableOpacity>
-              )}
 
               <GlassButton
                 title={isLogin ? 'Sign In' : 'Create Account'}
@@ -278,36 +238,28 @@ export default function AuthScreen() {
                 fullWidth
                 loading={isLoading}
                 disabled={isLoading}
-                style={{ marginTop: 8 }}
+                style={styles.submitBtn}
               />
-
-              <View style={styles.divider}>
-                <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
-                <Text style={[styles.dividerText, { color: colors.textTertiary }]}>or</Text>
-                <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
-              </View>
             </GlassCard>
           </Animated.View>
 
-          <Animated.View style={[styles.footer, { opacity: footerOpacity }]}>
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: colors.textSecondary, fontFamily: Font.regular }]}>
               {isLogin ? "Don't have an account? " : 'Already have an account? '}
             </Text>
             <TouchableOpacity onPress={toggleMode} activeOpacity={0.7}>
-              <Text style={[styles.footerLink, { color: accent.teal }]}>
+              <Text style={[styles.footerLink, { color: accent.cyan, fontFamily: Font.semibold }]}>
                 {isLogin ? 'Sign Up' : 'Sign In'}
               </Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
 
-          <Animated.View style={{ opacity: footerOpacity }}>
-            <Text style={[styles.termsText, { color: colors.textTertiary }]}>
-              By continuing, you agree to our{' '}
-              <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Terms of Service</Text>
-              {' '}and{' '}
-              <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Privacy Policy</Text>
-            </Text>
-          </Animated.View>
+          <Text style={[styles.termsText, { color: colors.textTertiary, fontFamily: Font.regular }]}>
+            By continuing, you agree to our{' '}
+            <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Terms of Service</Text>
+            {' '}and{' '}
+            <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Privacy Policy</Text>
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -315,141 +267,86 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  bgBase: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  root: { flex: 1 },
+  flex: { flex: 1 },
   glowTop: {
     position: 'absolute',
-    top: -80,
-    left: SW / 2 - 160,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
+    top: -100,
+    left: SW / 2 - 180,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    opacity: 0.9,
   },
   glowBottom: {
     position: 'absolute',
-    bottom: -100,
-    right: -60,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
+    bottom: -120,
+    right: -80,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    opacity: 0.5,
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    paddingTop: Platform.OS === 'ios' ? 56 : 36,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
   },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginBottom: 20,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-  },
-  backArrow: {
-    fontSize: 18,
-    marginRight: 6,
-  },
-  backText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  logoWrap: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
+  backBtn: { alignSelf: 'flex-start', marginBottom: 20 },
+  hero: { alignItems: 'center', marginBottom: 28 },
   logoRing: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: '#2dd4bf',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  logoDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    opacity: 0.7,
-  },
-  brandName: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  brandSub: {
-    fontSize: 14,
-    marginTop: 6,
-  },
-  authCard: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  modeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  inputIcon: {
-    fontSize: 16,
-  },
-  biometricIconBtn: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
-    marginVertical: 12,
+    marginBottom: 14,
   },
-  divider: {
-    flexDirection: 'row',
+  logoInner: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
-    marginVertical: 16,
+    justifyContent: 'center',
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
+  brandName: {
+    fontSize: 30,
+    letterSpacing: 0.5,
   },
-  dividerText: {
-    fontSize: 12,
-    marginHorizontal: 12,
-    fontWeight: '500',
+  brandSub: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 12,
+    lineHeight: 20,
   },
+  authCard: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 22,
+  },
+  modeRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  modeBtn: { flex: 1 },
+  submitBtn: { marginTop: 4 },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
-    marginBottom: 16,
+    marginTop: 22,
+    marginBottom: 14,
   },
-  footerText: {
-    fontSize: 14,
-  },
-  footerLink: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  footerText: { fontSize: 14 },
+  footerLink: { fontSize: 14 },
   termsText: {
     fontSize: 11,
     textAlign: 'center',
     lineHeight: 17,
+    paddingHorizontal: 8,
   },
-  termsLink: {
-    textDecorationLine: 'underline',
-  },
+  termsLink: { textDecorationLine: 'underline' },
 });

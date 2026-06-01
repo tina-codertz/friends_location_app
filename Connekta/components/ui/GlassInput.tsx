@@ -1,5 +1,5 @@
 /**
- * GlassInput — Transparent field with floating label and focus glow.
+ * GlassInput — Transparent field with optional stacked or floating label.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -13,6 +13,7 @@ import {
   TextInputProps,
   ViewStyle,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font } from '@/constants/typography';
 
@@ -22,6 +23,8 @@ interface GlassInputProps extends TextInputProps {
   showSecureToggle?: boolean;
   containerStyle?: ViewStyle;
   icon?: React.ReactNode;
+  /** stacked = label above field (auth); floating = label inside field */
+  layout?: 'floating' | 'stacked';
 }
 
 export const GlassInput: React.FC<GlassInputProps> = ({
@@ -33,6 +36,7 @@ export const GlassInput: React.FC<GlassInputProps> = ({
   secureTextEntry,
   value,
   placeholder,
+  layout = 'floating',
   ...rest
 }) => {
   const { colors, accent } = useAppTheme();
@@ -41,7 +45,8 @@ export const GlassInput: React.FC<GlassInputProps> = ({
   const borderAnim = useRef(new Animated.Value(0)).current;
   const labelAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
 
-  const floated = focused || Boolean(value && String(value).length > 0);
+  const stacked = layout === 'stacked';
+  const floated = stacked || focused || Boolean(value && String(value).length > 0);
 
   useEffect(() => {
     Animated.timing(borderAnim, {
@@ -52,12 +57,13 @@ export const GlassInput: React.FC<GlassInputProps> = ({
   }, [focused, borderAnim]);
 
   useEffect(() => {
+    if (stacked) return;
     Animated.timing(labelAnim, {
       toValue: floated ? 1 : 0,
       duration: 180,
       useNativeDriver: true,
     }).start();
-  }, [floated, labelAnim]);
+  }, [floated, labelAnim, stacked]);
 
   const borderColor = error
     ? colors.errorBorder
@@ -78,13 +84,19 @@ export const GlassInput: React.FC<GlassInputProps> = ({
 
   return (
     <View style={[styles.container, containerStyle]}>
+      {stacked && label ? (
+        <Text style={[styles.stackedLabel, { color: colors.textSecondary, fontFamily: Font.medium }]}>
+          {label}
+        </Text>
+      ) : null}
+
       <Animated.View
         style={[
           styles.inputWrap,
           {
             borderColor,
             backgroundColor: error ? colors.errorBg : focused ? colors.inputBgFocus : colors.inputBg,
-            shadowColor: focused ? accent.electricBlue : colors.glassShadow,
+            shadowColor: focused ? accent.cyan : colors.glassShadow,
             shadowOpacity: focused ? 0.25 : 0.12,
             shadowRadius: focused ? 14 : 8,
             shadowOffset: { width: 0, height: 6 },
@@ -94,14 +106,15 @@ export const GlassInput: React.FC<GlassInputProps> = ({
       >
         <View style={[styles.innerHighlight, { backgroundColor: colors.glassHighlight }]} />
 
-        {label ? (
+        {!stacked && label ? (
           <Animated.Text
             pointerEvents="none"
             style={[
               styles.floatingLabel,
               {
-                color: focused ? accent.electricBlue : colors.textMuted,
+                color: focused ? accent.cyan : colors.textMuted,
                 fontFamily: Font.medium,
+                left: icon ? 44 : 16,
                 transform: [{ translateY: labelTranslate }, { scale: labelScale }],
               },
             ]}
@@ -110,12 +123,12 @@ export const GlassInput: React.FC<GlassInputProps> = ({
           </Animated.Text>
         ) : null}
 
-        {icon && <View style={styles.iconWrap}>{icon}</View>}
+        {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
 
         <TextInput
           {...rest}
           value={value}
-          placeholder={floated ? placeholder : undefined}
+          placeholder={stacked || floated ? placeholder : undefined}
           secureTextEntry={showSecureToggle ? hidden : secureTextEntry}
           onFocus={(e) => {
             setFocused(true);
@@ -130,7 +143,8 @@ export const GlassInput: React.FC<GlassInputProps> = ({
             {
               color: colors.textPrimary,
               fontFamily: Font.regular,
-              paddingTop: label ? 22 : 14,
+              paddingTop: stacked ? 14 : label ? 22 : 14,
+              paddingLeft: icon ? 0 : undefined,
             },
             rest.style,
           ]}
@@ -138,11 +152,15 @@ export const GlassInput: React.FC<GlassInputProps> = ({
           selectionColor={accent.cyan}
         />
 
-        {showSecureToggle && (
+        {showSecureToggle ? (
           <TouchableOpacity onPress={() => setHidden(!hidden)} style={styles.toggleBtn} hitSlop={12}>
-            <Text style={styles.toggleText}>{hidden ? '👁' : '🙈'}</Text>
+            <Ionicons
+              name={hidden ? 'eye-outline' : 'eye-off-outline'}
+              size={20}
+              color={colors.textMuted}
+            />
           </TouchableOpacity>
-        )}
+        ) : null}
       </Animated.View>
 
       {error ? (
@@ -153,15 +171,20 @@ export const GlassInput: React.FC<GlassInputProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 20 },
+  container: { marginBottom: 16 },
+  stackedLabel: {
+    fontSize: 13,
+    marginBottom: 8,
+    marginLeft: 2,
+    letterSpacing: 0.3,
+  },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    overflow: 'hidden',
-    minHeight: 56,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    minHeight: 52,
   },
   innerHighlight: {
     position: 'absolute',
@@ -172,21 +195,28 @@ const styles = StyleSheet.create({
   },
   floatingLabel: {
     position: 'absolute',
-    left: 16,
     top: 8,
     fontSize: 12,
     letterSpacing: 0.4,
     zIndex: 2,
   },
-  iconWrap: { marginRight: 10, marginTop: 8 },
+  iconWrap: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
   input: {
     flex: 1,
-    fontSize: 17,
-    paddingBottom: 12,
-    paddingRight: 8,
+    fontSize: 16,
+    paddingBottom: 14,
+    paddingRight: 4,
   },
-  toggleBtn: { paddingLeft: 8, paddingTop: 8 },
-  toggleText: { fontSize: 18 },
+  toggleBtn: {
+    paddingLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   errorText: { fontSize: 12, marginTop: 8, marginLeft: 4 },
 });
 

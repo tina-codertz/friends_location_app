@@ -20,3 +20,13 @@ export function circlePolygon(
 
   return { type: 'Polygon', coordinates: [ring] };
 }
+
+/** Offset a coordinate northward so labels sit above markers / area circles. */
+export function offsetCoordinateNorth(
+  latitude: number,
+  longitude: number,
+  metersNorth: number
+): { latitude: number; longitude: number } {
+  const dLat = metersNorth / 111_320;
+  return { latitude: latitude + dLat, longitude };
+}
