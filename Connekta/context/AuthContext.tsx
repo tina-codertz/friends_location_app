@@ -16,6 +16,7 @@ import {
   onAuthStateChanged,
   registerWithEmail,
 } from '@/services/firebase-auth';
+import { clearAuthQuotaBackoff } from '@/services/firestore-friends';
 import type { AppUser } from '@/types/user';
 
 export type { AppUser };
@@ -56,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const idToken = await fbUser.getIdToken();
       setApiAuthToken(idToken);
       setToken(idToken);
+      clearAuthQuotaBackoff();
     } catch (err) {
       console.warn('[AUTH] Failed to refresh ID token:', err);
       setApiAuthToken(null);

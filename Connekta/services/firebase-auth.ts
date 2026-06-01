@@ -53,6 +53,8 @@ export function firebaseAuthErrorMessage(err: unknown): string {
       return 'Invalid email or password.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Try again later.';
+    case 'auth/quota-exceeded':
+      return 'Firebase Auth quota exceeded. Wait 15–30 minutes, then reopen the app. Avoid rapid reloads while developing.';
     default:
       if (err instanceof Error && err.message) return err.message;
       return 'Something went wrong. Please try again.';
