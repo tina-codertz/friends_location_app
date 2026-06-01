@@ -1,19 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import { FriendLocation, locationAPI } from '@/services/api';
+import { locationAPI } from '@/services/api';
+import type { FriendLocation } from '@/types/location';
 
 const POLL_MS = 30000;
 
-/**
- * REST-only friend locations — no WebSocket. Polls only when active + authenticated.
- */
-export function useFriendLocationsPoll(active: boolean, authToken: string | null) {
+/** REST-only friend locations — polls Firestore via locationAPI. */
+export function useFriendLocationsPoll(active: boolean, uid: string | null | undefined) {
   const [locations, setLocations] = useState<FriendLocation[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
 
   const fetchOnce = useCallback(async () => {
-    if (!active || !authToken || !mountedRef.current) return;
+    if (!active || !uid || !mountedRef.current) return;
     try {
       const res = await locationAPI.friendsLocations();
       if (!mountedRef.current) return;
@@ -22,17 +21,17 @@ export function useFriendLocationsPoll(active: boolean, authToken: string | null
           res.locations.filter(
             (l) =>
               l &&
-              typeof l.id === 'number' &&
+              typeof l.id === 'string' &&
               typeof l.lat === 'number' &&
               typeof l.lng === 'number' &&
-              typeof l.username === 'string'
-          )
+              typeof l.username === 'string',
+          ),
         );
       }
     } catch {
       /* offline */
     }
-  }, [active, authToken]);
+  }, [active, uid]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -47,7 +46,7 @@ export function useFriendLocationsPoll(active: boolean, authToken: string | null
       pollRef.current = null;
     }
 
-    if (!active || !authToken) {
+    if (!active || !uid) {
       setLocations([]);
       return;
     }
@@ -59,14 +58,14 @@ export function useFriendLocationsPoll(active: boolean, authToken: string | null
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = null;
     };
-  }, [active, authToken, fetchOnce]);
+  }, [active, uid, fetchOnce]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
-      if (next === 'active' && active && authToken) void fetchOnce();
+      if (next === 'active' && active && uid) void fetchOnce();
     });
     return () => sub.remove();
-  }, [active, authToken, fetchOnce]);
+  }, [active, uid, fetchOnce]);
 
   return { locations, refresh: fetchOnce };
 }

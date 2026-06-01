@@ -49,7 +49,7 @@ function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
 export default function MapTabScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { token, user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const uid = user?.uid ?? null;
   const { colors, accent } = useAppTheme();
   const [focused, setFocused] = useState(false);
@@ -67,7 +67,7 @@ export default function MapTabScreen() {
 
   sharingRef.current = sharing;
 
-  const { locations, refresh } = useLiveFriendLocations(focused && isLoggedIn, token);
+  const { locations, refresh } = useLiveFriendLocations(focused && isLoggedIn, uid);
   const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(focused && isLoggedIn, uid);
 
   const region: MapRegion | null = useMemo(() => {
@@ -102,13 +102,13 @@ export default function MapTabScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (isLoggedIn && token) void refreshPlaces();
-    }, [isLoggedIn, token, refreshPlaces])
+      if (isLoggedIn && uid) void refreshPlaces();
+    }, [isLoggedIn, uid, refreshPlaces])
   );
 
   useFocusEffect(
     useCallback(() => {
-      if (!isLoggedIn || !token) return;
+      if (!isLoggedIn || !uid) return;
       setFocused(true);
       let sub: Location.LocationSubscription | undefined;
       let cancelled = false;
@@ -170,11 +170,11 @@ export default function MapTabScreen() {
         setFocused(false);
         sub?.remove();
       };
-    }, [isLoggedIn, token])
+    }, [isLoggedIn, uid])
   );
 
   const onToggleShare = async (value: boolean) => {
-    if (!token) return;
+    if (!uid) return;
     setSharing(value);
     try {
       await locationAPI.setSharing(value);

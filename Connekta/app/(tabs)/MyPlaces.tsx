@@ -129,6 +129,7 @@ export default function MyPlacesScreen() {
 
   const handleDelete = useCallback(
     (place: SavedPlace) => {
+      if (!user?.uid) return;
       Alert.alert('Delete place', `Remove "${place.name}"?`, [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -136,7 +137,7 @@ export default function MyPlacesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deletePlace(place.id);
+              await deletePlace(place.id, user.uid);
               setPlaces((prev) => prev.filter((p) => p.id !== place.id));
             } catch {
               Alert.alert('Error', 'Could not delete place');
@@ -145,7 +146,7 @@ export default function MyPlacesScreen() {
         },
       ]);
     },
-    []
+    [user?.uid],
   );
 
   const focusPlace = (place: SavedPlace) => {

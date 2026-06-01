@@ -99,7 +99,7 @@ export async function registerWithEmail(
     }
 
     const batch = writeBatch(firestore);
-    batch.set(usernameRef, { uid });
+    batch.set(usernameRef, { uid, username: username.trim() });
     batch.set(userRef, {
       email: email.trim().toLowerCase(),
       username: username.trim(),

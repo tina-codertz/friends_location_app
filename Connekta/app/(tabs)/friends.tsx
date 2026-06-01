@@ -36,7 +36,8 @@ export default function FriendsTabScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { invite: inviteParam } = useLocalSearchParams<{ invite?: string }>();
-  const { token, isLoggedIn } = useAuth();
+  const { user, isLoggedIn } = useAuth();
+  const uid = user?.uid ?? null;
   const { colors, accent } = useAppTheme();
   const mapRef = useRef<ConnektaMapRef>(null);
 
@@ -49,7 +50,7 @@ export default function FriendsTabScreen() {
 
   const { locations: friendLocations, refresh: refreshLocations } = useFriendLocationsPoll(
     focused && isLoggedIn,
-    token
+    uid,
   );
 
   const region: MapRegion | null = useMemo(() => {
@@ -68,7 +69,7 @@ export default function FriendsTabScreen() {
   );
 
   const loadLists = useCallback(async () => {
-    if (!token) return;
+    if (!uid) return;
     try {
       const [f, inc] = await Promise.all([friendsAPI.list(), friendsAPI.incoming()]);
       if (f.success && Array.isArray(f.friends)) setFriends(f.friends);
@@ -79,11 +80,11 @@ export default function FriendsTabScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [token]);
+  }, [uid]);
 
   useFocusEffect(
     useCallback(() => {
-      if (!isLoggedIn || !token) return;
+      if (!isLoggedIn || !uid) return;
       setFocused(true);
       setLoading(true);
       void loadLists();
@@ -104,7 +105,7 @@ export default function FriendsTabScreen() {
         cancelled = true;
         setFocused(false);
       };
-    }, [isLoggedIn, token, loadLists])
+    }, [isLoggedIn, uid, loadLists])
   );
 
   useEffect(() => {
@@ -120,7 +121,7 @@ export default function FriendsTabScreen() {
     if (region) mapRef.current?.flyTo(region, 500);
   }, [region]);
 
-  const accept = async (id: number) => {
+  const accept = async (id: string) => {
     try {
       const res = await friendsAPI.accept(id);
       if (res.success) {
@@ -136,7 +137,7 @@ export default function FriendsTabScreen() {
     }
   };
 
-  const reject = async (id: number) => {
+  const reject = async (id: string) => {
     try {
       const res = await friendsAPI.reject(id);
       if (res.success) setIncoming((prev) => prev.filter((u) => u.id !== id));
@@ -267,7 +268,7 @@ export default function FriendsTabScreen() {
           />
         }
         renderItem={({ item }) => {
-          const isLive = friendLocations.some((f) => f.id === item.id);
+          const isLive = friendLocations.some((f) => f.username === item.username);
           return (
             <TouchableOpacity onPress={() => focusFriend(item.username)} activeOpacity={0.85}>
               <GlassCard borderRadius={20} intensity="light" style={{ paddingVertical: 14 }}>

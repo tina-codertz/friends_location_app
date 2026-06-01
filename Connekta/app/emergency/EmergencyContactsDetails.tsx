@@ -23,7 +23,7 @@ export default function EmergencyContactsDetails() {
         onPress: async () => {
           try {
             if (id) {
-              await emergencyAPI.remove(parseInt(id));
+              await emergencyAPI.remove(id);
               Alert.alert('Success', 'Contact deleted.');
               router.back();
             }

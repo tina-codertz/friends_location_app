@@ -34,7 +34,7 @@ export default function CircleManagement() {
   const [generating, setGenerating] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [joining, setJoining] = useState(false);
-  const [removingId, setRemovingId] = useState<number | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -151,7 +151,7 @@ export default function CircleManagement() {
     );
   };
 
-  const removeMember = async (friendId: number) => {
+  const removeMember = async (friendId: string) => {
     setRemovingId(friendId);
     try {
       const res = await friendsAPI.remove(friendId);

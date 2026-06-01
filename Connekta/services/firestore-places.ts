@@ -8,7 +8,8 @@ import {
   where,
   Timestamp,
 } from 'firebase/firestore';
-import { auth, firestore } from '@/lib/firebase';
+import { firestore } from '@/lib/firebase';
+import { ensureFirestoreSignedIn, getCircleMemberUids } from '@/services/firestore-friends';
 import type { SavedPlace } from '@/types/places';
 
 function rowFromDoc(
@@ -34,29 +35,9 @@ function rowFromDoc(
   };
 }
 
-async function ensureSignedIn(uid: string): Promise<void> {
-  const current = auth.currentUser;
-  if (!current || current.uid !== uid) {
-    throw new Error('You must be signed in to save places.');
-  }
-  await current.getIdToken(true);
-}
-
-async function friendUids(uid: string): Promise<string[]> {
-  const snap = await getDocs(
-    query(collection(firestore, 'friendships'), where('memberIds', 'array-contains', uid)),
-  );
-  const set = new Set<string>([uid]);
-  snap.docs.forEach((d) => {
-    const members = d.data().memberIds as string[] | undefined;
-    members?.forEach((m) => set.add(m));
-  });
-  return [...set];
-}
-
 /** Places owned by the current user. */
 export async function listMyPlaces(uid: string): Promise<SavedPlace[]> {
-  await ensureSignedIn(uid);
+  await ensureFirestoreSignedIn(uid);
   const snap = await getDocs(
     query(collection(firestore, 'places'), where('userId', '==', uid)),
   );
@@ -67,8 +48,8 @@ export async function listMyPlaces(uid: string): Promise<SavedPlace[]> {
 
 /** Own places + friends' places (circle). */
 export async function listCirclePlaces(uid: string): Promise<SavedPlace[]> {
-  await ensureSignedIn(uid);
-  const uids = await friendUids(uid);
+  await ensureFirestoreSignedIn(uid);
+  const uids = await getCircleMemberUids(uid);
   const all: SavedPlace[] = [];
 
   const chunkSize = 10;
@@ -99,7 +80,7 @@ export async function createPlace(
     throw new Error('Invalid map location. Tap the map to set a pin.');
   }
 
-  await ensureSignedIn(uid);
+  await ensureFirestoreSignedIn(uid);
 
   const trimmedName = name.trim();
   const createdAt = Timestamp.now();
@@ -123,9 +104,7 @@ export async function createPlace(
   });
 }
 
-export async function deletePlace(placeId: string): Promise<void> {
-  const uid = auth.currentUser?.uid;
-  if (!uid) throw new Error('You must be signed in.');
-  await ensureSignedIn(uid);
+export async function deletePlace(placeId: string, uid: string): Promise<void> {
+  await ensureFirestoreSignedIn(uid);
   await deleteDoc(doc(firestore, 'places', placeId));
 }

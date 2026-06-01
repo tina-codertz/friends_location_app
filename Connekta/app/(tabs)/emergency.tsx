@@ -94,7 +94,7 @@ export default function EmergencyTabScreen() {
     }
   };
 
-  const remove = async (id: number) => {
+  const remove = async (id: string) => {
     try {
       await emergencyAPI.remove(id);
       void load();
