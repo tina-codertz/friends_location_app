@@ -29,37 +29,28 @@ eas whoami
 
 ---
 
-## 2. Add secrets (required for map + auth)
+## 2. Copy `.env` to EAS (required for map + auth)
 
-EAS does **not** upload your local `.env`. Set these on the project (use values from your `.env`):
+EAS does **not** upload your local `.env` automatically. Push every variable from `.env` to **preview** and **production**:
 
 ```bash
 cd Connekta
-
-# Mapbox (public token + downloads token for native SDK)
-eas secret:create --scope project --name EXPO_PUBLIC_MAPBOX_TOKEN --value "pk...."
-eas secret:create --scope project --name RNMAPBOX_MAPS_DOWNLOAD_TOKEN --value "sk...."
-
-# Firebase (all EXPO_PUBLIC_FIREBASE_* from .env)
-eas secret:create --scope project --name EXPO_PUBLIC_FIREBASE_API_KEY --value "..."
-eas secret:create --scope project --name EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN --value "..."
-eas secret:create --scope project --name EXPO_PUBLIC_FIREBASE_PROJECT_ID --value "..."
-eas secret:create --scope project --name EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET --value "..."
-eas secret:create --scope project --name EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID --value "..."
-eas secret:create --scope project --name EXPO_PUBLIC_FIREBASE_APP_ID --value "..."
+npm run env:push-eas
 ```
 
-Optional (Android legacy map tiles fallback):
+Or manually:
 
 ```bash
-eas secret:create --scope project --name EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY --value "..."
+eas env:push preview --path .env --force
 ```
 
-List secrets:
+Verify:
 
 ```bash
-eas secret:list
+eas env:list --environment preview
 ```
+
+You should see all `EXPO_PUBLIC_FIREBASE_*`, `EXPO_PUBLIC_MAPBOX_TOKEN`, `MAPBOX_DOWNLOADS_TOKEN`, `RNMAPBOX_MAPS_DOWNLOAD_TOKEN`, and `EXPO_PUBLIC_API_URL`.
 
 ---
 
