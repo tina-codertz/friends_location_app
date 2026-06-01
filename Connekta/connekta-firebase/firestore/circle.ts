@@ -12,9 +12,9 @@ import {
   Timestamp,
   documentId,
 } from 'firebase/firestore';
-import { firestore } from '@/firebase/config';
-import { friendshipDocId } from '@/firebase/ids';
-import { ensureFirestoreSignedIn } from '@/firebase/firestore/friends';
+import { firestore } from '../config';
+import { friendshipDocId } from '../ids';
+import { ensureFirestoreSignedIn } from './friends';
 import type { FriendUser } from '@/types/friends';
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -33,9 +33,22 @@ async function userProfile(uid: string): Promise<FriendUser | null> {
   return { id: uid, username: String(snap.data()?.username ?? 'user') };
 }
 
+function isPermissionDenied(err: unknown): boolean {
+  const code =
+    err && typeof err === 'object' && 'code' in err
+      ? String((err as { code: string }).code)
+      : '';
+  return code === 'permission-denied';
+}
+
 async function areFriends(a: string, b: string): Promise<boolean> {
-  const snap = await getDoc(doc(firestore, 'friendships', friendshipDocId(a, b)));
-  return snap.exists();
+  try {
+    const snap = await getDoc(doc(firestore, 'friendships', friendshipDocId(a, b)));
+    return snap.exists();
+  } catch (err) {
+    if (isPermissionDenied(err)) return false;
+    throw err;
+  }
 }
 
 async function findRequestBetween(

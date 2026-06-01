@@ -1,5 +1,5 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { auth, firestore } from '@/firebase/config';
+import { auth, firestore } from '../config';
 
 const MIN_TOKEN_CHECK_MS = 60_000;
 const QUOTA_BACKOFF_MS = 15 * 60_000;

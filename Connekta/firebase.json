@@ -1,0 +1,6 @@
+{
+  "firestore": {
+    "rules": "connekta-firebase/rules/firestore.rules",
+    "indexes": "connekta-firebase/rules/firestore.indexes.json"
+  }
+}

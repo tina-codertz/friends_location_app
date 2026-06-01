@@ -8,8 +8,8 @@ import {
   where,
   Timestamp,
 } from 'firebase/firestore';
-import { firestore } from '@/firebase/config';
-import { ensureFirestoreSignedIn } from '@/firebase/firestore/friends';
+import { firestore } from '../config';
+import { ensureFirestoreSignedIn } from './friends';
 import type { EmergencyContact } from '@/types/emergency';
 
 function rowFromDoc(id: string, data: Record<string, unknown>): EmergencyContact {

@@ -25,7 +25,7 @@ import {
   enableBiometricUnlock,
   getBiometricPolicy,
 } from '@/services/biometric-unlock';
-import { verifyCurrentUserPassword } from '@/firebase';
+import { verifyCurrentUserPassword } from '@/connekta-firebase';
 
 export default function SettingsHomeScreen() {
   const insets = useSafeAreaInsets();

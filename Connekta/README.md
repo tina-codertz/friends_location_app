@@ -28,7 +28,7 @@ You can start developing by editing the files inside the **app** directory. This
 ## Project layout
 
 - `app/` — Expo Router screens
-- `firebase/` — Firebase Auth, Firestore services, security rules (see `firebase/README.md`)
+- `connekta-firebase/` — Firebase Auth, Firestore services, security rules (see `connekta-firebase/README.md`)
 - `services/` — API facade, biometrics, session timeout
 - `components/`, `hooks/`, `constants/`, `types/`
 

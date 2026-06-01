@@ -123,7 +123,7 @@ export default function CircleManagement() {
             : 'Friend request sent.'
         );
       } else {
-        Alert.alert('Could not join', res.message ?? 'Invalid or expired code');
+        Alert.alert('Could not join', res.message ?? 'Invalid or expired code. If this mentions Firestore rules, publish Connekta/connekta-firebase/rules/firestore.rules in Firebase Console.');
       }
     } catch (e: unknown) {
       const msg =

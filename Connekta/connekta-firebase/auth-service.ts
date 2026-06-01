@@ -7,14 +7,14 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   type User as FirebaseUser,
-} from 'firebase/auth';
+} from '@firebase/auth';
 import {
   doc,
   getDoc,
   writeBatch,
   Timestamp,
 } from 'firebase/firestore';
-import { auth, firestore } from '@/firebase/config';
+import { auth, firestore } from './config';
 import type { AppUser } from '@/types/user';
 
 /** Firestore needs the Auth ID token before writes; right after sign-up it can lag briefly. */
@@ -42,7 +42,7 @@ export function firebaseAuthErrorMessage(err: unknown): string {
 
   switch (code) {
     case 'permission-denied':
-      return 'Firestore denied this action. In Firebase Console open Firestore → Rules, paste Connekta/firebase/rules/firestore.rules, and Publish.';
+      return 'Firestore denied this action. In Firebase Console open Firestore → Rules, paste Connekta/connekta-firebase/rules/firestore.rules, and Publish.';
     case 'auth/email-already-in-use':
       return 'This email is already registered.';
     case 'auth/invalid-email':
@@ -172,4 +172,9 @@ export function firestoreErrorMessage(err: unknown): string {
   return firebaseAuthErrorMessage(err);
 }
 
-export { onAuthStateChanged };
+/** Subscribe to auth changes on the shared RN auth instance. */
+export function subscribeToAuthState(
+  callback: (user: FirebaseUser | null) => void | Promise<void>,
+): () => void {
+  return onAuthStateChanged(auth, callback);
+}
