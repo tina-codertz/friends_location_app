@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { listCirclePlaces } from '@/services/firestore-places';
+import { listCirclePlaces } from '@/firebase/firestore/places';
 import type { SavedPlace } from '@/types/places';
 
 const MIN_FETCH_MS = 20000;
