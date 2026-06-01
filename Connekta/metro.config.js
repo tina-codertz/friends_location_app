@@ -15,6 +15,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   ) {
     return { type: 'sourceFile', filePath: shimPath };
   }
+  // Use React Native Firebase Auth build (AsyncStorage persistence) on native.
+  if (platform !== 'web' && moduleName === 'firebase/auth') {
+    return context.resolveRequest(context, '@firebase/auth', platform);
+  }
   if (defaultResolveRequest) {
     return defaultResolveRequest(context, moduleName, platform);
   }

@@ -5,7 +5,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { auth } from '@/app/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { setApiAuthToken } from '@/services/api';
 import {
   firebaseAuthErrorMessage,

@@ -9,11 +9,10 @@ import {
 import {
   doc,
   getDoc,
-  setDoc,
-  serverTimestamp,
   runTransaction,
+  Timestamp,
 } from 'firebase/firestore';
-import { auth, firestore } from '@/app/lib/firebase';
+import { auth, firestore } from '@/lib/firebase';
 import type { AppUser } from '@/types/user';
 
 export function firebaseAuthErrorMessage(err: unknown): string {
@@ -72,7 +71,7 @@ export async function registerWithEmail(
         email: email.trim().toLowerCase(),
         username: username.trim(),
         deviceId,
-        createdAt: serverTimestamp(),
+        createdAt: Timestamp.now(),
         sharing: false,
         lat: null,
         lng: null,
