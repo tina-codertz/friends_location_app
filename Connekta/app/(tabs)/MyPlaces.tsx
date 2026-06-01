@@ -17,7 +17,7 @@ import type { MapRegion } from '@/types/map';
 import { capList, MAX_PLACE_MARKERS_MAIN } from '@/utils/map-limits';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
@@ -54,6 +54,14 @@ export default function MyPlacesScreen() {
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const [region, setRegion] = useState<MapRegion>(DEFAULT_REGION);
   const [saving, setSaving] = useState(false);
+  const [focused, setFocused] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, [])
+  );
 
   const loadPlaces = useCallback(async () => {
     if (!user?.uid) return;
@@ -170,10 +178,11 @@ export default function MyPlacesScreen() {
         latitude={p.lat}
         longitude={p.lng}
         label={p.name}
+        subtitle="Your saved place"
         accentColor={accent.cyan}
       />
     ));
-  }, [places, accent.electricBlue, colors]);
+  }, [places, accent.cyan]);
 
   const renderPlaceItem = ({ item }: { item: SavedPlace }) => (
     <TouchableOpacity onPress={() => focusPlace(item)} activeOpacity={0.85}>
@@ -217,12 +226,15 @@ export default function MyPlacesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={styles.mapWrap}>
+      <View style={[styles.mapWrap, { backgroundColor: colors.mapBg }]}>
+        {focused ? (
         <ConnektaMap
           ref={mapRef}
           style={StyleSheet.absoluteFill}
           initialRegion={region}
           showUserLocation
+          rotateEnabled={false}
+          pitchEnabled={false}
           onPress={
             addOpen
               ? (coord) => setPin({ lat: coord.latitude, lng: coord.longitude })
@@ -236,10 +248,16 @@ export default function MyPlacesScreen() {
               latitude={pin.lat}
               longitude={pin.lng}
               label={placeName.trim() || 'New place'}
+              subtitle="Tap map to move pin"
               accentColor={accent.cyan}
             />
           ) : null}
         </ConnektaMap>
+        ) : (
+          <View style={[StyleSheet.absoluteFill, styles.mapPlaceholder]}>
+            <ActivityIndicator color={accent.cyan} />
+          </View>
+        )}
 
         <TouchableOpacity
           onPress={() => router.back()}
@@ -331,6 +349,10 @@ export default function MyPlacesScreen() {
 
 const styles = StyleSheet.create({
   mapWrap: { height: '42%' },
+  mapPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   backBtn: {
     position: 'absolute',
     left: 16,

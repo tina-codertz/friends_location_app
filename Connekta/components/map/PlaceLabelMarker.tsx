@@ -1,10 +1,8 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { useMapEngine } from '@/components/map/MapEngineContext';
 import { MapboxPointAnnotation } from '@/components/map/MapboxPointAnnotation';
-import { PlaceNameBadge } from '@/components/map/PlaceNameBadge';
-import { Font } from '@/constants/typography';
+import { MapMarkerLabel } from '@/components/map/MapMarkerLabel';
 
 type Props = {
   id: string;
@@ -21,20 +19,15 @@ type Props = {
 function PlaceLabelMarkerComponent(props: Props) {
   const engine = useMapEngine();
   const content = (
-    <View style={styles.wrap}>
-      <PlaceNameBadge
-        label={props.label}
-        accentColor={props.accentColor}
-        backgroundColor={props.backgroundColor}
-        textColor={props.textColor}
-        borderColor={props.borderColor}
-      />
-      {props.subtitle ? (
-        <Text style={[styles.subtitle, { color: props.textColor }]} numberOfLines={1}>
-          {props.subtitle}
-        </Text>
-      ) : null}
-    </View>
+    <MapMarkerLabel
+      label={props.label}
+      subtitle={props.subtitle}
+      accentColor={props.accentColor}
+      backgroundColor={props.backgroundColor}
+      textColor={props.textColor}
+      borderColor={props.borderColor}
+      subtitleColor={props.textColor}
+    />
   );
 
   if (engine === 'mapbox') {
@@ -44,6 +37,7 @@ function PlaceLabelMarkerComponent(props: Props) {
         longitude={props.longitude}
         latitude={props.latitude}
         anchor={{ x: 0.5, y: 1 }}
+        hasSubtitle={Boolean(props.subtitle)}
       >
         {content}
       </MapboxPointAnnotation>
@@ -63,19 +57,3 @@ function PlaceLabelMarkerComponent(props: Props) {
 }
 
 export const PlaceLabelMarker = memo(PlaceLabelMarkerComponent);
-
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    maxWidth: 160,
-  },
-  subtitle: {
-    fontFamily: Font.regular,
-    fontSize: 10,
-    marginTop: 4,
-    opacity: 0.85,
-    maxWidth: 120,
-    textAlign: 'center',
-  },
-});

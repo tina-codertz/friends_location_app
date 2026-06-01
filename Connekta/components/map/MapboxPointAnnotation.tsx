@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { getMapboxModule } from '@/utils/map-runtime';
 
@@ -9,26 +9,41 @@ type Props = {
   longitude: number;
   latitude: number;
   anchor?: Anchor;
+  /** Taller snapshot box when subtitle is shown */
+  hasSubtitle?: boolean;
   children: React.ReactNode;
 };
 
 /**
- * Mapbox snapshots one direct child for PointAnnotation. Wrapper prevents
- * RN view flattening and layout clipping (badges appearing cut in half).
+ * Mapbox PointAnnotation renders children to a bitmap — one stable wrapper
+ * with collapsable={false} and explicit size prevents clipped badges.
  */
 export function MapboxPointAnnotation({
   id,
   longitude,
   latitude,
-  anchor = { x: 0.5, y: 0.5 },
+  anchor = { x: 0.5, y: 1 },
+  hasSubtitle = false,
   children,
 }: Props) {
   const Mapbox = getMapboxModule();
   const annotationRef = useRef<{ refresh?: () => void } | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshSnapshot = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
     annotationRef.current?.refresh?.();
+    refreshTimer.current = setTimeout(() => {
+      annotationRef.current?.refresh?.();
+    }, 80);
   }, []);
+
+  useEffect(
+    () => () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    },
+    []
+  );
 
   if (!Mapbox) return null;
 
@@ -39,7 +54,11 @@ export function MapboxPointAnnotation({
       coordinate={[longitude, latitude]}
       anchor={anchor}
     >
-      <View collapsable={false} style={styles.host} onLayout={refreshSnapshot}>
+      <View
+        collapsable={false}
+        style={[styles.host, hasSubtitle && styles.hostTall]}
+        onLayout={refreshSnapshot}
+      >
         {children}
       </View>
     </Mapbox.PointAnnotation>
@@ -49,11 +68,15 @@ export function MapboxPointAnnotation({
 const styles = StyleSheet.create({
   host: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     overflow: 'visible',
-    minWidth: 140,
-    minHeight: 52,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
+    minWidth: 148,
+    minHeight: 48,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  hostTall: {
+    minHeight: 72,
+    paddingBottom: 10,
   },
 });
