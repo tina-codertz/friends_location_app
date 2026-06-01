@@ -101,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         if (fbUser) {
           if (await isSessionExpired()) {
+            await clearSessionActivity();
             await firebaseLogout();
             setUser(null);
             setApiAuthToken(null);
@@ -177,8 +178,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const expireSession = useCallback(async () => {
     try {
-      await firebaseLogout();
       await clearSessionActivity();
+      await firebaseLogout();
     } catch (err) {
       console.error('Session expire error:', err);
     } finally {
