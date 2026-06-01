@@ -17,6 +17,10 @@ import {
   registerWithEmail,
 } from '@/services/firebase-auth';
 import { clearAuthQuotaBackoff } from '@/services/firestore-friends';
+import {
+  disableBiometricUnlock,
+  scheduleBiometricEnrollmentIfNeeded,
+} from '@/services/biometric-unlock';
 import type { AppUser } from '@/types/user';
 
 export type { AppUser };
@@ -127,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const profile = await registerWithEmail(email, password, username, deviceId);
         setUser(profile);
         await syncIdToken();
-        await SecureStore.setItemAsync('needs_biometric_enrollment', '1');
+        await scheduleBiometricEnrollmentIfNeeded(email, password);
       } catch (err: unknown) {
         const errorMsg = firebaseAuthErrorMessage(err);
         setError(errorMsg);
@@ -147,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const profile = await loginWithEmail(email, password);
         setUser(profile);
         await syncIdToken();
+        await scheduleBiometricEnrollmentIfNeeded(email, password);
       } catch (err: unknown) {
         const errorMsg = firebaseAuthErrorMessage(err);
         setError(errorMsg);
@@ -161,10 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     try {
       await firebaseLogout();
-      await Promise.all([
-        SecureStore.deleteItemAsync('needs_biometric_enrollment').catch(() => undefined),
-        SecureStore.deleteItemAsync('biometric_unlock_enabled').catch(() => undefined),
-      ]);
+      await disableBiometricUnlock();
     } catch (err) {
       console.error('Logout error:', err);
     } finally {

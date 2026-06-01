@@ -4,6 +4,8 @@ import {
   signOut,
   onAuthStateChanged,
   deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   type User as FirebaseUser,
 } from 'firebase/auth';
 import {
@@ -151,6 +153,19 @@ export async function loadAppUser(fbUser: FirebaseUser): Promise<AppUser | null>
 
 export async function firebaseLogout(): Promise<void> {
   await signOut(auth);
+}
+
+/** Confirms the signed-in user knows their password (e.g. before saving biometric credentials). */
+export async function verifyCurrentUserPassword(password: string): Promise<boolean> {
+  const user = auth.currentUser;
+  const email = user?.email;
+  if (!user || !email) return false;
+  try {
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(email, password));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function firestoreErrorMessage(err: unknown): string {
