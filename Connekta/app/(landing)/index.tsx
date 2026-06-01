@@ -44,16 +44,26 @@ function LiveBadge() {
   );
 }
 
-/** Fake map with coloured avatar pins */
-function MockMap() {
+/** Circle preview — no map imagery (real map is home tab only) */
+function CirclePreview() {
   const { colors, accent } = useAppTheme();
   const pins = [
     { label: 'Alex', color: accent.cyan, top: SH * 0.28, left: SW * 0.15 },
-    { label: 'You',  color: accent.teal,   top: SH * 0.35, left: SW * 0.25 },
-    { label: 'Sam',  color: accent.orange, top: SH * 0.45, left: SW * 0.30 },
+    { label: 'You', color: accent.teal, top: SH * 0.35, left: SW * 0.25 },
+    { label: 'Sam', color: accent.cyanDeep, top: SH * 0.45, left: SW * 0.3 },
   ];
   return (
-    <View style={[styles.mapContainer, { backgroundColor: colors.mapBg }]}>
+    <View
+      style={[
+        styles.mapContainer,
+        {
+          backgroundColor: colors.glassBgMedium,
+          borderColor: colors.glassBorderMedium,
+          borderWidth: 1,
+        },
+      ]}
+    >
+      <View style={[styles.circleGlow, { backgroundColor: colors.tealGlow }]} />
       {pins.map((p) => (
         <View key={p.label} style={[styles.pinWrap, { top: p.top, left: p.left }]}>
           <View style={[styles.pinBubble, { backgroundColor: p.color }]}>
@@ -75,7 +85,7 @@ function Slide0() {
         <Text style={[styles.phoneTime, { color: colors.textPrimary }]}>9:41</Text>
         <LiveBadge />
       </View>
-      <MockMap />
+      <CirclePreview />
       <View style={[styles.phoneTabBar, { backgroundColor: colors.phoneTabBg, borderTopColor: colors.divider }]}>
         {['map-pin', 'users', 'bell', 'shield'].map((_icon, i) => (
           <View key={i} style={styles.tabItem}>
@@ -380,13 +390,22 @@ const styles = StyleSheet.create({
   liveDot: { width: 6, height: 6, borderRadius: 3 },
   liveText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
 
-  // ── Mock map ────────────────────────────────────────────────────────────────
+  // ── Circle preview (no map tiles) ───────────────────────────────────────────
   mapContainer: {
     flex: 1,
     margin: 12,
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative' as const,
+  },
+  circleGlow: {
+    position: 'absolute',
+    width: '70%',
+    height: '70%',
+    borderRadius: 999,
+    top: '15%',
+    left: '15%',
+    opacity: 0.6,
   },
   pinWrap: { position: 'absolute' as const, alignItems: 'center' },
   pinBubble: {
