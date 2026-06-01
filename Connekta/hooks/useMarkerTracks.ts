@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
 
-/** Custom map markers on Android often need a short tracksViewChanges window to paint. */
+/** Keeps custom marker views painting fully on both platforms (avoids half-clipped snapshots). */
 export function useMarkerTracks(deps: unknown[]): boolean {
-  const [tracks, setTracks] = useState(Platform.OS === 'android');
+  const [tracks, setTracks] = useState(true);
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
     setTracks(true);
-    const timer = setTimeout(() => setTracks(false), 800);
+    const timer = setTimeout(() => setTracks(false), 1500);
     return () => clearTimeout(timer);
   }, deps);
 
-  return Platform.OS === 'android' ? tracks : false;
+  return tracks;
 }

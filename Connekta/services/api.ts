@@ -47,7 +47,7 @@ function warnApiFailure(tag: string, err: unknown): void {
 }
 
 export { setApiAuthToken, setApiUnauthorizedHandler };
-import type { SavedPlace } from '@/types/places';
+import type { PlaceKind, SavedPlace } from '@/types/places';
 
 export type { SavedPlace };
 
@@ -401,6 +401,7 @@ export const placesAPI = {
     name: string,
     lat: number,
     lng: number,
+    kind?: PlaceKind,
   ): Promise<{ success: boolean; place?: SavedPlace; message?: string }> {
     try {
       const fbUser = auth.currentUser;
@@ -412,6 +413,7 @@ export const placesAPI = {
         name,
         lat,
         lng,
+        kind,
       );
       return { success: true, place };
     } catch (err: unknown) {

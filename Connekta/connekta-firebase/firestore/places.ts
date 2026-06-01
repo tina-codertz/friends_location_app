@@ -10,7 +10,8 @@ import {
 } from 'firebase/firestore';
 import { firestore } from '../config';
 import { ensureFirestoreSignedIn, getCircleMemberUids } from './friends';
-import type { SavedPlace } from '@/types/places';
+import type { PlaceKind, SavedPlace } from '@/types/places';
+import { isPlaceKind } from '@/utils/place-kind';
 
 function rowFromDoc(
   id: string,
@@ -24,11 +25,15 @@ function rowFromDoc(
         ? created
         : new Date().toISOString();
 
+  const rawKind = data.kind;
+  const kind = isPlaceKind(rawKind) ? rawKind : undefined;
+
   return {
     id,
     userId: String(data.userId ?? ''),
     username: String(data.username ?? ''),
     name: String(data.name ?? ''),
+    kind,
     lat: Number(data.lat),
     lng: Number(data.lng),
     created_at,
@@ -75,6 +80,7 @@ export async function createPlace(
   name: string,
   lat: number,
   lng: number,
+  kind: PlaceKind = 'other',
 ): Promise<SavedPlace> {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     throw new Error('Invalid map location. Tap the map to set a pin.');
@@ -85,10 +91,13 @@ export async function createPlace(
   const trimmedName = name.trim();
   const createdAt = Timestamp.now();
 
+  const placeKind = isPlaceKind(kind) ? kind : 'other';
+
   const ref = await addDoc(collection(firestore, 'places'), {
     userId: uid,
     username: username.trim() || 'user',
     name: trimmedName,
+    kind: placeKind,
     lat,
     lng,
     createdAt,
@@ -98,6 +107,7 @@ export async function createPlace(
     userId: uid,
     username: username.trim() || 'user',
     name: trimmedName,
+    kind: placeKind,
     lat,
     lng,
     createdAt,
