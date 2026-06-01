@@ -24,7 +24,14 @@ import { GlassButton } from '@/components/ui/GlassButton';
 import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
-import { placesAPI, type SavedPlace } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
+import { firestoreErrorMessage } from '@/services/firebase-auth';
+import {
+  createPlace,
+  deletePlace,
+  listMyPlaces,
+} from '@/services/firestore-places';
+import type { SavedPlace } from '@/types/places';
 
 const DEFAULT_REGION: MapRegion = {
   latitude: 37.7749,
@@ -37,6 +44,7 @@ export default function MyPlacesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors, accent } = useAppTheme();
+  const { user } = useAuth();
   const mapRef = useRef<ConnektaMapRef>(null);
 
   const [places, setPlaces] = useState<SavedPlace[]>([]);
@@ -48,16 +56,16 @@ export default function MyPlacesScreen() {
   const [saving, setSaving] = useState(false);
 
   const loadPlaces = useCallback(async () => {
+    if (!user?.uid) return;
     setLoading(true);
     try {
-      const res = await placesAPI.mine();
-      if (res.success) setPlaces(res.places);
+      setPlaces(await listMyPlaces(user.uid));
     } catch {
       Alert.alert('Error', 'Could not load your places.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.uid]);
 
   useEffect(() => {
     void loadPlaces();
@@ -87,6 +95,10 @@ export default function MyPlacesScreen() {
 
   const savePlace = async () => {
     const name = placeName.trim();
+    if (!user?.uid) {
+      Alert.alert('Sign in required', 'Please sign in again to save places.');
+      return;
+    }
     if (!name) {
       Alert.alert('Name required', 'Give this place a name your circle will recognize.');
       return;
@@ -97,16 +109,19 @@ export default function MyPlacesScreen() {
     }
     setSaving(true);
     try {
-      const res = await placesAPI.create(name, pin.lat, pin.lng);
-      if (res.success && res.place) {
-        setPlaces((prev) => [res.place!, ...prev]);
-        setAddOpen(false);
-        Alert.alert('Saved', `"${name}" is visible to your circle on the map.`);
-      } else {
-        Alert.alert('Error', res.message ?? 'Could not save place');
-      }
-    } catch {
-      Alert.alert('Error', 'Could not save place');
+      const place = await createPlace(
+        user.uid,
+        user.username,
+        name,
+        pin.lat,
+        pin.lng,
+      );
+      setPlaces((prev) => [place, ...prev]);
+      setAddOpen(false);
+      Alert.alert('Saved', `"${name}" is visible to your circle on the map.`);
+    } catch (err: unknown) {
+      console.error('[MyPlaces] savePlace failed:', err);
+      Alert.alert('Could not save place', firestoreErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -121,8 +136,8 @@ export default function MyPlacesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const res = await placesAPI.remove(place.id);
-              if (res.success) setPlaces((prev) => prev.filter((p) => p.id !== place.id));
+              await deletePlace(place.id);
+              setPlaces((prev) => prev.filter((p) => p.id !== place.id));
             } catch {
               Alert.alert('Error', 'Could not delete place');
             }

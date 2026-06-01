@@ -50,6 +50,7 @@ export default function MapTabScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { token, user, isLoggedIn } = useAuth();
+  const uid = user?.uid ?? null;
   const { colors, accent } = useAppTheme();
   const [focused, setFocused] = useState(false);
   const [permission, setPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
@@ -67,7 +68,7 @@ export default function MapTabScreen() {
   sharingRef.current = sharing;
 
   const { locations, refresh } = useLiveFriendLocations(focused && isLoggedIn, token);
-  const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(focused && isLoggedIn, token);
+  const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(focused && isLoggedIn, uid);
 
   const region: MapRegion | null = useMemo(() => {
     if (!me) return null;
@@ -245,9 +246,7 @@ export default function MapTabScreen() {
           />
         ))}
         {placeMarkers.map((p) => {
-          const isMine =
-            user?.uid != null &&
-            (String(p.user_id) === user.uid || (p as { userId?: string }).userId === user.uid);
+          const isMine = user?.uid != null && p.userId === user.uid;
           return (
             <PlaceAreaMarker
               key={`place-${p.id}`}

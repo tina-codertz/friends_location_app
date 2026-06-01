@@ -40,7 +40,7 @@ export function firebaseAuthErrorMessage(err: unknown): string {
 
   switch (code) {
     case 'permission-denied':
-      return 'Firestore denied this action. Publish firestore.rules in Firebase Console and check .env project IDs match your Firebase project.';
+      return 'Firestore denied this action. In Firebase Console open Firestore → Rules, paste Connekta/firestore.rules, and Publish.';
     case 'auth/email-already-in-use':
       return 'This email is already registered.';
     case 'auth/invalid-email':
@@ -149,6 +149,10 @@ export async function loadAppUser(fbUser: FirebaseUser): Promise<AppUser | null>
 
 export async function firebaseLogout(): Promise<void> {
   await signOut(auth);
+}
+
+export function firestoreErrorMessage(err: unknown): string {
+  return firebaseAuthErrorMessage(err);
 }
 
 export { onAuthStateChanged };

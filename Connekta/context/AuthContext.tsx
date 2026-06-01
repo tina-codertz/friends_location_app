@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { auth } from '@/lib/firebase';
 import { setApiAuthToken } from '@/services/api';
+import { setLegacyApiLogoutOn401 } from '@/services/auth-token';
 import {
   firebaseAuthErrorMessage,
   firebaseLogout,
@@ -35,6 +36,10 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  useEffect(() => {
+    setLegacyApiLogoutOn401(false);
+  }, []);
+
   const [user, setUser] = useState<AppUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);

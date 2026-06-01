@@ -6,6 +6,7 @@ import axios, { AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import {
   getApiAuthToken,
+  getLegacyApiLogoutOn401,
   notifyUnauthorized,
   setApiAuthToken,
   setApiUnauthorizedHandler,
@@ -107,7 +108,7 @@ apiClient.interceptors.response.use(
       console.warn('[API] Network error — no response. API URL:', API_BASE_URL);
     }
     
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && getLegacyApiLogoutOn401()) {
       setApiAuthToken(null);
       try {
         await SecureStore.deleteItemAsync('auth_token');
