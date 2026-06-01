@@ -21,7 +21,7 @@ import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassIconButton } from '@/components/ui/GlassIconButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { isUsernameAvailable } from '@/services/firebase-auth';
+import { isUsernameAvailable } from '@/firebase';
 import { validateUsername } from '@/utils/username';
 import { Font, FontBrand } from '@/constants/typography';
 import {
@@ -202,7 +202,11 @@ export default function AuthScreen() {
               Connekta
             </Text>
             <Text style={[styles.brandSub, { color: colors.textSecondary, fontFamily: Font.regular }]}>
-              {isLogin ? 'Sign in to see your circle on the map' : 'Create your account'}
+              {isLogin
+                ? canBiometricSignIn
+                  ? 'Session expired — sign in with biometrics or your password'
+                  : 'Sign in to see your circle on the map'
+                : 'Create your account'}
             </Text>
           </Animated.View>
 

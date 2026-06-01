@@ -21,12 +21,11 @@ import { useAuth } from '@/context/AuthContext';
 import { Font, Type } from '@/constants/typography';
 import {
   deviceSupportsBiometric,
-  disableBiometricAppLock,
-  enableBiometricLockFromStoredCredentials,
+  disableBiometricUnlock,
   enableBiometricUnlock,
   getBiometricPolicy,
 } from '@/services/biometric-unlock';
-import { verifyCurrentUserPassword } from '@/services/firebase-auth';
+import { verifyCurrentUserPassword } from '@/firebase';
 
 export default function SettingsHomeScreen() {
   const insets = useSafeAreaInsets();
@@ -39,7 +38,7 @@ export default function SettingsHomeScreen() {
 
   const refreshBio = useCallback(async () => {
     const policy = await getBiometricPolicy();
-    setBio(policy.enabled);
+    setBio(policy.hasStoredCredentials);
   }, []);
 
   useEffect(() => {
@@ -59,7 +58,7 @@ export default function SettingsHomeScreen() {
       return;
     }
 
-    const result = await enableBiometricUnlock(email, password, 'Enable biometric unlock');
+    const result = await enableBiometricUnlock(email, password, 'Enable biometric sign-in');
     if (result.ok) {
       setBio(true);
       setPasswordModal(false);
@@ -72,7 +71,7 @@ export default function SettingsHomeScreen() {
     } else if (result.reason === 'cancelled') {
       /* user dismissed */
     } else {
-      Alert.alert('Error', 'Could not save biometric unlock. Try again.');
+      Alert.alert('Error', 'Could not save biometric sign-in. Try again.');
     }
   };
 
@@ -82,21 +81,11 @@ export default function SettingsHomeScreen() {
         Alert.alert('Unavailable', 'Biometrics are not set up on this device.');
         return;
       }
-
-      const policy = await getBiometricPolicy();
-      if (policy.hasStoredCredentials) {
-        const result = await enableBiometricLockFromStoredCredentials();
-        if (result.ok) {
-          setBio(true);
-        }
-        return;
-      }
-
       setPasswordModal(true);
       return;
     }
 
-    await disableBiometricAppLock();
+    await disableBiometricUnlock();
     setBio(false);
   };
 
@@ -139,9 +128,8 @@ export default function SettingsHomeScreen() {
       <GlassCard borderRadius={16} intensity="medium">
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>Biometric lock</Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-              Unlock the app and sign in with Face ID / Touch ID.
+            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+              Biometric sign-in
             </Text>
           </View>
           <Switch
@@ -187,7 +175,7 @@ export default function SettingsHomeScreen() {
           <GlassCard borderRadius={20} intensity="heavy" glowAccent style={styles.modalCard}>
             <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Confirm password</Text>
             <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 16 }]}>
-              Enter your password once to enable biometric sign-in on this device.
+              Enter your password once to enable biometric sign-in after inactivity.
             </Text>
             <GlassInput
               layout="stacked"

@@ -25,12 +25,12 @@ import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
 import { useAuth } from '@/context/AuthContext';
-import { firestoreErrorMessage } from '@/services/firebase-auth';
+import { firestoreErrorMessage } from '@/firebase';
 import {
   createPlace,
   deletePlace,
   listMyPlaces,
-} from '@/services/firestore-places';
+} from '@/firebase/firestore/places';
 import type { SavedPlace } from '@/types/places';
 
 const DEFAULT_REGION: MapRegion = {

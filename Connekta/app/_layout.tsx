@@ -84,8 +84,6 @@ function InnerRootLayout() {
           }} 
         />
 
-        {/* Modal */}
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
       <StatusBar style={colors.statusBarStyle} />
     </ThemeProvider>

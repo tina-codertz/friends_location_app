@@ -11,27 +11,25 @@ import {
   setApiAuthToken,
   setApiUnauthorizedHandler,
 } from '@/services/auth-token';
-import { auth } from '@/lib/firebase';
-import { loadAppUser } from '@/services/firebase-auth';
+import { auth, isAuthQuotaExceeded, loadAppUser } from '@/firebase';
 import {
   createPlace,
   deletePlace,
   listCirclePlaces,
   listMyPlaces,
-} from '@/services/firestore-places';
+} from '@/firebase/firestore/places';
 import {
   getMyLocationState,
   listFriendLocations,
   pingLocation,
   setLocationSharing,
-} from '@/services/firestore-location';
-import * as firestoreCircle from '@/services/firestore-circle';
+} from '@/firebase/firestore/location';
+import * as firestoreCircle from '@/firebase/firestore/circle';
 import {
   addEmergencyContact,
   listEmergencyContacts,
   removeEmergencyContact,
-} from '@/services/firestore-emergency';
-import { isAuthQuotaExceeded } from '@/services/firestore-friends';
+} from '@/firebase/firestore/emergency';
 
 let lastQuotaWarnAt = 0;
 
