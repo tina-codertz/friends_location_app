@@ -14,15 +14,18 @@ type Props = {
   children?: React.ReactNode;
 };
 
-/** Expo Go / dev fallback using react-native-maps + optional Mapbox raster tiles. */
+/**
+ * Fallback when native @rnmapbox/maps is unavailable (Expo Go).
+ * Uses Mapbox raster tiles ONLY — no Apple/Google base map underneath.
+ */
 export const LegacyMapView = forwardRef<ConnektaMapRef, Props>(function LegacyMapView(
-  { style, initialRegion, colorMode = 'light', showUserLocation = true, onPress, children },
+  { style, initialRegion, colorMode = 'dark', showUserLocation = true, onPress, children },
   ref
 ) {
   const mapRef = useRef<MapView>(null);
   const token = getMapboxAccessToken();
   const rasterStyle = getMapboxRasterStyleId(colorMode);
-  const mapTypeProps = Platform.OS === 'ios' ? { mapType: 'standard' as const } : {};
+  const useMapboxTilesOnly = Boolean(token);
 
   const region: Region = {
     latitude: initialRegion.latitude,
@@ -50,9 +53,11 @@ export const LegacyMapView = forwardRef<ConnektaMapRef, Props>(function LegacyMa
       ref={mapRef}
       style={[styles.fill, style]}
       initialRegion={region}
+      mapType={useMapboxTilesOnly ? 'none' : 'standard'}
       showsUserLocation={showUserLocation}
       showsMyLocationButton={Platform.OS === 'android'}
-      {...mapTypeProps}
+      loadingBackgroundColor="#131316"
+      loadingIndicatorColor="#00DBE9"
       onPress={
         onPress
           ? (e) => {
@@ -64,12 +69,15 @@ export const LegacyMapView = forwardRef<ConnektaMapRef, Props>(function LegacyMa
           : undefined
       }
     >
-      {token ? (
+      {useMapboxTilesOnly ? (
         <UrlTile
-          urlTemplate={`https://api.mapbox.com/styles/v1/mapbox/${rasterStyle}/tiles/256/{z}/{x}/{y}@2x?access_token=${token}`}
-          maximumZ={19}
+          urlTemplate={`https://api.mapbox.com/styles/v1/mapbox/${rasterStyle}/tiles/512/{z}/{x}/{y}@2x?access_token=${token}`}
+          maximumZ={20}
+          minimumZ={0}
+          tileSize={512}
+          zIndex={0}
           flipY={false}
-          zIndex={-1}
+          shouldReplaceMapContent={Platform.OS === 'ios'}
         />
       ) : null}
       {children}
@@ -78,5 +86,5 @@ export const LegacyMapView = forwardRef<ConnektaMapRef, Props>(function LegacyMa
 });
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
+  fill: { flex: 1, backgroundColor: '#131316' },
 });

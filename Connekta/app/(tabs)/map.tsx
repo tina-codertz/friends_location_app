@@ -245,44 +245,47 @@ export default function MapTabScreen() {
   }
 
   return (
-    <View style={[styles.fill, { backgroundColor: colors.bg }]}>
-      <ConnektaMap
-        ref={mapRef}
-        style={StyleSheet.absoluteFill}
-        initialRegion={region}
-        showUserLocation
-      >
-        {showFriendMarkers &&
-          friendMarkers.map((f) => (
-            <PlaceLabelMarker
-              key={`live-${f.id}`}
-              id={`live-${f.id}`}
-              latitude={f.lat}
-              longitude={f.lng}
-              label={f.username}
-              subtitle="Live"
-              accentColor={accent.cyan}
-              backgroundColor={colors.glassBgHeavy}
-              textColor={colors.textPrimary}
-              borderColor={accent.cyan}
-            />
-          ))}
-        {showPlaceMarkers &&
-          placeMarkers.map((p) => {
-            const isMine = user?.uid != null && p.userId === user.uid;
-            return (
-              <PlaceAreaMarker
-                key={`place-${p.id}`}
-                id={`place-${p.id}`}
-                latitude={p.lat}
-                longitude={p.lng}
-                label={p.name.trim()}
-                subtitle={isMine ? 'Your saved place' : `Shared by ${p.username}`}
-                accentColor={isMine ? accent.cyan : accent.green}
+    <View style={[styles.fill, { backgroundColor: colors.mapBg }]}>
+      {focused ? (
+        <ConnektaMap
+          ref={mapRef}
+          style={StyleSheet.absoluteFill}
+          initialRegion={region}
+          showUserLocation
+          rotateEnabled={false}
+          pitchEnabled={false}
+        >
+          {showFriendMarkers &&
+            friendMarkers.map((f) => (
+              <PlaceLabelMarker
+                key={`live-${f.id}`}
+                id={`live-${f.id}`}
+                latitude={f.lat}
+                longitude={f.lng}
+                label={f.username}
+                subtitle="Live"
+                accentColor={accent.cyan}
+                backgroundColor={colors.glassBgHeavy}
+                textColor={colors.textPrimary}
+                borderColor={accent.cyan}
               />
-            );
-          })}
-      </ConnektaMap>
+            ))}
+          {showPlaceMarkers &&
+            placeMarkers.map((p) => {
+              const isMine = user?.uid != null && p.userId === user.uid;
+              return (
+                <PlaceAreaMarker
+                  key={`place-${p.id}`}
+                  id={`place-${p.id}`}
+                  latitude={p.lat}
+                  longitude={p.lng}
+                  label={p.name.trim()}
+                  accentColor={isMine ? accent.cyan : accent.green}
+                />
+              );
+            })}
+        </ConnektaMap>
+      ) : null}
 
       <MapTabChrome
         colors={colors}

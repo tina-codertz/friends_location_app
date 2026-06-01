@@ -56,16 +56,16 @@ export function canUseNativeMapsOnAndroid(): boolean {
 
 export type MapColorMode = 'light' | 'dark';
 
-/** Mapbox style aligned with device light/dark preference. */
+/** Vector style — dark for Connekta UI; light uses outdoors for clarity. */
 export function getMapboxStyleUrl(mode: MapColorMode): string {
   return mode === 'dark'
-    ? 'mapbox://styles/mapbox/dark-v11'
+    ? 'mapbox://styles/mapbox/navigation-night-v1'
     : 'mapbox://styles/mapbox/streets-v12';
 }
 
-/** Raster tile style id for react-native-maps UrlTile overlay. */
+/** Raster tile style id (512px tiles in LegacyMapView). */
 export function getMapboxRasterStyleId(mode: MapColorMode): string {
-  return mode === 'dark' ? 'dark-v11' : 'streets-v12';
+  return mode === 'dark' ? 'navigation-night-v1' : 'streets-v12';
 }
 
 /** @deprecated Use getMapboxStyleUrl(mode) */

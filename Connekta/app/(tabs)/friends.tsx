@@ -177,8 +177,15 @@ export default function FriendsTabScreen() {
             <ActivityIndicator color={accent.electricBlue} />
             <Text style={[Type.caption, { color: colors.textMuted, marginTop: 8 }]}>Getting your location…</Text>
           </View>
-        ) : (
-          <ConnektaMap ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={region} showUserLocation>
+        ) : focused ? (
+          <ConnektaMap
+            ref={mapRef}
+            style={StyleSheet.absoluteFill}
+            initialRegion={region}
+            showUserLocation
+            rotateEnabled={false}
+            pitchEnabled={false}
+          >
             {friendMarkers.map((f) => (
               <PlaceLabelMarker
                 key={`friend-${f.id}`}
@@ -187,13 +194,17 @@ export default function FriendsTabScreen() {
                 longitude={f.lng}
                 label={f.username}
                 subtitle="Live"
-                accentColor={accent.coral}
+                accentColor={accent.cyan}
                 backgroundColor={colors.glassBgHeavy}
                 textColor={colors.textPrimary}
-                borderColor={accent.coral}
+                borderColor={accent.cyan}
               />
             ))}
           </ConnektaMap>
+        ) : (
+          <View style={[styles.mapPlaceholder, { backgroundColor: colors.surface }]}>
+            <Ionicons name="map-outline" size={32} color={colors.textMuted} />
+          </View>
         )}
         </View>
       </View>

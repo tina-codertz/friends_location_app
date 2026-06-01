@@ -2,12 +2,8 @@ import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
 import type { Feature } from 'geojson';
 import { canUseMapbox, getMapboxStyleUrl, type MapColorMode } from '@/utils/maps-config';
-import { ensureMapboxConfigured } from '@/utils/mapbox-init';
-import {
-  getMapboxModule,
-  isMapboxNativeAvailable,
-  shouldUseLegacyMapEngine,
-} from '@/utils/map-runtime';
+import { resolveMapEngine, mapEngineLabel } from '@/utils/map-engine';
+import { getMapboxModule } from '@/utils/map-runtime';
 import { MapEngineProvider } from '@/components/map/MapEngineContext';
 import { LegacyMapView } from '@/components/map/LegacyMapView';
 import type { MapRegion } from '@/types/map';
@@ -33,7 +29,7 @@ type Props = {
 };
 
 function deltaToZoom(latitudeDelta = 0.04): number {
-  return Math.max(4, Math.min(16, Math.log2(360 / latitudeDelta) - 1));
+  return Math.max(4, Math.min(18, Math.log2(360 / latitudeDelta) - 1));
 }
 
 type MapboxInnerProps = Props & { colorMode: MapColorMode };
@@ -45,10 +41,10 @@ function MapboxMapInner(
     initialRegion,
     colorMode,
     showUserLocation,
-    scrollEnabled,
-    zoomEnabled,
-    rotateEnabled,
-    pitchEnabled,
+    scrollEnabled = true,
+    zoomEnabled = true,
+    rotateEnabled = false,
+    pitchEnabled = false,
     onPress,
     children,
   }: MapboxInnerProps,
@@ -64,12 +60,15 @@ function MapboxMapInner(
 
   const zoom = useMemo(() => deltaToZoom(initialRegion.latitudeDelta), [initialRegion.latitudeDelta]);
 
+  const styleURL = useMemo(() => getMapboxStyleUrl(colorMode), [colorMode]);
+
   useImperativeHandle(ref, () => ({
     flyTo: (region: MapRegion, durationMs = 500) => {
       cameraRef.current?.setCamera({
         centerCoordinate: [region.longitude, region.latitude],
         zoomLevel: deltaToZoom(region.latitudeDelta),
         animationDuration: durationMs,
+        pitch: 0,
       });
     },
   }));
@@ -78,7 +77,7 @@ function MapboxMapInner(
     <View style={[styles.fill, containerStyle, style]}>
       <Mapbox.MapView
         style={styles.fill}
-        styleURL={getMapboxStyleUrl(colorMode)}
+        styleURL={styleURL}
         scrollEnabled={scrollEnabled}
         zoomEnabled={zoomEnabled}
         rotateEnabled={rotateEnabled}
@@ -86,6 +85,7 @@ function MapboxMapInner(
         attributionEnabled
         logoEnabled={false}
         compassEnabled
+        scaleBarEnabled={false}
         onPress={
           onPress
             ? (feature: Feature) => {
@@ -102,9 +102,12 @@ function MapboxMapInner(
           defaultSettings={{
             centerCoordinate: center,
             zoomLevel: zoom,
+            pitch: 0,
           }}
         />
-        {showUserLocation ? <Mapbox.UserLocation visible showsUserHeadingIndicator /> : null}
+        {showUserLocation ? (
+          <Mapbox.UserLocation visible showsUserHeadingIndicator androidRenderMode="compass" />
+        ) : null}
         {children}
       </Mapbox.MapView>
     </View>
@@ -115,10 +118,9 @@ const MapboxMap = forwardRef(MapboxMapInner);
 
 export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMap(props, ref) {
   const { colors, mode } = useAppTheme();
-  const useNativeMapbox = isMapboxNativeAvailable() && ensureMapboxConfigured();
-  const useLegacy = shouldUseLegacyMapEngine();
+  const engine = resolveMapEngine();
 
-  if (!canUseMapbox()) {
+  if (!canUseMapbox() || engine === 'unavailable') {
     return (
       <View style={[styles.fallback, { backgroundColor: colors.bg }, props.containerStyle, props.style]}>
         <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', fontFamily: Font.medium }]}>
@@ -129,7 +131,7 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
     );
   }
 
-  if (useNativeMapbox) {
+  if (engine === 'mapbox-gl') {
     return (
       <MapEngineProvider engine="mapbox">
         <MapboxMap ref={ref} {...props} colorMode={mode} />
@@ -137,34 +139,29 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
     );
   }
 
-  if (useLegacy) {
-    return (
-      <MapEngineProvider engine="legacy">
-        <LegacyMapView
-          ref={ref}
-          style={props.style}
-          initialRegion={props.initialRegion}
-          colorMode={mode}
-          showUserLocation={props.showUserLocation}
-          onPress={props.onPress}
-        >
-          {props.children}
-        </LegacyMapView>
-      </MapEngineProvider>
-    );
-  }
-
   return (
-    <View style={[styles.fallback, { backgroundColor: colors.bg }, props.containerStyle, props.style]}>
-      <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', fontFamily: Font.medium }]}>
-        Map unavailable. Run a dev build: npx expo run:android
-      </Text>
-    </View>
+    <MapEngineProvider engine="legacy">
+      <LegacyMapView
+        ref={ref}
+        style={props.style}
+        initialRegion={props.initialRegion}
+        colorMode={mode}
+        showUserLocation={props.showUserLocation}
+        onPress={props.onPress}
+      >
+        {props.children}
+      </LegacyMapView>
+    </MapEngineProvider>
   );
 });
 
+/** Dev helper — which renderer is active */
+export function getActiveMapEngineLabel(): string {
+  return mapEngineLabel(resolveMapEngine());
+}
+
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
+  fill: { flex: 1, backgroundColor: '#131316' },
   fallback: {
     flex: 1,
     alignItems: 'center',

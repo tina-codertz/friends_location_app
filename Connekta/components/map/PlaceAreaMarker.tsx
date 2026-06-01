@@ -17,7 +17,6 @@ type Props = {
   latitude: number;
   longitude: number;
   label: string;
-  subtitle?: string;
   accentColor: string;
   radiusMeters?: number;
 };
@@ -78,7 +77,7 @@ function PlaceAreaMarkerComponent({
           id={`label-${id}`}
           longitude={longitude}
           latitude={latitude}
-          anchor={{ x: 0.5, y: 0.5 }}
+          anchor={{ x: 0.5, y: 1 }}
         >
           {nameBadge}
         </MapboxPointAnnotation>
@@ -99,7 +98,7 @@ function PlaceAreaMarkerComponent({
       <Marker
         identifier={`label-${id}`}
         coordinate={{ latitude, longitude }}
-        anchor={{ x: 0.5, y: 0.5 }}
+        anchor={{ x: 0.5, y: 1 }}
         tracksViewChanges={tracksViewChanges}
         zIndex={10}
       >
