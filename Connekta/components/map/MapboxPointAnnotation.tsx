@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { getMapboxModule } from '@/utils/map-runtime';
 
@@ -9,33 +9,32 @@ type Props = {
   longitude: number;
   latitude: number;
   anchor?: Anchor;
-  /** Taller snapshot box when subtitle is shown */
   hasSubtitle?: boolean;
   children: React.ReactNode;
 };
 
-/**
- * Mapbox PointAnnotation renders children to a bitmap — one stable wrapper
- * with collapsable={false} and explicit size prevents clipped badges.
- */
+/** Fallback for small pins (draft) — fixed size + layout-driven refresh. */
 export function MapboxPointAnnotation({
   id,
   longitude,
   latitude,
-  anchor = { x: 0.5, y: 1 },
+  anchor = { x: 0.5, y: 0.5 },
   hasSubtitle = false,
   children,
 }: Props) {
   const Mapbox = getMapboxModule();
   const annotationRef = useRef<{ refresh?: () => void } | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [box, setBox] = useState({
+    width: hasSubtitle ? 200 : 180,
+    height: hasSubtitle ? 88 : 56,
+  });
 
   const refreshSnapshot = useCallback(() => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
     annotationRef.current?.refresh?.();
-    refreshTimer.current = setTimeout(() => {
-      annotationRef.current?.refresh?.();
-    }, 80);
+    refreshTimer.current = setTimeout(() => annotationRef.current?.refresh?.(), 100);
+    refreshTimer.current = setTimeout(() => annotationRef.current?.refresh?.(), 250);
   }, []);
 
   useEffect(
@@ -43,6 +42,18 @@ export function MapboxPointAnnotation({
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
     },
     []
+  );
+
+  const onLayout = useCallback(
+    (w: number, h: number) => {
+      const width = Math.max(120, Math.ceil(w) + 32);
+      const height = Math.max(44, Math.ceil(h) + 32);
+      setBox((prev) =>
+        prev.width === width && prev.height === height ? prev : { width, height }
+      );
+      refreshSnapshot();
+    },
+    [refreshSnapshot]
   );
 
   if (!Mapbox) return null;
@@ -56,10 +67,15 @@ export function MapboxPointAnnotation({
     >
       <View
         collapsable={false}
-        style={[styles.host, hasSubtitle && styles.hostTall]}
-        onLayout={refreshSnapshot}
+        style={[
+          styles.host,
+          { width: box.width, height: box.height },
+        ]}
+        onLayout={(e) => onLayout(e.nativeEvent.layout.width, e.nativeEvent.layout.height)}
       >
-        {children}
+        <View collapsable={false} style={styles.inner}>
+          {children}
+        </View>
       </View>
     </Mapbox.PointAnnotation>
   );
@@ -68,15 +84,11 @@ export function MapboxPointAnnotation({
 const styles = StyleSheet.create({
   host: {
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    overflow: 'visible',
-    minWidth: 148,
-    minHeight: 48,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
-  hostTall: {
-    minHeight: 72,
-    paddingBottom: 10,
+  inner: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
