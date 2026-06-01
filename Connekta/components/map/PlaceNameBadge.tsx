@@ -18,30 +18,26 @@ export function PlaceNameBadge({
   borderColor,
 }: Props) {
   return (
-    <View style={styles.wrap} collapsable={false}>
-      <View style={[styles.bubble, { backgroundColor, borderColor }]}>
-        <View style={[styles.dot, { backgroundColor: accentColor }]} />
-        <Text style={[styles.label, { color: textColor }]} numberOfLines={1}>
-          {label}
-        </Text>
-      </View>
+    <View style={styles.bubble} collapsable={false}>
+      <View style={[styles.dot, { backgroundColor: accentColor }]} />
+      <Text style={[styles.label, { color: textColor }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    maxWidth: 140,
-  },
   bubble: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'center',
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1.5,
+    maxWidth: 160,
     elevation: 6,
     shadowColor: '#000',
     shadowOpacity: 0.2,
@@ -52,10 +48,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+    flexShrink: 0,
   },
   label: {
     fontFamily: Font.semibold,
     fontSize: 13,
-    maxWidth: 100,
+    flexShrink: 1,
   },
 });

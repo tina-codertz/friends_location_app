@@ -1,6 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import { Circle, Marker } from 'react-native-maps';
 import { getMapboxModule } from '@/utils/map-runtime';
+import { MapboxPointAnnotation } from '@/components/map/MapboxPointAnnotation';
 import { useMapEngine } from '@/components/map/MapEngineContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useMarkerTracks } from '@/hooks/useMarkerTracks';
@@ -73,13 +74,14 @@ function PlaceAreaMarkerComponent({
             style={{ lineColor: strokeColor, lineWidth: 3.5 }}
           />
         </Mapbox.ShapeSource>
-        <Mapbox.PointAnnotation
+        <MapboxPointAnnotation
           id={`label-${id}`}
-          coordinate={[longitude, latitude]}
+          longitude={longitude}
+          latitude={latitude}
           anchor={{ x: 0.5, y: 0.5 }}
         >
           {nameBadge}
-        </Mapbox.PointAnnotation>
+        </MapboxPointAnnotation>
       </>
     );
   }
