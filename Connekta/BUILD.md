@@ -127,9 +127,13 @@ npx expo run:ios       # simulator or device (Xcode required)
 Release APK locally (after prebuild):
 
 ```bash
+# Must use JDK 17 — Java 25 breaks Gradle with "Unsupported class file major version 69"
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 cd android && ./gradlew assembleRelease
 # APK: android/app/build/outputs/apk/release/app-release.apk
 ```
+
+`android/gradle.properties` sets `org.gradle.java.home` to Homebrew OpenJDK 17. If `brew upgrade openjdk@17` changes the path, run `brew --prefix openjdk@17` and update that line.
 
 ---
 
