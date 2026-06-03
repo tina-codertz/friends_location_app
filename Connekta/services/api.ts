@@ -1,35 +1,25 @@
 /**
- * Frontend API Service - Axios client for backend communication
+ * App data facade — Firestore-backed helpers used by screens and hooks.
  */
 
-import axios, { AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
-import {
-  getApiAuthToken,
-  getLegacyApiLogoutOn401,
-  notifyUnauthorized,
-  setApiAuthToken,
-  setApiUnauthorizedHandler,
-} from '@/services/auth-token';
 import { auth, firebaseAuthErrorMessage, isAuthQuotaExceeded, loadAppUser } from '@/connekta-firebase';
-import {
-  createPlace,
-  deletePlace,
-  listCirclePlaces,
-  listMyPlaces,
-} from '@/connekta-firebase/firestore/places';
-import {
-  getMyLocationState,
-  listFriendLocations,
-  pingLocation,
-  setLocationSharing,
-} from '@/connekta-firebase/firestore/location';
 import * as firestoreCircle from '@/connekta-firebase/firestore/circle';
 import {
   addEmergencyContact,
   listEmergencyContacts,
   removeEmergencyContact,
 } from '@/connekta-firebase/firestore/emergency';
+import {
+  getMyLocationState,
+  listFriendLocations,
+  pingLocation,
+  setLocationSharing,
+} from '@/connekta-firebase/firestore/location';
+import type { FriendUser } from '@/types/friends';
+import type { FriendLocation } from '@/types/location';
+import type { EmergencyContact } from '@/types/emergency';
+
+export type { FriendUser, FriendLocation, EmergencyContact };
 
 let lastQuotaWarnAt = 0;
 
@@ -46,241 +36,13 @@ function warnApiFailure(tag: string, err: unknown): void {
   console.warn(`[${tag}] failed:`, err);
 }
 
-export { setApiAuthToken, setApiUnauthorizedHandler };
-import type { PlaceKind, SavedPlace } from '@/types/places';
-
-export type { SavedPlace };
-
-// Get API base URL - use machine IP if running on device
-const getAPIBaseURL = (): string => {
-  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (envUrl) {
-    return envUrl.replace(/\/$/, '');
-  }
-  return 'https://backend.christinakimario8.workers.dev';
-};
-
-const API_BASE_URL = getAPIBaseURL();
-console.log('[API] Using base URL:', API_BASE_URL);
-
-/** WebSocket URL for Durable Object realtime hub (JWT as query param). */
-export function getRealtimeWebSocketUrl(token: string): string {
-  const override = process.env.EXPO_PUBLIC_WS_URL;
-  if (override) {
-    const u = new URL(override);
-    u.searchParams.set('token', token);
-    return u.toString();
-  }
-  const wsBase = getAPIBaseURL().replace(/^https:\/\//i, 'wss://').replace(/^http:\/\//i, 'ws://');
-  return `${wsBase.replace(/\/$/, '')}/realtime/ws?token=${encodeURIComponent(token)}`;
-}
-
-// Create axios instance
-export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': 'true',
-  },
-});
-
-// Request interceptor - Add JWT token from secure storage
-apiClient.interceptors.request.use(
-  async (config) => {
-    try {
-      let token = getApiAuthToken();
-      if (!token) {
-        token = await SecureStore.getItemAsync('auth_token');
-      }
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    } catch (err) {
-      console.warn('[API] Failed to get token:', err);
-    }
-    console.log('[API] Making request:', config.method?.toUpperCase(), config.url);
-    return config;
-  },
-  (error) => {
-    console.error('[API] Request interceptor error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor - Handle errors
-apiClient.interceptors.response.use(
-  (response) => {
-    console.log('[API] Response received:', response.status, response.config.url);
-    return response;
-  },
-  async (error: AxiosError<any>) => {
-    const status = error.response?.status;
-    const url = error.config?.url ?? '';
-    const rawData = error.response?.data;
-    const isHtmlGateway =
-      typeof rawData === 'string' &&
-      (rawData.includes('ngrok') || rawData.includes('<!DOCTYPE html>'));
-    const isGatewayOutage = status === 502 || status === 503 || status === 504 || isHtmlGateway;
-
-    const errorInfo = {
-      status,
-      message: error.message,
-      url,
-      data: isHtmlGateway ? '(ngrok/gateway HTML — backend unreachable)' : rawData,
-      code: error.code,
-    };
-
-    const isLegacyFirebaseCall =
-      typeof url === 'string' &&
-      (url.includes('/places') ||
-        url.includes('/location') ||
-        url.includes('/friends') ||
-        url.includes('/emergency'));
-    if (isGatewayOutage) {
-      console.warn(
-        '[API] Gateway/backend unavailable for',
-        url,
-        '— ensure `npx wrangler dev` is running and ngrok points to port 8787'
-      );
-    } else if (isLegacyFirebaseCall) {
-      console.warn('[API] Deprecated HTTP call (use Firestore):', url);
-    } else {
-      console.error('[API] Response error:', errorInfo);
-    }
-
-    if (!error.response) {
-      console.warn('[API] Network error — no response. API URL:', API_BASE_URL);
-    }
-    
-    if (error.response?.status === 401 && getLegacyApiLogoutOn401()) {
-      setApiAuthToken(null);
-      try {
-        await SecureStore.deleteItemAsync('auth_token');
-        await SecureStore.deleteItemAsync('user_data');
-      } catch (err) {
-        console.warn('[API] Failed to clear secure store:', err);
-      }
-      notifyUnauthorized();
-    }
-    return Promise.reject(error);
-  }
-);
-
-/** Prefer server message from axios 4xx/5xx responses. */
 export function getApiErrorMessage(err: unknown, fallback: string): string {
-  if (axios.isAxiosError(err)) {
-    const data = err.response?.data as { message?: unknown } | undefined;
-    if (typeof data?.message === 'string' && data.message.trim().length > 0) {
-      return data.message;
-    }
-  }
-  if (err instanceof Error && err.message) return err.message;
+  if (err instanceof Error && err.message.trim().length > 0) return err.message;
   return fallback;
 }
 
-export interface RegisterRequest {
-  email: string;
-  username: string;
-  device_id: string;
-}
-
-export interface LoginRequest {
-  username: string;
-  device_id: string;
-}
-
-export interface User {
-  id: number;
-  email: string;
-  username: string;
-  device_id: string;
-  verified: number;
-  created_at: string;
-}
-
-export interface AuthResponse {
-  success: boolean;
-  user?: User;
-  token?: string;
-  message?: string;
-}
-
-/**
- * Auth API endpoints
- */
-export const authAPI = {
-  /** Check if username is free before sign-up. */
-  async checkUsername(username: string): Promise<{ success: boolean; available: boolean; message?: string }> {
-    try {
-      const response = await apiClient.get<{ success: boolean; available: boolean; message?: string }>(
-        '/auth/check-username',
-        { params: { username: username.trim() } }
-      );
-      return response.data;
-    } catch (err) {
-      // Older deployed workers may not have this route yet; register still validates username.
-      if (axios.isAxiosError(err) && err.response?.status === 404) {
-        console.warn('[API] /auth/check-username not deployed — skipping pre-check');
-        return { success: true, available: true };
-      }
-      throw err;
-    }
-  },
-
-  /**
-   * Register new user
-   */
-  async register(email: string, username: string, device_id: string): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/register', {
-      email,
-      username,
-      device_id,
-    });
-    return response.data;
-  },
-
-  /**
-   * Login user
-   */
-  async login(username: string, device_id: string): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/login', {
-      username,
-      device_id,
-    });
-    return response.data;
-  },
-};
-
-export type { FriendUser } from '@/types/friends';
-import type { FriendUser } from '@/types/friends';
-
-export type { FriendLocation } from '@/types/location';
-import type { FriendLocation } from '@/types/location';
-
-/** Friends & circle invites use Firestore (not Cloudflare /friends API). */
+/** Friends & circle invites (Firestore). */
 export const friendsAPI = {
-  async search(q: string): Promise<{ success: boolean; users: FriendUser[] }> {
-    try {
-      const uid = auth.currentUser?.uid;
-      if (!uid) return { success: false, users: [] };
-      const users = await firestoreCircle.searchUsers(uid, q);
-      return { success: true, users };
-    } catch (err) {
-      console.warn('[friendsAPI] search failed:', err);
-      return { success: false, users: [] };
-    }
-  },
-  async sendRequest(to_user_id: string): Promise<{ success: boolean; message?: string }> {
-    try {
-      const uid = auth.currentUser?.uid;
-      if (!uid) return { success: false, message: 'Not signed in' };
-      return await firestoreCircle.sendFriendRequest(uid, to_user_id);
-    } catch (err) {
-      console.warn('[friendsAPI] sendRequest failed:', err);
-      return { success: false, message: 'Could not send request' };
-    }
-  },
   async accept(from_user_id: string): Promise<{ success: boolean; message?: string }> {
     try {
       const uid = auth.currentUser?.uid;
@@ -373,68 +135,7 @@ export const friendsAPI = {
   },
 };
 
-/** Places use Firestore (not the Cloudflare /places API). */
-export const placesAPI = {
-  async mine(): Promise<{ success: boolean; places: SavedPlace[] }> {
-    try {
-      const uid = auth.currentUser?.uid;
-      if (!uid) return { success: false, places: [] };
-      const places = await listMyPlaces(uid);
-      return { success: true, places };
-    } catch (err) {
-      console.warn('[placesAPI] mine failed:', err);
-      return { success: false, places: [] };
-    }
-  },
-  async circle(): Promise<{ success: boolean; places: SavedPlace[] }> {
-    try {
-      const uid = auth.currentUser?.uid;
-      if (!uid) return { success: false, places: [] };
-      const places = await listCirclePlaces(uid);
-      return { success: true, places };
-    } catch (err) {
-      console.warn('[placesAPI] circle failed:', err);
-      return { success: false, places: [] };
-    }
-  },
-  async create(
-    name: string,
-    lat: number,
-    lng: number,
-    kind?: PlaceKind,
-  ): Promise<{ success: boolean; place?: SavedPlace; message?: string }> {
-    try {
-      const fbUser = auth.currentUser;
-      if (!fbUser) return { success: false, message: 'Not signed in' };
-      const profile = await loadAppUser(fbUser);
-      const place = await createPlace(
-        fbUser.uid,
-        profile?.username ?? 'user',
-        name,
-        lat,
-        lng,
-        kind,
-      );
-      return { success: true, place };
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Could not save place';
-      return { success: false, message };
-    }
-  },
-  async remove(id: string | number): Promise<{ success: boolean; message?: string }> {
-    try {
-      const uid = auth.currentUser?.uid;
-      if (!uid) return { success: false, message: 'Not signed in' };
-      await deletePlace(String(id), uid);
-      return { success: true };
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Could not delete place';
-      return { success: false, message };
-    }
-  },
-};
-
-/** Location sharing uses Firestore `users/{uid}` (not Cloudflare /location API). */
+/** Location sharing (`users/{uid}` in Firestore). */
 export const locationAPI = {
   async setSharing(enabled: boolean): Promise<{ success: boolean; sharing: boolean }> {
     try {
@@ -487,10 +188,7 @@ export const locationAPI = {
   },
 };
 
-export type { EmergencyContact } from '@/types/emergency';
-import type { EmergencyContact } from '@/types/emergency';
-
-/** Emergency contacts use Firestore (not Cloudflare /emergency API). */
+/** Emergency contacts (Firestore). */
 export const emergencyAPI = {
   async list(): Promise<{ success: boolean; contacts: EmergencyContact[] }> {
     try {
@@ -526,5 +224,3 @@ export const emergencyAPI = {
     }
   },
 };
-
-export default apiClient;

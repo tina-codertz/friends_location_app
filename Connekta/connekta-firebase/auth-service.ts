@@ -155,6 +155,7 @@ export async function firebaseLogout(): Promise<void> {
   await signOut(auth);
 }
 
+
 /** Confirms the signed-in user knows their password (e.g. before saving biometric credentials). */
 export async function verifyCurrentUserPassword(password: string): Promise<boolean> {
   const user = auth.currentUser;

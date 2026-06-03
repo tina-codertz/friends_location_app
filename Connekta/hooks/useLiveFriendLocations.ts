@@ -3,7 +3,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { locationAPI } from '@/services/api';
 import type { FriendLocation } from '@/types/location';
 
-const POLL_MS = 60_000;
+const POLL_MS = 30_000;
 
 /**
  * Live friend locations via Firestore (polls users/{friendUid}).

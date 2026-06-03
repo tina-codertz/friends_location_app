@@ -1,6 +1,3 @@
-/**
- * Authentication Context — Firebase Auth + Firestore profile
- */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,7 +12,7 @@ import {
   registerWithEmail,
   subscribeToAuthState,
 } from '@/connekta-firebase';
-import { setApiAuthToken } from '@/services/api';
+import { setApiAuthToken } from '@/services/auth-token';
 import { setLegacyApiLogoutOn401 } from '@/services/auth-token';
 import {
   disableBiometricUnlock,

@@ -31,8 +31,10 @@ import {
   MAX_PLACE_MARKERS_MAIN,
 } from '@/utils/map-limits';
 
-const MIN_PING_MS = 20000;
-const MIN_MOVE_M = 50;
+/** Min time between Firestore pings (battery + quota). */
+const MIN_PING_MS = 10_000;
+/** Min movement before another ping (meters). */
+const MIN_MOVE_M = 15;
 
 function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371000;
@@ -151,24 +153,28 @@ export default function MapTabScreen() {
 
           if (!ENABLE_MAP_LOCATION_TRACKING) return;
 
+          const maybePing = (next: { lat: number; lng: number }, force = false) => {
+            if (!sharingRef.current) return;
+            const now = Date.now();
+            if (!force && now - lastPing.current < MIN_PING_MS) return;
+            const prev = lastSent.current;
+            if (!force && prev && distanceM(prev, next) < MIN_MOVE_M) return;
+            lastPing.current = now;
+            lastSent.current = next;
+            locationAPI.ping(next.lat, next.lng).catch(() => undefined);
+          };
+
           sub = await Location.watchPositionAsync(
             {
               accuracy: Location.Accuracy.Balanced,
-              distanceInterval: 40,
-              timeInterval: 15000,
+              distanceInterval: MIN_MOVE_M,
+              timeInterval: MIN_PING_MS,
             },
             (loc) => {
               if (cancelled) return;
               const next = { lat: loc.coords.latitude, lng: loc.coords.longitude };
               setMe(next);
-              if (!sharingRef.current) return;
-              const now = Date.now();
-              if (now - lastPing.current < MIN_PING_MS) return;
-              const prev = lastSent.current;
-              if (prev && distanceM(prev, next) < MIN_MOVE_M) return;
-              lastPing.current = now;
-              lastSent.current = next;
-              locationAPI.ping(next.lat, next.lng).catch(() => undefined);
+              maybePing(next);
             }
           );
         } catch {
@@ -190,17 +196,38 @@ export default function MapTabScreen() {
   const onToggleShare = async (value: boolean) => {
     if (!uid) return;
     setSharing(value);
+    sharingRef.current = value;
     try {
       await locationAPI.setSharing(value);
-      if (value && me) {
-        lastPing.current = 0;
-        lastSent.current = null;
-        locationAPI.ping(me.lat, me.lng).catch(() => undefined);
+      if (value) {
+        let pos = me;
+        try {
+          const { status } = await Location.getForegroundPermissionsAsync();
+          if (status === 'granted') {
+            const fresh = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            pos = { lat: fresh.coords.latitude, lng: fresh.coords.longitude };
+            setMe(pos);
+          }
+        } catch {
+          /* use last known me */
+        }
+        if (pos) {
+          const now = Date.now();
+          lastPing.current = now;
+          lastSent.current = pos;
+          await locationAPI.ping(pos.lat, pos.lng);
+        }
         void refresh();
         void refreshPlaces();
+      } else {
+        lastSent.current = null;
+        lastPing.current = 0;
       }
     } catch {
       setSharing(!value);
+      sharingRef.current = !value;
     }
   };
 
