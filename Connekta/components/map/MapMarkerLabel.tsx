@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { PlaceNameBadge } from '@/components/map/PlaceNameBadge';
-import { PlaceKindChip } from '@/components/map/PlaceKindChip';
 import type { PlaceKind } from '@/types/places';
 import { Font } from '@/constants/typography';
 
@@ -17,8 +16,7 @@ type Props = {
 };
 
 /**
- * Pill label + optional subtitle + pin tip at bottom (anchor point on map).
- * Layout is bottom-anchored so the full badge sits above the coordinate.
+ * Single pill label + optional subtitle + pin tip at bottom (anchor on map).
  */
 export function MapMarkerLabel({
   label,
@@ -30,21 +28,11 @@ export function MapMarkerLabel({
   borderColor,
   subtitleColor,
 }: Props) {
-  const showKind = placeKind != null && placeKind !== 'other';
-
   return (
     <View style={styles.wrap} collapsable={false}>
-      {showKind ? (
-        <PlaceKindChip
-          kind={placeKind}
-          accentColor={accentColor}
-          textColor={textColor}
-          backgroundColor={backgroundColor}
-          borderColor={borderColor}
-        />
-      ) : null}
       <PlaceNameBadge
         label={label}
+        placeKind={placeKind}
         accentColor={accentColor}
         backgroundColor={backgroundColor}
         textColor={textColor}

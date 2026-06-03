@@ -10,7 +10,6 @@ type Props = {
   latitude: number;
   anchor?: Anchor;
   hasSubtitle?: boolean;
-  hasKindChip?: boolean;
   children: React.ReactNode;
 };
 
@@ -28,14 +27,12 @@ export function MapboxPointAnnotation({
   latitude,
   anchor = { x: 0.5, y: 1 },
   hasSubtitle = false,
-  hasKindChip = false,
   children,
 }: Props) {
   const Mapbox = getMapboxModule();
   const annotationRef = useRef<{ refresh?: () => void } | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const kindExtra = hasKindChip ? 28 : 0;
-  const minHeight = (hasSubtitle ? 112 : 80) + kindExtra;
+  const minHeight = hasSubtitle ? 112 : 80;
   const [box, setBox] = useState({
     width: 240,
     height: minHeight + PAD_TOP + PAD_BOTTOM + 16,

@@ -1,5 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import type { PlaceKind } from '@/types/places';
+import { PLACE_KIND_META } from '@/utils/place-kind';
 import { Font } from '@/constants/typography';
 
 type Props = {
@@ -8,6 +11,8 @@ type Props = {
   backgroundColor: string;
   textColor: string;
   borderColor: string;
+  /** When set, shows category icon instead of a plain dot. */
+  placeKind?: PlaceKind;
 };
 
 export function PlaceNameBadge({
@@ -16,7 +21,11 @@ export function PlaceNameBadge({
   backgroundColor,
   textColor,
   borderColor,
+  placeKind,
 }: Props) {
+  const showKind = placeKind != null && placeKind !== 'other';
+  const kindIcon = showKind ? PLACE_KIND_META[placeKind].icon : null;
+
   return (
     <View
       style={[
@@ -25,7 +34,11 @@ export function PlaceNameBadge({
       ]}
       collapsable={false}
     >
-      <View style={[styles.dot, { backgroundColor: accentColor }]} />
+      {kindIcon ? (
+        <Ionicons name={kindIcon} size={14} color={accentColor} style={styles.kindIcon} />
+      ) : (
+        <View style={[styles.dot, { backgroundColor: accentColor }]} />
+      )}
       <Text style={[styles.label, { color: textColor }]} numberOfLines={1}>
         {label}
       </Text>
@@ -50,6 +63,9 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+    flexShrink: 0,
+  },
+  kindIcon: {
     flexShrink: 0,
   },
   label: {
