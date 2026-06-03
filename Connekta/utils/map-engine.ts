@@ -1,4 +1,8 @@
-import { canUseMapbox, prefersGoogleMaps } from '@/utils/maps-config';
+import {
+  canUseGoogleMapsOnPlatform,
+  canUseMapbox,
+  getMapProviderPreference,
+} from '@/utils/maps-config';
 import { ensureMapboxConfigured } from '@/utils/mapbox-init';
 import { isMapboxNativeAvailable } from '@/utils/map-runtime';
 
@@ -14,8 +18,8 @@ let cachedEngine: MapEngineKind | null = null;
 export function resolveMapEngine(): MapEngineKind {
   if (cachedEngine) return cachedEngine;
 
-  if (prefersGoogleMaps()) {
-    cachedEngine = 'google-maps';
+  if (getMapProviderPreference() === 'google') {
+    cachedEngine = canUseGoogleMapsOnPlatform() ? 'google-maps' : 'unavailable';
     return cachedEngine;
   }
 

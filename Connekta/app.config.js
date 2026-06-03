@@ -52,6 +52,7 @@ module.exports = ({ config }) => {
     ...config,
     extra: {
       ...config.extra,
+      mapProvider,
       // Embedded for dev/production builds; also available as EXPO_PUBLIC_MAPBOX_TOKEN in JS
       ...(mapboxToken ? { mapboxAccessToken: mapboxToken } : {}),
       ...(googleMapsKey ? { googleMapsApiKey: googleMapsKey, googleMapsAndroidApiKey: googleMapsKey } : {}),

@@ -54,6 +54,27 @@ You should see `EXPO_PUBLIC_MAP_PROVIDER` (set to `google` in `eas.json`), `EXPO
 
 **Google Maps on EAS:** `eas.json` sets `EXPO_PUBLIC_MAP_PROVIDER=google`. API keys must be in EAS (not committed in `eas.json`) — add them to `.env` then run `npm run env:push-eas`.
 
+Confirm **production** too if you use `npm run build:android:store`:
+
+```bash
+eas env:list --environment production | grep -E 'GOOGLE|MAP_PROVIDER'
+```
+
+### Google Maps blank in APK but works in Expo Go?
+
+Expo Go and your **release APK use different signing certificates**. In [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → your Maps API key → **Android app restrictions**:
+
+1. Package name: `com.christinakimario.friendslocationsharing`
+2. SHA-1: get the fingerprint EAS uses for the build profile:
+
+```bash
+eas credentials -p android
+```
+
+Choose the same profile as your build (`preview-apk` or `production`), view the keystore SHA-1, and add it to the key restriction.
+
+Also enable **Maps SDK for Android** on that API key. After changing restrictions, wait a few minutes and install a **new** EAS build (env changes require rebuild).
+
 ---
 
 ## 3. Build Android APK (install on phone)
