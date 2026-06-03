@@ -17,21 +17,13 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
 import { useAppTheme } from '@/context/ThemeContext';
-import { friendsAPI, type FriendUser } from '@/services/api';
+import { friendsAPI, getApiErrorMessage, type FriendUser } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 import { useAuth } from '@/context/AuthContext';
-import { useFriendLocationsPoll } from '@/hooks/useFriendLocationsPoll';
+import { useFriendLocations } from '@/hooks/useFriendLocations';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 import type { MapRegion } from '@/types/map';
 import { capList, MAX_FRIEND_MARKERS_PREVIEW } from '@/utils/map-limits';
-
-function apiErrorMessage(e: unknown, fallback: string): string {
-  if (e && typeof e === 'object' && 'response' in e) {
-    const data = (e as { response?: { data?: { message?: string } } }).response?.data;
-    if (data?.message) return data.message;
-  }
-  return fallback;
-}
 
 export default function FriendsTabScreen() {
   const insets = useSafeAreaInsets();
@@ -49,7 +41,7 @@ export default function FriendsTabScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
 
-  const { locations: friendLocations, refresh: refreshLocations } = useFriendLocationsPoll(
+  const { locations: friendLocations, refresh: refreshLocations } = useFriendLocations(
     focused && isLoggedIn,
     uid,
   );
@@ -134,7 +126,7 @@ export default function FriendsTabScreen() {
         void loadLists();
       }
     } catch (e) {
-      Alert.alert('Accept failed', apiErrorMessage(e, 'Could not accept request'));
+      Alert.alert('Accept failed', getApiErrorMessage(e, 'Could not accept request'));
     }
   };
 

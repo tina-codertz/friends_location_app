@@ -5,7 +5,6 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { AppOpenLocationPing } from '@/components/location/AppOpenLocationPing';
 import { ConnektaTabBar } from '@/components/navigation/ConnektaTabBar';
 import { BiometricGate } from '@/components/security/BiometricGate';
-import { SessionTimeoutGuard } from '@/components/security/SessionTimeoutGuard';
 
 export const unstable_settings = {
   initialRouteName: 'map',
@@ -15,7 +14,6 @@ export default function TabLayout() {
   return (
     <AuthGuard>
       <AppOpenLocationPing />
-      <SessionTimeoutGuard>
       <BiometricGate>
       <Tabs
         tabBar={(props) => <ConnektaTabBar {...props} />}
@@ -34,7 +32,6 @@ export default function TabLayout() {
         <Tabs.Screen name="ShareLocation" options={{ href: null }} />
       </Tabs>
       </BiometricGate>
-      </SessionTimeoutGuard>
     </AuthGuard>
   );
 }

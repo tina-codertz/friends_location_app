@@ -11,7 +11,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -38,7 +38,7 @@ function FieldIcon({ name, color }: { name: keyof typeof Ionicons.glyphMap; colo
 export default function AuthScreen() {
   const router = useRouter();
   const { colors, accent } = useAppTheme();
-  const { register, login, isLoading, error, clearError } = useAuth();
+  const { register, login, isLoading, isLoggedIn, error, clearError } = useAuth();
 
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
@@ -172,6 +172,10 @@ export default function AuthScreen() {
   };
 
   const iconMuted = colors.textMuted;
+
+  if (isLoggedIn) {
+    return <Redirect href="/(tabs)/map" />;
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>

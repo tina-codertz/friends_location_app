@@ -1,9 +1,9 @@
-import { canUseMapbox } from '@/utils/maps-config';
+import { canUseMapbox, prefersGoogleMaps } from '@/utils/maps-config';
 import { ensureMapboxConfigured } from '@/utils/mapbox-init';
 import { isMapboxNativeAvailable } from '@/utils/map-runtime';
 
 /** How the app renders maps — pick exactly one path per ConnektaMap instance. */
-export type MapEngineKind = 'mapbox-gl' | 'mapbox-raster' | 'unavailable';
+export type MapEngineKind = 'google-maps' | 'mapbox-gl' | 'mapbox-raster' | 'unavailable';
 
 let cachedEngine: MapEngineKind | null = null;
 
@@ -13,6 +13,11 @@ let cachedEngine: MapEngineKind | null = null;
  */
 export function resolveMapEngine(): MapEngineKind {
   if (cachedEngine) return cachedEngine;
+
+  if (prefersGoogleMaps()) {
+    cachedEngine = 'google-maps';
+    return cachedEngine;
+  }
 
   if (!canUseMapbox()) {
     cachedEngine = 'unavailable';
@@ -28,13 +33,10 @@ export function resolveMapEngine(): MapEngineKind {
   return cachedEngine;
 }
 
-/** Call after env/token changes in dev (rare). */
-export function resetMapEngineCache(): void {
-  cachedEngine = null;
-}
-
 export function mapEngineLabel(engine: MapEngineKind): string {
   switch (engine) {
+    case 'google-maps':
+      return 'Google Maps';
     case 'mapbox-gl':
       return 'Mapbox GL';
     case 'mapbox-raster':

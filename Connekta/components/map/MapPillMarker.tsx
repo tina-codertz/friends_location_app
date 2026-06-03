@@ -24,7 +24,6 @@ type Props = {
 const LEGACY_W = 240;
 const LEGACY_H_NO_SUB = 96;
 const LEGACY_H_SUB = 128;
-const LEGACY_KIND_EXTRA = 28;
 
 /**
  * Full glass pill on map — Mapbox PointAnnotation (dev build) or legacy Marker (Expo Go).
@@ -44,7 +43,6 @@ function MapPillMarkerComponent({
 }: Props) {
   const engine = useMapEngine();
   const hasSubtitle = Boolean(subtitle?.trim());
-  const hasKindChip = placeKind != null && placeKind !== 'other';
   const tracksViewChanges = useMarkerTracks([
     label,
     subtitle,
@@ -77,15 +75,13 @@ function MapPillMarkerComponent({
         latitude={latitude}
         anchor={{ x: 0.5, y: 1 }}
         hasSubtitle={hasSubtitle}
-        hasKindChip={hasKindChip}
       >
         {content}
       </MapboxPointAnnotation>
     );
   }
 
-  const legacyHeight =
-    (hasSubtitle ? LEGACY_H_SUB : LEGACY_H_NO_SUB) + (hasKindChip ? LEGACY_KIND_EXTRA : 0);
+  const legacyHeight = hasSubtitle ? LEGACY_H_SUB : LEGACY_H_NO_SUB;
 
   return (
     <Marker

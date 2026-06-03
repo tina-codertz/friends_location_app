@@ -7,9 +7,10 @@ import {
   latitudeDeltaToZoom,
   type MapColorMode,
 } from '@/utils/maps-config';
-import { resolveMapEngine, mapEngineLabel } from '@/utils/map-engine';
+import { resolveMapEngine } from '@/utils/map-engine';
 import { getMapboxModule } from '@/utils/map-runtime';
 import { MapEngineProvider } from '@/components/map/MapEngineContext';
+import { GoogleMapView } from '@/components/map/GoogleMapView';
 import { LegacyMapView } from '@/components/map/LegacyMapView';
 import type { MapRegion } from '@/types/map';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -94,7 +95,7 @@ function MapboxMapInner(
         attributionEnabled
         logoEnabled={false}
         compassEnabled
-        scaleBarEnabled={false}
+        scaleBarEnabled
         onPress={
           onPress
             ? (feature: Feature) => {
@@ -132,8 +133,28 @@ function MapboxMapInner(
 const MapboxMap = forwardRef(MapboxMapInner);
 
 export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMap(props, ref) {
-  const { colors, accent, mode } = useAppTheme();
+  const { colors, mode } = useAppTheme();
   const engine = resolveMapEngine();
+
+  if (engine === 'google-maps') {
+    return (
+      <MapEngineProvider engine="legacy">
+        <GoogleMapView
+          ref={ref}
+          style={props.style}
+          initialRegion={props.initialRegion}
+          colorMode={mode}
+          showUserLocation={props.showUserLocation}
+          scrollEnabled={props.scrollEnabled}
+          zoomEnabled={props.zoomEnabled}
+          rotateEnabled={props.rotateEnabled}
+          onPress={props.onPress}
+        >
+          {props.children}
+        </GoogleMapView>
+      </MapEngineProvider>
+    );
+  }
 
   if (!canUseMapbox()) {
     return (
@@ -174,10 +195,6 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
     </MapEngineProvider>
   );
 });
-
-export function getActiveMapEngineLabel(): string {
-  return mapEngineLabel(resolveMapEngine());
-}
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },

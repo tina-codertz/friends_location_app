@@ -24,4 +24,4 @@ connekta-firebase/
 
 Publish rules: Firebase Console → Firestore → Rules → paste `rules/firestore.rules`.
 
-App code outside this folder: `services/api.ts` (API facade), `services/biometric-unlock.ts`, `services/session-activity.ts`.
+App code outside this folder: `services/api.ts` (API facade), `services/biometric-unlock.ts`.

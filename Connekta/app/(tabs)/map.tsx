@@ -17,11 +17,12 @@ import { MapTabChrome, type MapFilterChip } from '@/components/map/MapTabChrome'
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { ENABLE_MAP_LOCATION_TRACKING } from '@/constants/features';
-import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
+import { MAP_ZOOM } from '@/utils/maps-config';
+import { useFriendLocations } from '@/hooks/useFriendLocations';
 import { useCirclePlaces } from '@/hooks/useCirclePlaces';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
-import { placeKindLabel, resolvePlaceKind } from '@/utils/place-kind';
+import { resolvePlaceKind } from '@/utils/place-kind';
 import { locationAPI } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 import type { MapRegion } from '@/types/map';
@@ -74,7 +75,7 @@ export default function MapTabScreen() {
 
   sharingRef.current = sharing;
 
-  const { locations, refresh } = useLiveFriendLocations(focused && isLoggedIn, uid);
+  const { locations, refresh } = useFriendLocations(focused && isLoggedIn, uid);
   const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(focused && isLoggedIn, uid);
 
   const region: MapRegion | null = useMemo(() => {
@@ -82,8 +83,8 @@ export default function MapTabScreen() {
     return {
       latitude: me.lat,
       longitude: me.lng,
-      latitudeDelta: 0.04,
-      longitudeDelta: 0.04,
+      latitudeDelta: MAP_ZOOM.defaultLatitudeDelta,
+      longitudeDelta: MAP_ZOOM.defaultLatitudeDelta,
     };
   }, [me]);
 
@@ -302,7 +303,6 @@ export default function MapTabScreen() {
             placeMarkers.map((p) => {
               const isMine = user?.uid != null && p.userId === user.uid;
               const kind = resolvePlaceKind(p);
-              const kindLabel = placeKindLabel(kind);
               return (
                 <PlaceAreaMarker
                   key={`place-${p.id}`}
@@ -311,11 +311,7 @@ export default function MapTabScreen() {
                   longitude={p.lng}
                   label={p.name.trim()}
                   placeKind={kind}
-                  subtitle={
-                    isMine
-                      ? `${kindLabel} · Your saved place`
-                      : `${kindLabel} · ${p.username}`
-                  }
+                  subtitle={isMine ? 'Your saved place' : p.username}
                   accentColor={isMine ? accent.cyan : accent.green}
                 />
               );
