@@ -67,10 +67,6 @@ export default function AuthScreen() {
     }
   }, [error, clearError]);
 
-  if (isLoggedIn) {
-    return <Redirect href="/(tabs)/map" />;
-  }
-
   useEffect(() => {
     void (async () => {
       const policy = await getBiometricPolicy();
@@ -176,6 +172,10 @@ export default function AuthScreen() {
   };
 
   const iconMuted = colors.textMuted;
+
+  if (isLoggedIn) {
+    return <Redirect href="/(tabs)/map" />;
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
