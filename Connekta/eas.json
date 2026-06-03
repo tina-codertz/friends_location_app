@@ -20,7 +20,6 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_ENABLE_REALTIME": "false",
         "EXPO_PUBLIC_API_URL": "https://backend.christinakimario8.workers.dev"
       }
     },
@@ -45,7 +44,6 @@
       },
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_ENABLE_REALTIME": "false",
         "EXPO_PUBLIC_API_URL": "https://backend.christinakimario8.workers.dev"
       }
     }

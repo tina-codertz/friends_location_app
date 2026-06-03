@@ -10,4 +10,4 @@ export const GOOGLE_MAP_DARK_STYLE = [
   { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#d59563' }] },
   { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#263c3f' }] },
   { featureType: 'transit', elementType: 'labels.text.fill', stylers: [{ color: '#98a5be' }] },
-] as const;
+];

@@ -13,13 +13,11 @@ import {
   subscribeToAuthState,
 } from '@/connekta-firebase';
 import { setApiAuthToken } from '@/services/auth-token';
-import { setLegacyApiLogoutOn401 } from '@/services/auth-token';
 import {
   disableBiometricUnlock,
   scheduleBiometricEnrollmentIfNeeded,
 } from '@/services/biometric-unlock';
 import { markOnboardingComplete } from '@/services/onboarding';
-import { clearSessionActivity } from '@/services/session-activity';
 import type { AppUser } from '@/types/user';
 
 export type { AppUser };
@@ -40,10 +38,6 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  useEffect(() => {
-    setLegacyApiLogoutOn401(false);
-  }, []);
-
   const [user, setUser] = useState<AppUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -168,7 +162,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await firebaseLogout();
       await disableBiometricUnlock();
-      await clearSessionActivity();
     } catch (err) {
       console.error('Logout error:', err);
     } finally {

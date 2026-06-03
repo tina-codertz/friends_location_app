@@ -75,10 +75,6 @@ export function canUseGoogleMapsOnPlatform(): boolean {
   return false;
 }
 
-export function canUseNativeMapsOnAndroid(): boolean {
-  return canUseMapbox() || getAndroidMapsApiKey() != null;
-}
-
 /** `EXPO_PUBLIC_MAP_PROVIDER=google` to use Google Maps (requires API keys + native rebuild). */
 export function getMapProviderPreference(): MapProviderPreference {
   const raw = process.env.EXPO_PUBLIC_MAP_PROVIDER?.trim().toLowerCase();
@@ -119,5 +115,3 @@ export function getMapboxRasterStyleId(mode: MapColorMode): string {
   return mode === 'dark' ? 'dark-v11' : 'streets-v12';
 }
 
-/** @deprecated Use getMapboxStyleUrl(mode) */
-export const MAPBOX_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';

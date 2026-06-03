@@ -33,11 +33,6 @@ export function resolveMapEngine(): MapEngineKind {
   return cachedEngine;
 }
 
-/** Call after env/token changes in dev (rare). */
-export function resetMapEngineCache(): void {
-  cachedEngine = null;
-}
-
 export function mapEngineLabel(engine: MapEngineKind): string {
   switch (engine) {
     case 'google-maps':

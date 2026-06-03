@@ -18,7 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { ENABLE_MAP_LOCATION_TRACKING } from '@/constants/features';
 import { MAP_ZOOM } from '@/utils/maps-config';
-import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
+import { useFriendLocations } from '@/hooks/useFriendLocations';
 import { useCirclePlaces } from '@/hooks/useCirclePlaces';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
@@ -75,7 +75,7 @@ export default function MapTabScreen() {
 
   sharingRef.current = sharing;
 
-  const { locations, refresh } = useLiveFriendLocations(focused && isLoggedIn, uid);
+  const { locations, refresh } = useFriendLocations(focused && isLoggedIn, uid);
   const { places: circlePlaces, refresh: refreshPlaces } = useCirclePlaces(focused && isLoggedIn, uid);
 
   const region: MapRegion | null = useMemo(() => {

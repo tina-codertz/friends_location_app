@@ -7,7 +7,7 @@ import {
   latitudeDeltaToZoom,
   type MapColorMode,
 } from '@/utils/maps-config';
-import { resolveMapEngine, mapEngineLabel } from '@/utils/map-engine';
+import { resolveMapEngine } from '@/utils/map-engine';
 import { getMapboxModule } from '@/utils/map-runtime';
 import { MapEngineProvider } from '@/components/map/MapEngineContext';
 import { GoogleMapView } from '@/components/map/GoogleMapView';
@@ -195,10 +195,6 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
     </MapEngineProvider>
   );
 });
-
-export function getActiveMapEngineLabel(): string {
-  return mapEngineLabel(resolveMapEngine());
-}
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
