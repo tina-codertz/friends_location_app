@@ -17,6 +17,7 @@ import { MapTabChrome, type MapFilterChip } from '@/components/map/MapTabChrome'
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { ENABLE_MAP_LOCATION_TRACKING } from '@/constants/features';
+import { MAP_ZOOM } from '@/utils/maps-config';
 import { useLiveFriendLocations } from '@/hooks/useLiveFriendLocations';
 import { useCirclePlaces } from '@/hooks/useCirclePlaces';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
@@ -82,8 +83,8 @@ export default function MapTabScreen() {
     return {
       latitude: me.lat,
       longitude: me.lng,
-      latitudeDelta: 0.04,
-      longitudeDelta: 0.04,
+      latitudeDelta: MAP_ZOOM.defaultLatitudeDelta,
+      longitudeDelta: MAP_ZOOM.defaultLatitudeDelta,
     };
   }, [me]);
 

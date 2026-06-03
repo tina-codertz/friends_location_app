@@ -19,7 +19,7 @@ import {
   scheduleBiometricEnrollmentIfNeeded,
 } from '@/services/biometric-unlock';
 import { markOnboardingComplete } from '@/services/onboarding';
-import { clearSessionActivity, isSessionExpired, recordSessionActivity } from '@/services/session-activity';
+import { clearSessionActivity } from '@/services/session-activity';
 import type { AppUser } from '@/types/user';
 
 export type { AppUser };
@@ -34,8 +34,6 @@ export interface AuthContextType {
   register: (email: string, password: string, username: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  /** Sign out after inactivity timeout; keeps biometric credentials for quick sign-in. */
-  expireSession: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -98,14 +96,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       try {
         if (fbUser) {
-          if (await isSessionExpired()) {
-            await clearSessionActivity();
-            await firebaseLogout();
-            setUser(null);
-            setApiAuthToken(null);
-            setToken(null);
-            return;
-          }
           const profile = await loadAppUser(fbUser);
           setUser(profile);
           if (profile) {
@@ -140,7 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const profile = await registerWithEmail(email, password, username, deviceId);
         setUser(profile);
         await syncIdToken();
-        await recordSessionActivity();
         await markOnboardingComplete();
         await scheduleBiometricEnrollmentIfNeeded(email, password);
       } catch (err: unknown) {
@@ -162,7 +151,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const profile = await loginWithEmail(email, password);
         setUser(profile);
         await syncIdToken();
-        await recordSessionActivity();
         await markOnboardingComplete();
         await scheduleBiometricEnrollmentIfNeeded(email, password);
       } catch (err: unknown) {
@@ -175,20 +163,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
     [syncIdToken],
   );
-
-  const expireSession = useCallback(async () => {
-    try {
-      await clearSessionActivity();
-      await firebaseLogout();
-    } catch (err) {
-      console.error('Session expire error:', err);
-    } finally {
-      setApiAuthToken(null);
-      setToken(null);
-      setUser(null);
-      setError(null);
-    }
-  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -218,7 +192,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     login,
     logout,
-    expireSession,
     clearError,
   };
 

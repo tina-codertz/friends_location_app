@@ -99,7 +99,7 @@ export function BiometricGate({ children }: Props) {
             Quick sign-in
           </Text>
           <Text style={[Type.body, { color: colors.textMuted, marginBottom: 24, textAlign: 'center' }]}>
-            After 10 minutes away, sign back in with {Platform.OS === 'ios' ? 'Face ID or Touch ID' : 'your fingerprint'}{' '}
+            Sign back in faster after you sign out — use {Platform.OS === 'ios' ? 'Face ID or Touch ID' : 'your fingerprint'}{' '}
             instead of typing your password.
           </Text>
           <GlassButton

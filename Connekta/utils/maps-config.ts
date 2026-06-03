@@ -1,4 +1,7 @@
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+
+export type MapProviderPreference = 'mapbox' | 'google';
 
 /** Normalize env/extra values (may be null, boolean, or non-string in dev). */
 export function normalizeMapsApiKey(value: unknown): string | null {
@@ -41,17 +44,50 @@ export function canUseMapbox(): boolean {
   return getMapboxAccessToken() != null;
 }
 
-/** @deprecated Google Maps — optional fallback; Mapbox is primary. */
-export function getAndroidMapsApiKey(): string | null {
-  const fromEnv = normalizeMapsApiKey(process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY);
-  if (fromEnv) return fromEnv;
+/** Shared Google Maps API key (Maps SDK for iOS/Android). */
+export function getGoogleMapsApiKey(): string | null {
+  const shared = normalizeMapsApiKey(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY);
+  if (shared) return shared;
 
   const extra = getExpoExtra();
-  return normalizeMapsApiKey(extra?.googleMapsAndroidApiKey);
+  const fromExtra = normalizeMapsApiKey(extra?.googleMapsApiKey);
+  if (fromExtra) return fromExtra;
+
+  return null;
+}
+
+export function getGoogleMapsIosApiKey(): string | null {
+  const ios = normalizeMapsApiKey(process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY);
+  if (ios) return ios;
+  return getGoogleMapsApiKey();
+}
+
+/** Android Maps SDK key (react-native-maps PROVIDER_GOOGLE). */
+export function getAndroidMapsApiKey(): string | null {
+  const android = normalizeMapsApiKey(process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY);
+  if (android) return android;
+  return getGoogleMapsApiKey();
+}
+
+export function canUseGoogleMapsOnPlatform(): boolean {
+  if (Platform.OS === 'ios') return getGoogleMapsIosApiKey() != null;
+  if (Platform.OS === 'android') return getAndroidMapsApiKey() != null;
+  return false;
 }
 
 export function canUseNativeMapsOnAndroid(): boolean {
   return canUseMapbox() || getAndroidMapsApiKey() != null;
+}
+
+/** `EXPO_PUBLIC_MAP_PROVIDER=google` to use Google Maps (requires API keys + native rebuild). */
+export function getMapProviderPreference(): MapProviderPreference {
+  const raw = process.env.EXPO_PUBLIC_MAP_PROVIDER?.trim().toLowerCase();
+  if (raw === 'google') return 'google';
+  return 'mapbox';
+}
+
+export function prefersGoogleMaps(): boolean {
+  return getMapProviderPreference() === 'google' && canUseGoogleMapsOnPlatform();
 }
 
 export type MapColorMode = 'light' | 'dark';
@@ -59,8 +95,9 @@ export type MapColorMode = 'light' | 'dark';
 /** Zoom limits for ConnektaMap camera (navigation-focused, readable scale). */
 export const MAP_ZOOM = {
   min: 4,
-  max: 17,
-  defaultLatitudeDelta: 0.04,
+  max: 18,
+  /** Slightly closer default — easier to read street names. */
+  defaultLatitudeDelta: 0.028,
 } as const;
 
 export function latitudeDeltaToZoom(latitudeDelta?: number): number {
@@ -69,16 +106,17 @@ export function latitudeDeltaToZoom(latitudeDelta?: number): number {
   return Math.max(MAP_ZOOM.min, Math.min(MAP_ZOOM.max, raw));
 }
 
-/** Vector style — navigation-night for dark; streets for light. */
+/**
+ * Mapbox Standard — detailed POIs and street labels (readable in new areas).
+ * Avoid navigation-night; it hides labels for turn-by-turn driving.
+ */
 export function getMapboxStyleUrl(mode: MapColorMode): string {
-  return mode === 'dark'
-    ? 'mapbox://styles/mapbox/navigation-night-v1'
-    : 'mapbox://styles/mapbox/streets-v12';
+  return 'mapbox://styles/mapbox/standard';
 }
 
-/** Raster tile style id (512px tiles in LegacyMapView). */
+/** Raster fallback (Expo Go) — streets / dark with full label detail. */
 export function getMapboxRasterStyleId(mode: MapColorMode): string {
-  return mode === 'dark' ? 'navigation-night-v1' : 'streets-v12';
+  return mode === 'dark' ? 'dark-v11' : 'streets-v12';
 }
 
 /** @deprecated Use getMapboxStyleUrl(mode) */

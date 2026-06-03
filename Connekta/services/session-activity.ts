@@ -1,7 +1,10 @@
 import * as SecureStore from 'expo-secure-store';
 
-/** Session ends after this much time without the app being used. */
-export const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+/**
+ * Inactivity timeout disabled — sessions persist on device until explicit sign-out
+ * (Firebase Auth + AsyncStorage). Kept for legacy SecureStore cleanup on logout.
+ */
+export const SESSION_TIMEOUT_MS = Number.POSITIVE_INFINITY;
 
 const LAST_ACTIVE_KEY = 'session_last_active_at';
 
@@ -20,10 +23,9 @@ export async function getLastSessionActivity(): Promise<number | null> {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Always false — app trusts the device until the user signs out. */
 export async function isSessionExpired(): Promise<boolean> {
-  const last = await getLastSessionActivity();
-  if (last == null) return false;
-  return Date.now() - last >= SESSION_TIMEOUT_MS;
+  return false;
 }
 
 export async function sessionInactiveMs(): Promise<number> {
