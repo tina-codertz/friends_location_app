@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { PlaceKind } from '@/types/places';
-import { PLACE_KIND_META } from '@/utils/place-kind';
+import { isPlaceKind, PLACE_KIND_META } from '@/utils/place-kind';
 import { Font } from '@/constants/typography';
 
 type Props = {
@@ -23,8 +23,9 @@ export function PlaceNameBadge({
   borderColor,
   placeKind,
 }: Props) {
-  const showKind = placeKind != null && placeKind !== 'other';
-  const kindIcon = showKind ? PLACE_KIND_META[placeKind].icon : null;
+  const kindMeta =
+    placeKind != null && isPlaceKind(placeKind) ? PLACE_KIND_META[placeKind] : null;
+  const kindIcon = kindMeta && placeKind !== 'other' ? kindMeta.icon : null;
 
   return (
     <View

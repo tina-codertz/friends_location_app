@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef, type Ref } from 'react';
 import { View, Text, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
 import type { Feature } from 'geojson';
 import {
@@ -12,7 +12,7 @@ import { getMapboxModule } from '@/utils/map-runtime';
 import { MapEngineProvider } from '@/components/map/MapEngineContext';
 import { GoogleMapView } from '@/components/map/GoogleMapView';
 import { LegacyMapView } from '@/components/map/LegacyMapView';
-import type { MapRegion } from '@/types/map';
+import { isValidMapRegion, type MapRegion } from '@/types/map';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
 
@@ -23,7 +23,7 @@ export type ConnektaMapRef = {
 type Props = {
   style?: StyleProp<ViewStyle>;
   containerStyle?: StyleProp<ViewStyle>;
-  initialRegion: MapRegion;
+  initialRegion?: MapRegion | null;
   showUserLocation?: boolean;
   scrollEnabled?: boolean;
   zoomEnabled?: boolean;
@@ -34,7 +34,8 @@ type Props = {
   children?: React.ReactNode;
 };
 
-type MapboxInnerProps = Props & {
+type MapboxInnerProps = Omit<Props, 'initialRegion'> & {
+  initialRegion: MapRegion;
   colorMode: MapColorMode;
   mapBg: string;
 };
@@ -132,17 +133,63 @@ function MapboxMapInner(
 
 const MapboxMap = forwardRef(MapboxMapInner);
 
+function MapRegionPlaceholder({
+  message,
+  style,
+  containerStyle,
+  mapBg,
+  textColor,
+}: {
+  message: string;
+  style?: StyleProp<ViewStyle>;
+  containerStyle?: StyleProp<ViewStyle>;
+  mapBg: string;
+  textColor: string;
+}) {
+  return (
+    <View style={[styles.fallback, { backgroundColor: mapBg }, containerStyle, style]}>
+      <Text style={[Type.body, { color: textColor, textAlign: 'center', fontFamily: Font.medium }]}>
+        {message}
+      </Text>
+    </View>
+  );
+}
+
 export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMap(props, ref) {
   const { colors, mode } = useAppTheme();
   const engine = resolveMapEngine();
+  const innerMapRef = useRef<ConnektaMapRef | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    flyTo: (region, durationMs = 500) => {
+      innerMapRef.current?.flyTo(region, durationMs);
+    },
+  }));
+
+  const waitingMessage =
+    props.fallbackMessage ?? 'Getting your location…';
+
+  if (!isValidMapRegion(props.initialRegion)) {
+    return (
+      <MapRegionPlaceholder
+        message={waitingMessage}
+        style={props.style}
+        containerStyle={props.containerStyle}
+        mapBg={colors.mapBg}
+        textColor={colors.textMuted}
+      />
+    );
+  }
+
+  const region = props.initialRegion;
 
   if (engine === 'google-maps') {
     return (
       <MapEngineProvider engine="legacy">
         <GoogleMapView
-          ref={ref}
+          ref={innerMapRef as Ref<ConnektaMapRef>}
           style={props.style}
-          initialRegion={props.initialRegion}
+          initialRegion={region}
           colorMode={mode}
           showUserLocation={props.showUserLocation}
           scrollEnabled={props.scrollEnabled}
@@ -171,8 +218,9 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
     return (
       <MapEngineProvider engine="mapbox">
         <MapboxMap
-          ref={ref}
+          ref={innerMapRef as Ref<ConnektaMapRef>}
           {...props}
+          initialRegion={region}
           colorMode={mode}
           mapBg={colors.mapBg}
         />
@@ -183,9 +231,9 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
   return (
     <MapEngineProvider engine="legacy">
       <LegacyMapView
-        ref={ref}
+        ref={innerMapRef as Ref<ConnektaMapRef>}
         style={props.style}
-        initialRegion={props.initialRegion}
+        initialRegion={region}
         colorMode={mode}
         showUserLocation={props.showUserLocation}
         onPress={props.onPress}
