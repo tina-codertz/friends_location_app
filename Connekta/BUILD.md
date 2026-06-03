@@ -54,6 +54,13 @@ You should see `EXPO_PUBLIC_MAP_PROVIDER` (default `mapbox` in `eas.json`), `EXP
 
 **Mapbox on EAS (default):** `eas.json` sets `EXPO_PUBLIC_MAP_PROVIDER=mapbox`. Push tokens from `.env` with `npm run env:push-eas`, then **rebuild** the APK/AAB (provider is baked at build time).
 
+If `env:push-eas` fails with *“cannot change a secret variable to a non-secret”* for `EXPO_PUBLIC_MAPBOX_TOKEN`, delete it first (environment is a **positional** argument, not `--environment`):
+
+```bash
+npx eas-cli env:delete preview --variable-name EXPO_PUBLIC_MAPBOX_TOKEN --non-interactive
+npm run env:push-eas
+```
+
 **Optional Google Maps:** set `EXPO_PUBLIC_MAP_PROVIDER=google` in `.env` and EAS, add `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`, enable Maps SDK + billing + Android SHA-1 in Google Cloud, then rebuild.
 
 Confirm **production** too if you use `npm run build:android:store`:

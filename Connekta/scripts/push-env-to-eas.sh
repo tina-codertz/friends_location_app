@@ -29,15 +29,9 @@ push_one() {
     echo "skip (empty): $NAME @ $ENV"
     return 0
   fi
-  # New EXPO_PUBLIC_* vars must not use visibility=secret. Existing secret vars cannot
-  # be changed to sensitive (EAS error) — keep MAPBOX as secret if already uploaded.
+  # EXPO_PUBLIC_* is embedded in the app bundle — EAS allows plaintext or sensitive only.
   if [[ "$NAME" == EXPO_PUBLIC_* && "$VIS" == "secret" ]]; then
-    case "$NAME" in
-      EXPO_PUBLIC_MAPBOX_TOKEN) ;;
-      *)
-        VIS="sensitive"
-        ;;
-    esac
+    VIS="sensitive"
   fi
   echo "→ $ENV / $NAME ($VIS)"
   run_eas env:create "$ENV" --name "$NAME" --value "$VAL" --visibility "$VIS" --force --non-interactive
@@ -46,7 +40,7 @@ push_one() {
 for ENV in preview production; do
   echo "======== $ENV ========"
   push_one EXPO_PUBLIC_API_URL plaintext "$EXPO_PUBLIC_API_URL" "$ENV"
-  push_one EXPO_PUBLIC_MAPBOX_TOKEN secret "$EXPO_PUBLIC_MAPBOX_TOKEN" "$ENV"
+  push_one EXPO_PUBLIC_MAPBOX_TOKEN sensitive "$EXPO_PUBLIC_MAPBOX_TOKEN" "$ENV"
   push_one MAPBOX_DOWNLOADS_TOKEN secret "$MAPBOX_DOWNLOADS_TOKEN" "$ENV"
   push_one RNMAPBOX_MAPS_DOWNLOAD_TOKEN secret "$RNMAPBOX_VAL" "$ENV"
   push_one EXPO_PUBLIC_FIREBASE_API_KEY plaintext "$EXPO_PUBLIC_FIREBASE_API_KEY" "$ENV"
