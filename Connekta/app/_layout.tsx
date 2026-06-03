@@ -12,7 +12,7 @@ import { AuthProvider } from '@/context/AuthContext';
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export const unstable_settings = {
-  anchor: '(landing)',
+  anchor: 'index',
 };
 
 /**
@@ -54,7 +54,9 @@ function InnerRootLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: colors.bg },
         }}>
-        {/* Landing Page */}
+        <Stack.Screen name="index" options={{ animation: 'none' }} />
+
+        {/* Landing — first launch only (before first sign-up / sign-in) */}
         <Stack.Screen name="(landing)" />
 
         {/* Auth Screens */}

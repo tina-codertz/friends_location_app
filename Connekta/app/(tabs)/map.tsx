@@ -30,9 +30,13 @@ import {
   MAX_FRIEND_MARKERS_MAIN,
   MAX_PLACE_MARKERS_MAIN,
 } from '@/utils/map-limits';
+import {
+  canSendLocationPing,
+  markLocationPingSent,
+  MIN_LOCATION_PING_MS,
+} from '@/utils/location-ping-coalesce';
 
-/** Min time between Firestore pings (battery + quota). */
-const MIN_PING_MS = 10_000;
+const MIN_PING_MS = MIN_LOCATION_PING_MS;
 /** Min movement before another ping (meters). */
 const MIN_MOVE_M = 15;
 
@@ -64,7 +68,6 @@ export default function MapTabScreen() {
   const [me, setMe] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const lastPing = useRef(0);
   const lastSent = useRef<{ lat: number; lng: number } | null>(null);
   const sharingRef = useRef(false);
   const mapRef = useRef<ConnektaMapRef>(null);
@@ -155,12 +158,11 @@ export default function MapTabScreen() {
 
           const maybePing = (next: { lat: number; lng: number }, force = false) => {
             if (!sharingRef.current) return;
-            const now = Date.now();
-            if (!force && now - lastPing.current < MIN_PING_MS) return;
+            if (!force && !canSendLocationPing()) return;
             const prev = lastSent.current;
             if (!force && prev && distanceM(prev, next) < MIN_MOVE_M) return;
-            lastPing.current = now;
             lastSent.current = next;
+            markLocationPingSent();
             locationAPI.ping(next.lat, next.lng).catch(() => undefined);
           };
 
@@ -214,16 +216,14 @@ export default function MapTabScreen() {
           /* use last known me */
         }
         if (pos) {
-          const now = Date.now();
-          lastPing.current = now;
           lastSent.current = pos;
+          markLocationPingSent();
           await locationAPI.ping(pos.lat, pos.lng);
         }
         void refresh();
         void refreshPlaces();
       } else {
         lastSent.current = null;
-        lastPing.current = 0;
       }
     } catch {
       setSharing(!value);

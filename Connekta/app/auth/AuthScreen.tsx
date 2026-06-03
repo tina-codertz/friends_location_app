@@ -187,7 +187,9 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <GlassIconButton name="chevron-back" onPress={() => router.back()} style={styles.backBtn} />
+          {router.canGoBack() ? (
+            <GlassIconButton name="chevron-back" onPress={() => router.back()} style={styles.backBtn} />
+          ) : null}
 
           <Animated.View style={[styles.hero, { opacity: heroOpacity }]}>
             <LinearGradient

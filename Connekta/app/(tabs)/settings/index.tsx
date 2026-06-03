@@ -157,7 +157,7 @@ export default function SettingsHomeScreen() {
                 style: 'destructive',
                 onPress: async () => {
                   await logout();
-                  router.replace('/(landing)');
+                  router.replace('/auth/AuthScreen');
                 },
               },
             ]);
