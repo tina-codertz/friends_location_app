@@ -4,7 +4,14 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "base": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://backend.christinakimario8.workers.dev",
+        "EXPO_PUBLIC_MAP_PROVIDER": "google"
+      }
+    },
     "development": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -12,15 +19,13 @@
       }
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
       },
       "ios": {
         "simulator": false
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://backend.christinakimario8.workers.dev"
       }
     },
     "preview-apk": {
@@ -36,16 +41,14 @@
       }
     },
     "production": {
+      "extends": "base",
       "android": {
         "buildType": "app-bundle"
       },
       "ios": {
         "simulator": false
       },
-      "autoIncrement": true,
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://backend.christinakimario8.workers.dev"
-      }
+      "autoIncrement": true
     }
   },
   "submit": {

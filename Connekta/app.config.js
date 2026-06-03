@@ -13,12 +13,40 @@ module.exports = ({ config }) => {
   const googleMapsIosKey =
     process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY?.trim() || googleMapsKey;
 
-  if (process.env.EAS_BUILD === 'true' && !mapboxToken) {
-    console.warn(
-      '[Connekta] EAS Build: EXPO_PUBLIC_MAPBOX_TOKEN is missing. ' +
-        'Add it with: eas secret:create --scope project --name EXPO_PUBLIC_MAPBOX_TOKEN --value "pk...."'
-    );
+  const mapProvider = process.env.EXPO_PUBLIC_MAP_PROVIDER?.trim().toLowerCase() || 'mapbox';
+  const useGoogleMaps = mapProvider === 'google';
+
+  if (process.env.EAS_BUILD === 'true') {
+    if (useGoogleMaps && !googleMapsKey) {
+      console.warn(
+        '[Connekta] EAS Build: EXPO_PUBLIC_MAP_PROVIDER=google but no Google Maps API key. ' +
+          'Run: npm run env:push-eas (sets EXPO_PUBLIC_GOOGLE_MAPS_API_KEY on preview/production).'
+      );
+    }
+    if (!useGoogleMaps && !mapboxToken) {
+      console.warn(
+        '[Connekta] EAS Build: EXPO_PUBLIC_MAPBOX_TOKEN is missing. ' +
+          'Add it with: eas env:create --environment preview --name EXPO_PUBLIC_MAPBOX_TOKEN --value "pk...."'
+      );
+    }
   }
+
+  const plugins = [
+    ...(config.plugins ?? []),
+    [
+      'expo-location',
+      {
+        locationWhenInUsePermission:
+          'Connekta uses your location to show you on the map and optionally share with friends you approve.',
+      },
+    ],
+    [
+      '@rnmapbox/maps',
+      {
+        RNMapboxMapsVersion: '11.16.2',
+      },
+    ],
+  ];
 
   return {
     ...config,
@@ -29,23 +57,7 @@ module.exports = ({ config }) => {
       ...(googleMapsKey ? { googleMapsApiKey: googleMapsKey, googleMapsAndroidApiKey: googleMapsKey } : {}),
       ...(googleMapsIosKey ? { googleMapsIosApiKey: googleMapsIosKey } : {}),
     },
-    plugins: [
-      ...(config.plugins ?? []),
-      [
-        'expo-location',
-        {
-          locationWhenInUsePermission:
-            'Connekta uses your location to show you on the map and optionally share with friends you approve.',
-        },
-      ],
-      [
-        '@rnmapbox/maps',
-        {
-          // Native Mapbox SDK v11 (matches @rnmapbox/maps 10.2.10 defaults). Do not use 10.x here.
-          RNMapboxMapsVersion: '11.16.2',
-        },
-      ],
-    ],
+    plugins,
     ios: {
       ...config.ios,
       ...(googleMapsIosKey

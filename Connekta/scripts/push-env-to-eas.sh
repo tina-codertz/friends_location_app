@@ -27,6 +27,16 @@ push_one() {
     echo "skip (empty): $NAME @ $ENV"
     return 0
   fi
+  # New EXPO_PUBLIC_* vars must not use visibility=secret. Existing secret vars cannot
+  # be changed to sensitive (EAS error) — keep MAPBOX as secret if already uploaded.
+  if [[ "$NAME" == EXPO_PUBLIC_* && "$VIS" == "secret" ]]; then
+    case "$NAME" in
+      EXPO_PUBLIC_MAPBOX_TOKEN) ;;
+      *)
+        VIS="sensitive"
+        ;;
+    esac
+  fi
   echo "→ $ENV / $NAME ($VIS)"
   "$EAS" env:create "$ENV" --name "$NAME" --value "$VAL" --visibility "$VIS" --force --non-interactive
 }
@@ -43,6 +53,10 @@ for ENV in preview production; do
   push_one EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET plaintext "$EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET" "$ENV"
   push_one EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID plaintext "$EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" "$ENV"
   push_one EXPO_PUBLIC_FIREBASE_APP_ID plaintext "$EXPO_PUBLIC_FIREBASE_APP_ID" "$ENV"
+  push_one EXPO_PUBLIC_MAP_PROVIDER plaintext "${EXPO_PUBLIC_MAP_PROVIDER:-google}" "$ENV"
+  push_one EXPO_PUBLIC_GOOGLE_MAPS_API_KEY sensitive "${EXPO_PUBLIC_GOOGLE_MAPS_API_KEY:-}" "$ENV"
+  push_one EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY sensitive "${EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY:-${EXPO_PUBLIC_GOOGLE_MAPS_API_KEY:-}}" "$ENV"
+  push_one EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY sensitive "${EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY:-${EXPO_PUBLIC_GOOGLE_MAPS_API_KEY:-}}" "$ENV"
 done
 
 echo ""

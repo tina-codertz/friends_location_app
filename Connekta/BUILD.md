@@ -50,7 +50,9 @@ Verify:
 eas env:list --environment preview
 ```
 
-You should see all `EXPO_PUBLIC_FIREBASE_*`, `EXPO_PUBLIC_MAPBOX_TOKEN`, `MAPBOX_DOWNLOADS_TOKEN`, `RNMAPBOX_MAPS_DOWNLOAD_TOKEN`, and `EXPO_PUBLIC_API_URL`.
+You should see `EXPO_PUBLIC_MAP_PROVIDER` (set to `google` in `eas.json`), `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`, Firebase, Mapbox download tokens, and `EXPO_PUBLIC_API_URL`.
+
+**Google Maps on EAS:** `eas.json` sets `EXPO_PUBLIC_MAP_PROVIDER=google`. API keys must be in EAS (not committed in `eas.json`) — add them to `.env` then run `npm run env:push-eas`.
 
 ---
 
