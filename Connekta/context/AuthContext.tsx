@@ -18,6 +18,7 @@ import {
   disableBiometricUnlock,
   scheduleBiometricEnrollmentIfNeeded,
 } from '@/services/biometric-unlock';
+import { markOnboardingComplete } from '@/services/onboarding';
 import { clearSessionActivity, isSessionExpired, recordSessionActivity } from '@/services/session-activity';
 import type { AppUser } from '@/types/user';
 
@@ -140,6 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(profile);
         await syncIdToken();
         await recordSessionActivity();
+        await markOnboardingComplete();
         await scheduleBiometricEnrollmentIfNeeded(email, password);
       } catch (err: unknown) {
         const errorMsg = firebaseAuthErrorMessage(err);
@@ -161,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(profile);
         await syncIdToken();
         await recordSessionActivity();
+        await markOnboardingComplete();
         await scheduleBiometricEnrollmentIfNeeded(email, password);
       } catch (err: unknown) {
         const errorMsg = firebaseAuthErrorMessage(err);
