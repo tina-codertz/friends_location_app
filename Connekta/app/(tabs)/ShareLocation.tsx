@@ -16,6 +16,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { locationAPI } from '@/services/api';
 import { Font, Type } from '@/constants/typography';
 
 export default function ShareLocationScreen() {
@@ -25,6 +26,23 @@ export default function ShareLocationScreen() {
   const [liveSharing, setLiveSharing] = useState(false);
   const [currentLat, setCurrentLat] = useState<number | null>(null);
   const [currentLng, setCurrentLng] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    void (async () => {
+      try {
+        const s = await locationAPI.myState();
+        if (s.success) {
+          setLiveSharing(!!s.sharing);
+          if (typeof s.lat === 'number' && typeof s.lng === 'number') {
+            setCurrentLat(s.lat);
+            setCurrentLng(s.lng);
+          }
+        }
+      } catch {
+        /* offline */
+      }
+    })();
+  }, []);
 
   const handleShareLocation = useCallback(async () => {
     try {
@@ -51,9 +69,19 @@ export default function ShareLocationScreen() {
         Alert.alert('Permission required', 'Enable location permissions to share live.');
         return;
       }
-      setLiveSharing(true);
-    } else {
-      setLiveSharing(false);
+    }
+    setLiveSharing(value);
+    try {
+      await locationAPI.setSharing(value);
+      if (value) {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setCurrentLat(pos.coords.latitude);
+        setCurrentLng(pos.coords.longitude);
+        await locationAPI.ping(pos.coords.latitude, pos.coords.longitude);
+      }
+    } catch {
+      setLiveSharing(!value);
+      Alert.alert('Error', 'Could not update sharing. Try again on the Map tab.');
     }
   }, []);
 

@@ -51,7 +51,7 @@ export async function listMyPlaces(uid: string): Promise<SavedPlace[]> {
   return rows;
 }
 
-/** Own places + friends' places (circle). */
+/** Own places + friends' places (Circle). */
 export async function listCirclePlaces(uid: string): Promise<SavedPlace[]> {
   await ensureFirestoreSignedIn(uid);
   const uids = await getCircleMemberUids(uid);
