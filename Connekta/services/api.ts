@@ -15,7 +15,9 @@ import {
   listFriendLocations,
   pingLocation,
   setLocationSharing,
+  updateShareMode,
 } from '@/connekta-firebase/firestore/location';
+import type { ShareMode } from '@/utils/location-privacy';
 import type { FriendUser } from '@/types/friends';
 import type { FriendLocation, LocationHistoryEntry, LocationHistoryQuery } from '@/types/location';
 import type { EmergencyContact } from '@/types/emergency';
@@ -183,16 +185,43 @@ export const locationAPI = {
     lng: number | null;
     updated_at: string | null;
     share_until: string | null;
+    share_mode: ShareMode;
   }> {
     try {
       const uid = auth.currentUser?.uid;
       if (!uid) {
-        return { success: false, sharing: false, lat: null, lng: null, updated_at: null, share_until: null };
+        return {
+          success: false,
+          sharing: false,
+          lat: null,
+          lng: null,
+          updated_at: null,
+          share_until: null,
+          share_mode: 'paused',
+        };
       }
       return await getMyLocationState(uid);
     } catch (err) {
       warnApiFailure('locationAPI.myState', err);
-      return { success: false, sharing: false, lat: null, lng: null, updated_at: null, share_until: null };
+      return {
+        success: false,
+        sharing: false,
+        lat: null,
+        lng: null,
+        updated_at: null,
+        share_until: null,
+        share_mode: 'paused',
+      };
+    }
+  },
+  async setShareMode(mode: ShareMode): Promise<{ success: boolean; sharing: boolean }> {
+    try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return { success: false, sharing: false };
+      return await updateShareMode(uid, mode);
+    } catch (err) {
+      warnApiFailure('locationAPI.setShareMode', err);
+      return { success: false, sharing: false };
     }
   },
   async history(

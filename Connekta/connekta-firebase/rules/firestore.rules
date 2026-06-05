@@ -21,13 +21,29 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if signedIn();
+      // Account profile — owner only (email never visible to circle).
+      allow read: if isOwner(userId);
       allow create: if isOwner(userId)
         && request.resource.data.email is string
-        && request.resource.data.username is string
-        && request.resource.data.sharing == false;
+        && request.resource.data.username is string;
       allow update: if isOwner(userId);
       allow delete: if isOwner(userId);
+
+      match /public/profile {
+        // Username only — same visibility as usernames lookup.
+        allow read: if signedIn();
+        allow write: if isOwner(userId);
+      }
+
+      match /location/private {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /location/current {
+        allow read: if isOwner(userId)
+          || (isFriend(userId) && resource.data.sharing == true);
+        allow write: if isOwner(userId);
+      }
 
       match /locationHistory/{pointId} {
         allow read: if isOwner(userId);
@@ -40,7 +56,6 @@ service cloud.firestore {
     }
 
     match /usernames/{usernameLower} {
-      // Public read so sign-up can check availability before auth
       allow read: if true;
       allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid;
@@ -64,7 +79,6 @@ service cloud.firestore {
     }
 
     match /friendships/{pairId} {
-      // get: includes missing docs (areFriends before join) — list stays member-only
       allow get: if signedIn();
       allow list: if signedIn()
         && request.auth.uid in resource.data.memberIds;

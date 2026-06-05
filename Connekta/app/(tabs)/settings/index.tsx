@@ -126,6 +126,13 @@ export default function SettingsHomeScreen() {
       />
 
       <GlassNavCard
+        title="Location privacy"
+        subtitle="Exact, approximate, or paused sharing"
+        icon="shield-checkmark-outline"
+        onPress={() => router.push('/(tabs)/settings/LocationPrivacy')}
+      />
+
+      <GlassNavCard
         title="Location history"
         subtitle="View your route trail and recent pings"
         icon="time-outline"

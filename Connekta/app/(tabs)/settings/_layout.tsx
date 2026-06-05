@@ -18,6 +18,7 @@ export default function SettingsStackLayout() {
       <Stack.Screen name="profile" options={{ title: 'Profile' }} />
       <Stack.Screen name="CircleManagement" options={{ title: 'Circle Management' }} />
       <Stack.Screen name="LocationHistory" options={{ title: 'Location History' }} />
+      <Stack.Screen name="LocationPrivacy" options={{ title: 'Location Privacy' }} />
     </Stack>
   );
 }

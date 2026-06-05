@@ -102,16 +102,31 @@ export async function registerWithEmail(
       throw new Error('Username is already taken');
     }
 
+    const now = Timestamp.now();
     const batch = writeBatch(firestore);
     batch.set(usernameRef, { uid, username: username.trim() });
     batch.set(userRef, {
       email: email.trim().toLowerCase(),
       username: username.trim(),
       deviceId,
-      createdAt: Timestamp.now(),
-      sharing: false,
+      createdAt: now,
+    });
+    batch.set(doc(firestore, 'users', uid, 'public', 'profile'), {
+      username: username.trim(),
+    });
+    batch.set(doc(firestore, 'users', uid, 'location', 'private'), {
       lat: null,
       lng: null,
+      sharing: false,
+      shareUntil: null,
+      shareMode: 'paused',
+      locationUpdatedAt: null,
+      sharingUpdatedAt: now,
+    });
+    batch.set(doc(firestore, 'users', uid, 'location', 'current'), {
+      lat: null,
+      lng: null,
+      sharing: false,
       locationUpdatedAt: null,
     });
     await batch.commit();

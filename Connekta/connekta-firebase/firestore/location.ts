@@ -6,15 +6,23 @@ import {
   limit,
   orderBy,
   query,
+  setDoc,
   Timestamp,
-  updateDoc,
   where,
   writeBatch,
 } from 'firebase/firestore';
 import { firestore } from '../config';
 import type { FriendLocation, LocationHistoryEntry, LocationHistoryQuery } from '@/types/location';
 import { LOCATION_HISTORY_MAX_POINTS } from '@/utils/location-history';
+import { coordinatesForShareMode, type ShareMode } from '@/utils/location-privacy';
 import { ensureFirestoreSignedIn, getCircleMemberUids } from './friends';
+import {
+  locationCurrentRef,
+  locationPrivateRef,
+  migrateLegacyPrivacyDocs,
+  parseShareMode,
+  readPublicUsername,
+} from './privacy';
 
 function updatedAtIso(data: Record<string, unknown>): string {
   const u = data.locationUpdatedAt;
@@ -45,6 +53,47 @@ function isShareActive(data: Record<string, unknown>): boolean {
   return true;
 }
 
+async function readPrivateLocation(uid: string): Promise<Record<string, unknown> | null> {
+  await migrateLegacyPrivacyDocs(uid);
+  const snap = await getDoc(locationPrivateRef(uid));
+  if (snap.exists()) return snap.data();
+
+  const legacy = await getDoc(doc(firestore, 'users', uid));
+  return legacy.exists() ? legacy.data()! : null;
+}
+
+async function syncCurrentLocationDoc(
+  uid: string,
+  exactLat: number,
+  exactLng: number,
+  privateData: Record<string, unknown>,
+  now: Timestamp,
+): Promise<void> {
+  const sharing = isShareActive(privateData);
+  const shareMode = parseShareMode(privateData.shareMode);
+
+  if (!sharing || shareMode === 'paused') {
+    await setDoc(
+      locationCurrentRef(uid),
+      { sharing: false, lat: null, lng: null, locationUpdatedAt: null },
+      { merge: true },
+    );
+    return;
+  }
+
+  const display = coordinatesForShareMode(exactLat, exactLng, shareMode);
+  await setDoc(
+    locationCurrentRef(uid),
+    {
+      lat: display.lat,
+      lng: display.lng,
+      sharing: true,
+      locationUpdatedAt: now,
+    },
+    { merge: true },
+  );
+}
+
 export async function getMyLocationState(uid: string): Promise<{
   success: boolean;
   sharing: boolean;
@@ -52,13 +101,22 @@ export async function getMyLocationState(uid: string): Promise<{
   lng: number | null;
   updated_at: string | null;
   share_until: string | null;
+  share_mode: ShareMode;
 }> {
   await ensureFirestoreSignedIn(uid);
-  const snap = await getDoc(doc(firestore, 'users', uid));
-  if (!snap.exists()) {
-    return { success: true, sharing: false, lat: null, lng: null, updated_at: null, share_until: null };
+  const d = await readPrivateLocation(uid);
+  if (!d) {
+    return {
+      success: true,
+      sharing: false,
+      lat: null,
+      lng: null,
+      updated_at: null,
+      share_until: null,
+      share_mode: 'paused',
+    };
   }
-  const d = snap.data()!;
+
   const lat = typeof d.lat === 'number' ? d.lat : null;
   const lng = typeof d.lng === 'number' ? d.lng : null;
   const active = isShareActive(d);
@@ -69,6 +127,7 @@ export async function getMyLocationState(uid: string): Promise<{
     lng,
     updated_at: lat != null && lng != null ? updatedAtIso(d) : null,
     share_until: timestampIso(d.shareUntil),
+    share_mode: parseShareMode(d.shareMode),
   };
 }
 
@@ -78,11 +137,51 @@ export async function setLocationSharing(
   shareUntilIso?: string | null,
 ): Promise<{ success: boolean; sharing: boolean }> {
   await ensureFirestoreSignedIn(uid);
-  await updateDoc(doc(firestore, 'users', uid), {
-    sharing: enabled,
-    shareUntil: enabled ? timestampFromIso(shareUntilIso) : null,
-    sharingUpdatedAt: Timestamp.now(),
-  });
+  await migrateLegacyPrivacyDocs(uid);
+
+  const now = Timestamp.now();
+  const privateSnap = await getDoc(locationPrivateRef(uid));
+  const shareMode = privateSnap.exists()
+    ? parseShareMode(privateSnap.data().shareMode)
+    : 'exact';
+  const nextMode: ShareMode = enabled
+    ? shareMode === 'paused'
+      ? 'exact'
+      : shareMode
+    : 'paused';
+
+  await setDoc(
+    locationPrivateRef(uid),
+    {
+      sharing: enabled,
+      shareUntil: enabled ? timestampFromIso(shareUntilIso) : null,
+      shareMode: nextMode,
+      sharingUpdatedAt: now,
+    },
+    { merge: true },
+  );
+
+  if (!enabled) {
+    await setDoc(
+      locationCurrentRef(uid),
+      { sharing: false, lat: null, lng: null, locationUpdatedAt: null },
+      { merge: true },
+    );
+    return { success: true, sharing: false };
+  }
+
+  const lat = privateSnap.data()?.lat;
+  const lng = privateSnap.data()?.lng;
+  if (typeof lat === 'number' && typeof lng === 'number') {
+    await syncCurrentLocationDoc(uid, lat, lng, {
+      sharing: true,
+      shareUntil: timestampFromIso(shareUntilIso),
+      shareMode: nextMode,
+    }, now);
+  } else {
+    await setDoc(locationCurrentRef(uid), { sharing: true }, { merge: true });
+  }
+
   return { success: true, sharing: enabled };
 }
 
@@ -96,17 +195,26 @@ export async function pingLocation(
     return { success: false, message: 'Invalid coordinates' };
   }
   await ensureFirestoreSignedIn(uid);
+  await migrateLegacyPrivacyDocs(uid);
+
+  const privateSnap = await getDoc(locationPrivateRef(uid));
+  const privateData = privateSnap.data() ?? {};
+  if (!isShareActive(privateData) || parseShareMode(privateData.shareMode) === 'paused') {
+    return { success: true };
+  }
 
   const source = options.source ?? 'foreground';
   const accuracy = typeof options.accuracy === 'number' && Number.isFinite(options.accuracy)
     ? options.accuracy
     : null;
   const now = Timestamp.now();
-  await updateDoc(doc(firestore, 'users', uid), {
-    lat,
-    lng,
-    locationUpdatedAt: now,
-  });
+
+  await setDoc(
+    locationPrivateRef(uid),
+    { lat, lng, locationUpdatedAt: now },
+    { merge: true },
+  );
+  await syncCurrentLocationDoc(uid, lat, lng, privateData, now);
 
   try {
     const historyBatch = writeBatch(firestore);
@@ -119,7 +227,6 @@ export async function pingLocation(
     });
     await historyBatch.commit();
   } catch (err) {
-    // Live position already saved; history needs locationHistory rules published.
     console.warn('[pingLocation] history write failed:', err);
   }
 
@@ -133,21 +240,71 @@ export async function listFriendLocations(uid: string): Promise<FriendLocation[]
 
   for (const friendUid of members) {
     if (friendUid === uid) continue;
-    const snap = await getDoc(doc(firestore, 'users', friendUid));
-    if (!snap.exists()) continue;
-    const d = snap.data()!;
-    if (!isShareActive(d) || typeof d.lat !== 'number' || typeof d.lng !== 'number') continue;
+
+    let currentData: Record<string, unknown> | null = null;
+    try {
+      const currentSnap = await getDoc(locationCurrentRef(friendUid));
+      if (currentSnap.exists()) currentData = currentSnap.data();
+    } catch {
+      continue;
+    }
+
+    if (!currentData || currentData.sharing !== true) continue;
+    if (typeof currentData.lat !== 'number' || typeof currentData.lng !== 'number') continue;
+
+    const username = (await readPublicUsername(friendUid)) ?? 'Friend';
     out.push({
       id: friendUid,
-      username: String(d.username ?? ''),
-      lat: d.lat,
-      lng: d.lng,
-      updated_at: updatedAtIso(d),
-      share_until: timestampIso(d.shareUntil),
+      username,
+      lat: currentData.lat,
+      lng: currentData.lng,
+      updated_at: updatedAtIso(currentData),
+      share_until: null,
     });
   }
 
   return out;
+}
+
+export async function updateShareMode(
+  uid: string,
+  mode: ShareMode,
+): Promise<{ success: boolean; sharing: boolean }> {
+  await ensureFirestoreSignedIn(uid);
+  await migrateLegacyPrivacyDocs(uid);
+
+  if (mode === 'paused') {
+    await setLocationSharing(uid, false, null);
+    return { success: true, sharing: false };
+  }
+
+  const privateSnap = await getDoc(locationPrivateRef(uid));
+  const privateData = privateSnap.data() ?? {};
+  const now = Timestamp.now();
+
+  await setDoc(
+    locationPrivateRef(uid),
+    { shareMode: mode, sharingUpdatedAt: now },
+    { merge: true },
+  );
+
+  const lat = privateData.lat;
+  const lng = privateData.lng;
+  if (
+    isShareActive({ ...privateData, shareMode: mode })
+    && typeof lat === 'number'
+    && typeof lng === 'number'
+  ) {
+    await syncCurrentLocationDoc(
+      uid,
+      lat,
+      lng,
+      { ...privateData, shareMode: mode },
+      now,
+    );
+  }
+
+  return { success: true, sharing: isShareActive({ ...privateData, shareMode: mode }) };
 }
 
 export async function listMyLocationHistory(
