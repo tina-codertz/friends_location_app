@@ -15,7 +15,8 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.",
         "NSLocationAlwaysUsageDescription": "Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.",
         "UIBackgroundModes": [
-          "location"
+          "location",
+          "remote-notification"
         ],
         "NSFaceIDUsageDescription": "Connekta uses Face ID to unlock the app and protect your session."
       },
@@ -28,6 +29,7 @@
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION",
+        "POST_NOTIFICATIONS",
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
         "android.permission.USE_BIOMETRIC",

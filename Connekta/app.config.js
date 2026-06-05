@@ -53,6 +53,15 @@ module.exports = ({ config }) => {
         RNMapboxMapsVersion: '11.16.2',
       },
     ],
+    [
+      'expo-notifications',
+      {
+        icon: './assets/images/location.png',
+        color: '#38BDF8',
+        defaultChannel: 'connekta-alerts',
+        sounds: [],
+      },
+    ],
   ];
 
   return {

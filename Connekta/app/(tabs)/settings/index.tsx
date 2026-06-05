@@ -126,6 +126,13 @@ export default function SettingsHomeScreen() {
       />
 
       <GlassNavCard
+        title="Notifications"
+        subtitle="Circle requests, sharing updates, and alerts"
+        icon="notifications-outline"
+        onPress={() => router.push('/(tabs)/settings/NotificationSettings')}
+      />
+
+      <GlassNavCard
         title="Location privacy"
         subtitle="Exact, approximate, or paused sharing"
         icon="shield-checkmark-outline"

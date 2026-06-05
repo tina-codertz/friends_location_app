@@ -53,6 +53,10 @@ service cloud.firestore {
           && request.resource.data.createdAt is timestamp;
         allow update, delete: if false;
       }
+
+      match /devices/{deviceId} {
+        allow read, write, delete: if isOwner(userId);
+      }
     }
 
     match /usernames/{usernameLower} {
