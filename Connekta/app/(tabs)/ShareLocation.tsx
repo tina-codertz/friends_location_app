@@ -7,7 +7,6 @@ import {
   Alert,
   StyleSheet,
   TouchableOpacity,
-  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -19,13 +18,14 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { locationAPI } from '@/services/api';
 import {
-  getLocationPermissionStatus,
+  formatSharingSummary,
+  getSharingPermissionStatus,
+  needsAlwaysPermission,
   permissionStatusHint,
   permissionStatusLabel,
   showBackgroundPermissionRequiredAlert,
-  showSharingStartFailureAlert,
-  startLiveLocationSharing,
-  stopBackgroundLocationSharing,
+  startLiveSharing,
+  stopLiveSharing,
   type LocationPermissionStatus,
 } from '@/services/location-sharing';
 import { Font, Type } from '@/constants/typography';
@@ -52,7 +52,7 @@ export default function ShareLocationScreen() {
 
   const refreshScreenState = useCallback(async () => {
     try {
-      const [s, perms] = await Promise.all([locationAPI.myState(), getLocationPermissionStatus()]);
+      const [s, perms] = await Promise.all([locationAPI.myState(), getSharingPermissionStatus()]);
       setPermissionStatus(perms);
       if (s.success) {
         setLiveSharing(!!s.sharing);
@@ -91,16 +91,16 @@ export default function ShareLocationScreen() {
     }
   }, [user]);
 
-  const startLiveSharingCore = useCallback(async () => {
+  const onStartLiveSharing = useCallback(async () => {
     setBusy(true);
     try {
-      const result = await startLiveLocationSharing(selectedDuration);
-      if (!result.success) {
-        const perms = await getLocationPermissionStatus();
-        setPermissionStatus(perms);
-        showSharingStartFailureAlert(result.message, perms);
-        return;
-      }
+      const result = await startLiveSharing({
+        durationMinutes: selectedDuration,
+        explainAlways: true,
+      });
+      setPermissionStatus(result.permissionStatus);
+      if (result.cancelled || !result.success) return;
+
       setLiveSharing(true);
       setShareUntil(result.shareUntilIso ?? null);
       const s = await locationAPI.myState();
@@ -108,7 +108,6 @@ export default function ShareLocationScreen() {
         setCurrentLat(s.lat);
         setCurrentLng(s.lng);
       }
-      setPermissionStatus(await getLocationPermissionStatus());
     } catch {
       Alert.alert('Error', 'Could not start live sharing. Check location permissions and try again.');
     } finally {
@@ -116,61 +115,21 @@ export default function ShareLocationScreen() {
     }
   }, [selectedDuration]);
 
-  const startLiveSharing = useCallback(async () => {
-    const perms = await getLocationPermissionStatus();
-    setPermissionStatus(perms);
-
-    if (perms.foreground !== 'granted') {
-      Alert.alert(
-        'Location required',
-        'Connekta needs location access to share with your circle.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => void Linking.openSettings() },
-        ],
-      );
-      return;
-    }
-
-    if (perms.backgroundAvailable && perms.background !== 'granted') {
-      Alert.alert(
-        'Allow always-on location',
-        'Choose "Always" when prompted so your circle can see you after you close the app. This is required for live sharing.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Continue', onPress: () => void startLiveSharingCore() },
-        ],
-      );
-      return;
-    }
-
-    await startLiveSharingCore();
-  }, [startLiveSharingCore]);
-
-  const stopLiveSharing = useCallback(async () => {
+  const onStopLiveSharing = useCallback(async () => {
     setBusy(true);
     try {
-      await stopBackgroundLocationSharing();
+      const stopped = await stopLiveSharing();
+      if (!stopped) return;
       setLiveSharing(false);
       setShareUntil(null);
-    } catch {
-      Alert.alert('Error', 'Could not stop live sharing. Try again.');
     } finally {
       setBusy(false);
     }
   }, []);
 
-  const sharingSummary = liveSharing
-    ? shareUntil
-      ? `Active until ${new Date(shareUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-      : 'Active until you turn it off'
-    : 'Currently off';
-
-  const needsAlwaysPermission =
-    permissionStatus != null &&
-    permissionStatus.foreground === 'granted' &&
-    permissionStatus.backgroundAvailable &&
-    permissionStatus.background !== 'granted';
+  const sharingSummary = formatSharingSummary(liveSharing, shareUntil);
+  const showAlwaysSettingsCta =
+    permissionStatus != null && needsAlwaysPermission(permissionStatus);
 
   return (
     <ScrollView
@@ -209,7 +168,7 @@ export default function ShareLocationScreen() {
               </Text>
             </View>
           </View>
-          {needsAlwaysPermission && (
+          {showAlwaysSettingsCta && (
             <GlassButton
               title="Open Settings — choose Always"
               onPress={() => showBackgroundPermissionRequiredAlert(permissionStatus)}
@@ -275,7 +234,7 @@ export default function ShareLocationScreen() {
 
         <GlassButton
           title={liveSharing ? (busy ? 'Stopping...' : 'Stop Live Sharing') : busy ? 'Starting...' : 'Start Live Sharing'}
-          onPress={liveSharing ? stopLiveSharing : startLiveSharing}
+          onPress={liveSharing ? onStopLiveSharing : onStartLiveSharing}
           variant={liveSharing ? 'secondary' : 'primary'}
           disabled={busy}
           fullWidth

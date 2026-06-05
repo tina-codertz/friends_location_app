@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
-  Alert,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,11 +25,8 @@ import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
 import { resolvePlaceKind } from '@/utils/place-kind';
 import { locationAPI } from '@/services/api';
 import {
-  DEFAULT_MAP_SHARE_DURATION_MINUTES,
-  getLocationPermissionStatus,
-  showSharingStartFailureAlert,
-  startLiveLocationSharing,
-  stopBackgroundLocationSharing,
+  setLiveSharingEnabled,
+  showSharingToggleFailureAlert,
 } from '@/services/location-sharing';
 import { Font, Type } from '@/constants/typography';
 import type { MapRegion } from '@/types/map';
@@ -210,14 +206,14 @@ export default function MapTabScreen() {
     setSharing(value);
     sharingRef.current = value;
     try {
+      const result = await setLiveSharingEnabled(value, { explainAlways: true });
+      if (!result.success || result.cancelled) {
+        setSharing(false);
+        sharingRef.current = false;
+        return;
+      }
+
       if (value) {
-        const result = await startLiveLocationSharing(DEFAULT_MAP_SHARE_DURATION_MINUTES);
-        if (!result.success) {
-          setSharing(false);
-          sharingRef.current = false;
-          showSharingStartFailureAlert(result.message, await getLocationPermissionStatus());
-          return;
-        }
         const fresh = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
@@ -229,16 +225,12 @@ export default function MapTabScreen() {
         void refresh();
         void refreshPlaces();
       } else {
-        await stopBackgroundLocationSharing();
         lastSent.current = null;
       }
     } catch {
       setSharing(!value);
       sharingRef.current = !value;
-      Alert.alert(
-        'Live sharing',
-        value ? 'Could not start sharing. Open Share Location to check permissions.' : 'Could not stop sharing. Try again.',
-      );
+      showSharingToggleFailureAlert(value);
     }
   };
 

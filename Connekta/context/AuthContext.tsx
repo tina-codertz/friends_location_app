@@ -17,7 +17,7 @@ import {
   disableBiometricUnlock,
   scheduleBiometricEnrollmentIfNeeded,
 } from '@/services/biometric-unlock';
-import { stopBackgroundLocationSharing } from '@/services/background-location';
+import { stopLiveSharing } from '@/services/location-sharing';
 import { migrateLegacyPrivacyDocs } from '@/connekta-firebase/firestore/privacy';
 import { clearPushRegistration } from '@/hooks/usePushNotifications';
 import { markOnboardingComplete } from '@/services/onboarding';
@@ -165,7 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     try {
       const uid = auth.currentUser?.uid;
-      await stopBackgroundLocationSharing();
+      await stopLiveSharing({ showAlerts: false });
       if (uid) await clearPushRegistration(uid);
       await firebaseLogout();
       await disableBiometricUnlock();

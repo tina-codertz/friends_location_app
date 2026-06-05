@@ -1,3 +1,4 @@
+/** Native background GPS task. Permission UX and alerts: location-sharing.ts */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
