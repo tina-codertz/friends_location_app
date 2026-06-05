@@ -1,138 +1,129 @@
 /**
- * Connekta Theme — Blue edition (cyan hero, glass on dark midnight).
- * Reference: connekta_screens/*_blue_edition + pulsemap_core/DESIGN.md
- *
- * Rules: no pink/purple brand accents; real Mapbox only on (tabs)/map.
+ * Connekta Theme — calm safety palette.
+ * Trust-first colors: teal for primary actions, green for live, red for SOS.
  */
 
 import { Platform } from 'react-native';
 
-/** Cyan-led accents — no pink or purple in brand UI */
 const ACCENT = {
-  /** Primary brand / CTAs / active tab */
-  cyan: '#00DBE9',
-  cyanDeep: '#00A8B8',
-  /** Aliases used across existing components */
-  electricBlue: '#00DBE9',
-  electricBlueDeep: '#00A8B8',
-  teal: '#00DBE9',
-  tealDark: '#00A8B8',
-  /** Live / online only */
-  green: '#94DB00',
-  greenDark: '#6BB800',
-  /** SOS / critical only (not pink) */
-  sos: '#FF453A',
-  sosMuted: 'rgba(255,69,58,0.35)',
-  orange: '#38BDF8',
-  /** Errors */
-  error: '#FF6B6B',
-  errorDark: '#EF4444',
-  /** Deprecated aliases — map to cyan so old refs stay blue */
-  coral: '#00DBE9',
-  purple: '#00DBE9',
+  cyan: '#0EA5A4',
+  cyanDeep: '#0F766E',
+  electricBlue: '#2563EB',
+  electricBlueDeep: '#1D4ED8',
+  teal: '#0EA5A4',
+  tealDark: '#0F766E',
+  green: '#16A34A',
+  greenDark: '#15803D',
+  sos: '#DC2626',
+  sosMuted: 'rgba(220,38,38,0.18)',
+  orange: '#F59E0B',
+  error: '#DC2626',
+  errorDark: '#B91C1C',
+  coral: '#0EA5A4',
+  purple: '#2563EB',
 };
 
 const dark = {
-  bg: '#131316',
-  bgCard: '#1F1F22',
-  bgCardBorder: 'rgba(0,219,233,0.12)',
-  surface: 'rgba(255,255,255,0.06)',
-  surfaceHover: 'rgba(255,255,255,0.10)',
+  bg: '#0F172A',
+  bgCard: '#172033',
+  bgCardBorder: '#334155',
+  surface: '#1E293B',
+  surfaceHover: '#263449',
 
-  textPrimary: '#E4E1E6',
-  textSecondary: 'rgba(228,225,230,0.72)',
-  textMuted: '#9D8BA0',
-  textTertiary: 'rgba(228,225,230,0.38)',
+  textPrimary: '#F8FAFC',
+  textSecondary: '#CBD5E1',
+  textMuted: '#94A3B8',
+  textTertiary: '#64748B',
 
-  glassBgLight: 'rgba(19,19,22,0.72)',
-  glassBgMedium: 'rgba(31,31,34,0.82)',
-  glassBgHeavy: 'rgba(42,42,45,0.88)',
-  glassBorderLight: 'rgba(0,219,233,0.14)',
-  glassBorderMedium: 'rgba(0,219,233,0.22)',
-  glassBorderHeavy: 'rgba(0,219,233,0.32)',
-  glassHighlight: 'rgba(0,219,233,0.08)',
-  glassShadow: 'rgba(0,0,0,0.5)',
+  glassBgLight: '#172033',
+  glassBgMedium: '#172033',
+  glassBgHeavy: '#1E293B',
+  glassBorderLight: '#273548',
+  glassBorderMedium: '#334155',
+  glassBorderHeavy: '#475569',
+  glassHighlight: 'rgba(255,255,255,0.06)',
+  glassShadow: 'rgba(0,0,0,0.28)',
 
-  tealGlow: 'rgba(0,219,233,0.22)',
-  tealGlass: 'rgba(0,219,233,0.14)',
-  tealBorder: 'rgba(0,219,233,0.42)',
-  tealBorderFocus: 'rgba(0,219,233,0.65)',
-  purpleGlow: 'rgba(0,219,233,0.12)',
+  tealGlow: 'rgba(45,212,191,0.14)',
+  tealGlass: 'rgba(45,212,191,0.10)',
+  tealBorder: 'rgba(45,212,191,0.35)',
+  tealBorderFocus: 'rgba(45,212,191,0.55)',
+  purpleGlow: 'rgba(96,165,250,0.12)',
 
-  inputBg: 'rgba(255,255,255,0.06)',
-  inputBgFocus: 'rgba(0,219,233,0.08)',
-  inputBorder: 'rgba(255,255,255,0.14)',
-  inputBorderFocus: 'rgba(0,219,233,0.55)',
-  inputPlaceholder: 'rgba(228,225,230,0.4)',
+  inputBg: '#111827',
+  inputBgFocus: '#172033',
+  inputBorder: '#334155',
+  inputBorderFocus: 'rgba(45,212,191,0.65)',
+  inputPlaceholder: '#64748B',
 
-  errorBg: 'rgba(255,69,58,0.12)',
-  errorBorder: 'rgba(255,69,58,0.5)',
+  errorBg: 'rgba(220,38,38,0.12)',
+  errorBorder: 'rgba(248,113,113,0.5)',
 
-  pill: 'rgba(0,219,233,0.16)',
-  divider: 'rgba(255,255,255,0.08)',
-  overlay: 'rgba(0,0,0,0.55)',
-  liveGreenBg: 'rgba(148,219,0,0.18)',
-  phoneTabBg: 'rgba(19,19,22,0.85)',
-  mapBg: '#131316',
+  pill: 'rgba(45,212,191,0.12)',
+  divider: '#273548',
+  overlay: 'rgba(15,23,42,0.62)',
+  liveGreenBg: 'rgba(34,197,94,0.14)',
+  phoneTabBg: 'rgba(15,23,42,0.92)',
+  mapBg: '#0F172A',
 
   statusBarStyle: 'light' as 'light' | 'dark',
 
-  navBackground: '#131316',
-  navCard: 'rgba(31,31,34,0.92)',
-  navText: '#E4E1E6',
-  navBorder: 'rgba(0,219,233,0.12)',
+  navBackground: '#0F172A',
+  navCard: '#172033',
+  navText: '#F8FAFC',
+  navBorder: '#273548',
   navPrimary: ACCENT.cyan,
 };
 
 const light = {
-  bg: '#E8F4F8',
+  bg: '#F6F8FA',
   bgCard: '#FFFFFF',
-  bgCardBorder: 'rgba(0,168,184,0.15)',
-  surface: 'rgba(0,0,0,0.04)',
-  surfaceHover: 'rgba(0,0,0,0.07)',
+  bgCardBorder: '#E5E7EB',
+  surface: '#EEF3F6',
+  surfaceHover: '#E5EEF3',
 
-  textPrimary: 'rgba(0,0,0,0.87)',
-  textSecondary: 'rgba(0,0,0,0.55)',
-  textMuted: '#5C5C5C',
-  textTertiary: 'rgba(0,0,0,0.35)',
+  textPrimary: '#111827',
+  textSecondary: '#4B5563',
+  textMuted: '#6B7280',
+  textTertiary: '#9CA3AF',
 
-  glassBgLight: 'rgba(255,255,255,0.65)',
-  glassBgMedium: 'rgba(255,255,255,0.78)',
-  glassBgHeavy: 'rgba(255,255,255,0.88)',
-  glassBorderLight: 'rgba(0,168,184,0.12)',
-  glassBorderMedium: 'rgba(0,168,184,0.2)',
-  glassBorderHeavy: 'rgba(0,168,184,0.28)',
-  glassHighlight: 'rgba(255,255,255,0.9)',
-  glassShadow: 'rgba(0,0,0,0.08)',
+  glassBgLight: '#FFFFFF',
+  glassBgMedium: '#FFFFFF',
+  glassBgHeavy: '#F8FAFC',
+  glassBorderLight: '#E5E7EB',
+  glassBorderMedium: '#D1D5DB',
+  glassBorderHeavy: '#CBD5E1',
+  glassHighlight: 'rgba(255,255,255,0.7)',
+  glassShadow: 'rgba(15,23,42,0.08)',
 
-  tealGlow: 'rgba(0,168,184,0.15)',
-  tealGlass: 'rgba(0,168,184,0.1)',
-  tealBorder: 'rgba(0,168,184,0.35)',
-  tealBorderFocus: 'rgba(0,168,184,0.55)',
-  purpleGlow: 'rgba(0,168,184,0.1)',
+  tealGlow: 'rgba(14,165,164,0.12)',
+  tealGlass: 'rgba(14,165,164,0.10)',
+  tealBorder: 'rgba(14,165,164,0.35)',
+  tealBorderFocus: 'rgba(14,165,164,0.55)',
+  purpleGlow: 'rgba(37,99,235,0.10)',
 
-  inputBg: 'rgba(0,0,0,0.04)',
-  inputBgFocus: 'rgba(0,168,184,0.06)',
-  inputBorder: 'rgba(0,0,0,0.1)',
-  inputBorderFocus: 'rgba(0,168,184,0.5)',
-  inputPlaceholder: 'rgba(0,0,0,0.4)',
+  inputBg: '#FFFFFF',
+  inputBgFocus: '#FFFFFF',
+  inputBorder: '#E5E7EB',
+  inputBorderFocus: 'rgba(14,165,164,0.55)',
+  inputPlaceholder: '#9CA3AF',
 
-  errorBg: 'rgba(239,68,68,0.08)',
-  errorBorder: 'rgba(239,68,68,0.5)',
+  errorBg: 'rgba(220,38,38,0.08)',
+  errorBorder: 'rgba(220,38,38,0.45)',
 
-  pill: 'rgba(0,168,184,0.2)',
-  divider: 'rgba(0,0,0,0.08)',
-  overlay: 'rgba(0,0,0,0.15)',
-  liveGreenBg: 'rgba(148,219,0,0.15)',
-  phoneTabBg: 'rgba(255,255,255,0.9)',
-  mapBg: '#D6EEF2',
+  pill: 'rgba(14,165,164,0.12)',
+  divider: '#E5E7EB',
+  overlay: 'rgba(15,23,42,0.22)',
+  liveGreenBg: 'rgba(22,163,74,0.12)',
+  phoneTabBg: 'rgba(255,255,255,0.94)',
+  mapBg: '#EEF3F6',
 
   statusBarStyle: 'dark' as 'light' | 'dark',
 
-  navBackground: '#E8F4F8',
+  navBackground: '#F6F8FA',
   navCard: '#FFFFFF',
-  navText: '#11181C',
-  navBorder: 'rgba(0,168,184,0.12)',
+  navText: '#111827',
+  navBorder: '#E5E7EB',
   navPrimary: ACCENT.cyanDeep,
 };
 
@@ -147,7 +138,7 @@ export const Accent = ACCENT;
 
 export const Colors = {
   light: {
-    text: '#11181C',
+    text: '#111827',
     background: light.bg,
     tint: ACCENT.cyan,
     icon: '#687076',
@@ -155,7 +146,7 @@ export const Colors = {
     tabIconSelected: ACCENT.cyan,
   },
   dark: {
-    text: '#E4E1E6',
+    text: '#F8FAFC',
     background: dark.bg,
     tint: ACCENT.cyan,
     icon: '#9BA1A6',

@@ -96,11 +96,11 @@ export const GlassInput: React.FC<GlassInputProps> = ({
           {
             borderColor,
             backgroundColor: error ? colors.errorBg : focused ? colors.inputBgFocus : colors.inputBg,
-            shadowColor: focused ? accent.cyan : colors.glassShadow,
-            shadowOpacity: focused ? 0.25 : 0.12,
-            shadowRadius: focused ? 14 : 8,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: focused ? 6 : 3,
+            shadowColor: colors.glassShadow,
+            shadowOpacity: focused ? 0.12 : 0.06,
+            shadowRadius: focused ? 10 : 6,
+            shadowOffset: { width: 0, height: 3 },
+            elevation: focused ? 2 : 1,
           },
         ]}
       >
@@ -112,7 +112,7 @@ export const GlassInput: React.FC<GlassInputProps> = ({
             style={[
               styles.floatingLabel,
               {
-                color: focused ? accent.cyan : colors.textMuted,
+                color: focused ? accent.cyanDeep : colors.textMuted,
                 fontFamily: Font.medium,
                 left: icon ? 44 : 16,
                 transform: [{ translateY: labelTranslate }, { scale: labelScale }],
@@ -149,7 +149,7 @@ export const GlassInput: React.FC<GlassInputProps> = ({
             rest.style,
           ]}
           placeholderTextColor={colors.inputPlaceholder}
-          selectionColor={accent.cyan}
+          selectionColor={accent.cyanDeep}
         />
 
         {showSecureToggle ? (
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 14,
     minHeight: 52,
   },
