@@ -149,7 +149,7 @@ function Slide2() {
       </View>
       <View style={{ paddingHorizontal: 20, flex: 1 }}>
         <Text style={[styles.authTitle, { color: colors.textPrimary }]}>Device Auth</Text>
-        <Text style={[styles.authSub, { color: colors.textSecondary }]}>No password needed</Text>
+        <Text style={[styles.authSub, { color: colors.textSecondary }]}>email and password needed</Text>
         <View style={styles.inputField}>
           <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Username</Text>
           <View style={[styles.inputBox, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
@@ -220,7 +220,7 @@ export default function LandingPage() {
   const headings = [
     { title: 'See your friends,\nright now.',    sub: 'Live location on a shared map. Always opt-in, always private.' },
     { title: 'Your circle,\nyour rules.',        sub: 'Accept or reject requests. Only accepted friends see where you are.' },
-    { title: 'No password.\nJust you.',          sub: 'Register with a username. Unlock with your face or fingerprint.' },
+ 
   ];
 
   return (

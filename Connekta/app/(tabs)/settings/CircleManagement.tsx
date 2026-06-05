@@ -117,10 +117,10 @@ export default function CircleManagement() {
         setJoinCode('');
         void loadAll();
         Alert.alert(
-          'Request sent',
+          'Joined circle',
           res.circle_owner
-            ? `Friend request sent to ${res.circle_owner.username}. They can accept you in My Circle.`
-            : 'Friend request sent.'
+            ? `You and ${res.circle_owner.username} are now in each other's circle.`
+            : 'You joined the circle. Open My Circle to see your friends.'
         );
       } else {
         Alert.alert('Could not join', res.message ?? 'Invalid or expired code. If this mentions Firestore rules, publish Connekta/connekta-firebase/rules/firestore.rules in Firebase Console.');
