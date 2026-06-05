@@ -100,20 +100,27 @@ export async function pingLocation(
     ? options.accuracy
     : null;
   const now = Timestamp.now();
-  const batch = writeBatch(firestore);
-  batch.update(doc(firestore, 'users', uid), {
+  await updateDoc(doc(firestore, 'users', uid), {
     lat,
     lng,
     locationUpdatedAt: now,
   });
-  batch.set(doc(collection(firestore, 'users', uid, 'locationHistory')), {
-    lat,
-    lng,
-    accuracy,
-    source,
-    createdAt: now,
-  });
-  await batch.commit();
+
+  try {
+    const historyBatch = writeBatch(firestore);
+    historyBatch.set(doc(collection(firestore, 'users', uid, 'locationHistory')), {
+      lat,
+      lng,
+      accuracy,
+      source,
+      createdAt: now,
+    });
+    await historyBatch.commit();
+  } catch (err) {
+    // Live position already saved; history needs locationHistory rules published.
+    console.warn('[pingLocation] history write failed:', err);
+  }
+
   return { success: true };
 }
 
