@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { auth, firestore } from './config';
 import type { AppUser } from '@/types/user';
+import { validateUsername } from '@/utils/username';
 
 /** Firestore needs the Auth ID token before writes; right after sign-up it can lag briefly. */
 async function ensureFirestoreAuth(user: FirebaseUser): Promise<void> {
@@ -67,7 +68,9 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
   const key = username.trim().toLowerCase();
   try {
     const snap = await getDoc(doc(firestore, 'usernames', key));
-    return !snap.exists();
+    if (!snap.exists()) return true;
+    const ownerUid = snap.data()?.uid;
+    return ownerUid === auth.currentUser?.uid;
   } catch (err: unknown) {
     const code =
       err && typeof err === 'object' && 'code' in err
@@ -153,6 +156,57 @@ export async function loginWithEmail(email: string, password: string): Promise<A
     throw new Error('Profile not found. Please sign up again or contact support.');
   }
   return profile;
+}
+
+export async function updateUsername(nextUsername: string): Promise<AppUser> {
+  const fbUser = auth.currentUser;
+  if (!fbUser) {
+    throw new Error('Not signed in');
+  }
+
+  const validation = validateUsername(nextUsername);
+  if (!validation.ok) {
+    throw new Error(validation.message);
+  }
+
+  const trimmed = validation.value;
+  const nextKey = trimmed.toLowerCase();
+
+  await ensureFirestoreAuth(fbUser);
+
+  const userRef = doc(firestore, 'users', fbUser.uid);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) {
+    throw new Error('Profile not found');
+  }
+
+  const data = userSnap.data();
+  const currentUsername = String(data.username ?? '').trim();
+  const email = String(data.email ?? fbUser.email ?? '');
+
+  if (currentUsername.toLowerCase() === nextKey) {
+    return { uid: fbUser.uid, email, username: trimmed };
+  }
+
+  const usernameRef = doc(firestore, 'usernames', nextKey);
+  const existing = await getDoc(usernameRef);
+  if (existing.exists() && existing.data()?.uid !== fbUser.uid) {
+    throw new Error('Username is already taken');
+  }
+
+  const batch = writeBatch(firestore);
+  batch.update(userRef, { username: trimmed });
+  batch.set(doc(firestore, 'users', fbUser.uid, 'public', 'profile'), { username: trimmed }, { merge: true });
+
+  const oldKey = currentUsername.toLowerCase();
+  if (oldKey && oldKey !== nextKey) {
+    batch.delete(doc(firestore, 'usernames', oldKey));
+  }
+  batch.set(usernameRef, { uid: fbUser.uid, username: trimmed });
+
+  await batch.commit();
+
+  return { uid: fbUser.uid, email, username: trimmed };
 }
 
 export async function loadAppUser(fbUser: FirebaseUser): Promise<AppUser | null> {

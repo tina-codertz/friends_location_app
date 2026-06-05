@@ -11,6 +11,7 @@ import {
   loginWithEmail,
   registerWithEmail,
   subscribeToAuthState,
+  updateUsername,
 } from '@/connekta-firebase';
 import { setApiAuthToken } from '@/services/auth-token';
 import {
@@ -35,6 +36,7 @@ export interface AuthContextType {
   register: (email: string, password: string, username: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (username: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -179,6 +181,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const updateProfile = useCallback(async (username: string) => {
+    setError(null);
+    try {
+      const profile = await updateUsername(username);
+      setUser(profile);
+    } catch (err: unknown) {
+      const errorMsg = firebaseAuthErrorMessage(err);
+      setError(errorMsg);
+      throw err;
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -192,6 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     login,
     logout,
+    updateProfile,
     clearError,
   };
 
