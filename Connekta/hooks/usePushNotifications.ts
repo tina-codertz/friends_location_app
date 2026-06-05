@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from 'react';
-import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,6 +9,7 @@ import {
   registerForPushNotificationsAsync,
   routeForNotificationPayload,
 } from '@/services/push-notifications';
+import { getNotificationsModule, isPushRuntimeAvailable } from '@/utils/push-runtime';
 
 async function resolveDeviceId(): Promise<string> {
   try {
@@ -29,7 +29,7 @@ export function usePushNotifications(active: boolean, uid: string | null | undef
   const lastRegisteredRef = useRef<string | null>(null);
 
   const registerToken = useCallback(async () => {
-    if (!active || !uid) return;
+    if (!active || !uid || !isPushRuntimeAvailable()) return;
 
     const result = await registerForPushNotificationsAsync();
     if (!result.token || result.token === lastRegisteredRef.current) return;
@@ -40,7 +40,7 @@ export function usePushNotifications(active: boolean, uid: string | null | undef
   }, [active, uid]);
 
   useEffect(() => {
-    configureNotificationHandler();
+    void configureNotificationHandler();
   }, []);
 
   useEffect(() => {
@@ -52,24 +52,37 @@ export function usePushNotifications(active: boolean, uid: string | null | undef
   }, [active, uid, registerToken]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || !isPushRuntimeAvailable()) return;
 
-    const navigateFromResponse = (response: Notifications.NotificationResponse | null) => {
-      if (!response) return;
-      const payload = parseNotificationPayload(
-        response.notification.request.content.data as Record<string, unknown>,
-      );
-      const route = routeForNotificationPayload(payload);
-      if (route) router.push(route as never);
+    let cancelled = false;
+    let removeListener: (() => void) | undefined;
+
+    void (async () => {
+      const Notifications = await getNotificationsModule();
+      if (!Notifications || cancelled) return;
+
+      const navigateFromResponse = (
+        response: import('expo-notifications').NotificationResponse | null,
+      ) => {
+        if (!response) return;
+        const payload = parseNotificationPayload(
+          response.notification.request.content.data as Record<string, unknown>,
+        );
+        const route = routeForNotificationPayload(payload);
+        if (route) router.push(route as never);
+      };
+
+      const sub = Notifications.addNotificationResponseReceivedListener(navigateFromResponse);
+      removeListener = () => sub.remove();
+
+      const last = await Notifications.getLastNotificationResponseAsync();
+      navigateFromResponse(last);
+    })();
+
+    return () => {
+      cancelled = true;
+      removeListener?.();
     };
-
-    const sub = Notifications.addNotificationResponseReceivedListener(navigateFromResponse);
-
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      navigateFromResponse(response);
-    });
-
-    return () => sub.remove();
   }, [active, router]);
 
   return { refreshPushRegistration: registerToken };

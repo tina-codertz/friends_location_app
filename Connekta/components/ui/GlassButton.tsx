@@ -1,5 +1,5 @@
 /**
- * GlassButton — Stitch blue-edition CTAs (cyan container, glass tonal, pill glass).
+ * GlassButton — calm, accessible button variants for safety flows.
  */
 
 import React, { useRef } from 'react';
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font } from '@/constants/typography';
-import { Radius, StitchShadow } from '@/constants/ui';
+import { Radius } from '@/constants/ui';
 
 export type ButtonVariant =
   | 'primary'
@@ -83,29 +83,37 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
         return {
           backgroundColor: accent.cyan,
           borderWidth: 0,
-          ...StitchShadow.cyanGlow,
+          shadowColor: accent.cyanDeep,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.16,
+          shadowRadius: 10,
+          elevation: 3,
         };
       case 'danger':
         return {
           backgroundColor: accent.sos,
           borderWidth: 0,
           shadowColor: accent.sos,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.4,
-          shadowRadius: 14,
-          elevation: 10,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.18,
+          shadowRadius: 10,
+          elevation: 3,
         };
       case 'chipActive':
         return {
           backgroundColor: accent.cyanDeep,
           borderWidth: 0,
-          ...StitchShadow.cyanGlow,
+          shadowColor: accent.cyanDeep,
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.14,
+          shadowRadius: 8,
+          elevation: 2,
         };
       case 'chip':
         return {
           backgroundColor: colors.bgCard,
           borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.08)',
+          borderColor: colors.divider,
         };
       case 'secondary':
       case 'tonal':
@@ -140,7 +148,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   const labelColor = (() => {
     switch (variant) {
       case 'primary':
-        return '#002022';
+        return '#FFFFFF';
       case 'chipActive':
         return '#FFFFFF';
       case 'danger':
@@ -161,9 +169,9 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   })();
 
   const fontFamily =
-    variant === 'chip' || variant === 'chipActive' ? Font.semibold : Font.bold;
+    variant === 'chip' || variant === 'chipActive' ? Font.semibold : Font.semibold;
 
-  const letterSpacing = isChip ? 0.8 : 0.2;
+  const letterSpacing = 0;
 
   return (
     <Animated.View style={[{ transform: [{ scale }] }, fullWidth && { width: '100%' }, style]}>

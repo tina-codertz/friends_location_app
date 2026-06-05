@@ -1,5 +1,5 @@
 /**
- * GlassCard — Neumorphism-inspired glass surface with blur + soft depth.
+ * GlassCard — clean surface card with optional subtle blur on iOS.
  */
 
 import React from 'react';
@@ -29,7 +29,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   children,
   intensity = 'medium',
   glowAccent = false,
-  borderRadius = 16,
+  borderRadius = 12,
   style,
   animated = false,
   animationDelay = 0,
@@ -73,10 +73,10 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     overflow: 'hidden',
     backgroundColor: Platform.OS === 'web' || !blur ? bgColor : 'transparent',
     shadowColor: colors.glassShadow,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: isDark ? 0.35 : 0.12,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: isDark ? 0.20 : 0.08,
+    shadowRadius: 14,
+    elevation: 3,
     padding,
   };
 
@@ -88,7 +88,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
       />
       <View
         pointerEvents="none"
-        style={[styles.outerGlow, { borderRadius, borderColor: glowAccent ? colors.tealGlow : 'rgba(255,255,255,0.06)' }]}
+        style={[styles.outerGlow, { borderRadius, borderColor: glowAccent ? colors.tealBorder : 'transparent' }]}
       />
     </>
   );
@@ -97,12 +97,12 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     <View style={[shell, style]}>
       {blur && Platform.OS === 'ios' ? (
         <BlurView
-          intensity={BLUR_INTENSITY[intensity]}
+          intensity={Math.max(16, BLUR_INTENSITY[intensity] - 16)}
           tint={isDark ? 'dark' : 'light'}
           style={StyleSheet.absoluteFill}
         />
       ) : null}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: bgColor, opacity: blur && Platform.OS === 'ios' ? 0.72 : 1 }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: bgColor, opacity: blur && Platform.OS === 'ios' ? 0.88 : 1 }]} />
       {innerGlow}
       <View style={styles.content}>{children}</View>
     </View>

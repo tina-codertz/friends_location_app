@@ -11,13 +11,14 @@ import {
   loginWithEmail,
   registerWithEmail,
   subscribeToAuthState,
+  updateUsername,
 } from '@/connekta-firebase';
 import { setApiAuthToken } from '@/services/auth-token';
 import {
   disableBiometricUnlock,
   scheduleBiometricEnrollmentIfNeeded,
 } from '@/services/biometric-unlock';
-import { stopBackgroundLocationSharing } from '@/services/background-location';
+import { stopLiveSharing } from '@/services/location-sharing';
 import { migrateLegacyPrivacyDocs } from '@/connekta-firebase/firestore/privacy';
 import { clearPushRegistration } from '@/hooks/usePushNotifications';
 import { markOnboardingComplete } from '@/services/onboarding';
@@ -35,6 +36,7 @@ export interface AuthContextType {
   register: (email: string, password: string, username: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (username: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -165,7 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     try {
       const uid = auth.currentUser?.uid;
-      await stopBackgroundLocationSharing();
+      await stopLiveSharing({ showAlerts: false });
       if (uid) await clearPushRegistration(uid);
       await firebaseLogout();
       await disableBiometricUnlock();
@@ -176,6 +178,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(null);
       setUser(null);
       setError(null);
+    }
+  }, []);
+
+  const updateProfile = useCallback(async (username: string) => {
+    setError(null);
+    try {
+      const profile = await updateUsername(username);
+      setUser(profile);
+    } catch (err: unknown) {
+      const errorMsg = firebaseAuthErrorMessage(err);
+      setError(errorMsg);
+      throw err;
     }
   }, []);
 
@@ -192,6 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     login,
     logout,
+    updateProfile,
     clearError,
   };
 

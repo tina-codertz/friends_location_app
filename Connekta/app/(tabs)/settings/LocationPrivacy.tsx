@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { useAppTheme } from '@/context/ThemeContext';
 import { locationAPI } from '@/services/api';
-import { stopBackgroundLocationSharing } from '@/services/location-sharing';
+import { stopLiveSharing } from '@/services/location-sharing';
 import { Font, Type } from '@/constants/typography';
 import {
   shareModeDescription,
@@ -55,7 +55,7 @@ export default function LocationPrivacyScreen() {
       setBusy(true);
       try {
         if (next === 'paused') {
-          await stopBackgroundLocationSharing();
+          await stopLiveSharing();
         }
         const res = await locationAPI.setShareMode(next);
         if (!res.success) {

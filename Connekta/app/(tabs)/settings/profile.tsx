@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, Alert, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,23 +6,46 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { firebaseAuthErrorMessage } from '@/connekta-firebase';
+import { validateUsername } from '@/utils/username';
 import { Font, Type } from '@/constants/typography';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editUsername, setEditUsername] = useState(user?.username || '');
 
+  useEffect(() => {
+    if (!isEditing) {
+      setEditUsername(user?.username || '');
+    }
+  }, [user?.username, isEditing]);
+
   const handleSave = async () => {
-    if (editUsername.trim().length < 2) {
-      Alert.alert('Invalid', 'Username must be at least 2 characters.');
+    const check = validateUsername(editUsername);
+    if (!check.ok) {
+      Alert.alert('Invalid username', check.message);
       return;
     }
 
-    Alert.alert('Profile updated', 'Your profile has been updated.');
-    setIsEditing(false);
+    if (check.value === user?.username) {
+      setIsEditing(false);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateProfile(check.value);
+      Alert.alert('Profile updated', 'Your username has been saved.');
+      setIsEditing(false);
+    } catch (err: unknown) {
+      Alert.alert('Could not update profile', firebaseAuthErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -98,7 +121,13 @@ export default function ProfileScreen() {
       {isEditing && (
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
           <View style={{ flex: 1 }}>
-            <GlassButton title="Save" onPress={handleSave} variant="primary" fullWidth />
+            <GlassButton
+              title={saving ? 'Saving…' : 'Save'}
+              onPress={handleSave}
+              variant="primary"
+              fullWidth
+              disabled={saving}
+            />
           </View>
           <View style={{ flex: 1 }}>
             <GlassButton

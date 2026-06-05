@@ -4,7 +4,7 @@ import {
   initializeAuth,
   getReactNativePersistence,
 } from '@firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, setLogLevel } from 'firebase/firestore';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
@@ -34,5 +34,12 @@ function initAuth() {
 }
 
 export const auth = initAuth();
+
+// BloomFilterError is an internal SDK warning when a sync optimization fails;
+// Firestore automatically falls back to a full re-query. Hide WARN noise in dev.
+if (__DEV__) {
+  setLogLevel('error');
+}
+
 export const firestore = getFirestore(app);
 export const db = firestore;

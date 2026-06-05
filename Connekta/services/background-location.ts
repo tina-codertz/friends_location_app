@@ -1,11 +1,10 @@
+/** Native background GPS task. Permission UX and alerts: location-sharing.ts */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { onAuthStateChanged } from '@firebase/auth';
 import { auth } from '@/connekta-firebase';
 import { getMyLocationState, pingLocation, setLocationSharing } from '@/connekta-firebase/firestore/location';
-import { showLocalNotification } from '@/services/push-notifications';
-
 export const BACKGROUND_LOCATION_TASK = 'connekta-background-location';
 
 const ACTIVE_UID_KEY = 'connekta.backgroundLocation.uid';
@@ -218,11 +217,15 @@ export async function syncBackgroundLocationSharing(): Promise<void> {
   if (!remoteSharing || isExpired(shareUntilIso)) {
     if (remoteSharing && isExpired(shareUntilIso)) {
       await stopBackgroundLocationSharing();
-      void showLocalNotification(
-        'Live sharing ended',
-        'Your sharing timer expired. Turn it on again when you want your circle to see you.',
-        { type: 'sharing_expired', route: '/(tabs)/ShareLocation' },
-      );
+      void import('@/services/push-notifications')
+        .then(({ showLocalNotification }) =>
+          showLocalNotification(
+            'Live sharing ended',
+            'Your sharing timer expired. Turn it on again when you want your circle to see you.',
+            { type: 'sharing_expired', route: '/(tabs)/ShareLocation' },
+          ),
+        )
+        .catch(() => undefined);
     } else {
       await stopNativeTaskIfRegistered().catch(() => undefined);
       await clearBackgroundLocationState();

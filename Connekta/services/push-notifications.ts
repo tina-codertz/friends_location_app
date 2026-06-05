@@ -1,10 +1,12 @@
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { PushNotificationPayload } from '@/types/notifications';
+import { getNotificationsModule, isPushRuntimeAvailable } from '@/utils/push-runtime';
 
 const ANDROID_CHANNEL_ID = 'connekta-alerts';
+
+export type PushPermissionStatus = 'granted' | 'denied' | 'undetermined';
 
 export const NOTIFICATION_ROUTE_BY_TYPE: Record<string, string> = {
   friend_request: '/(tabs)/friends',
@@ -18,8 +20,10 @@ export const NOTIFICATION_ROUTE_BY_TYPE: Record<string, string> = {
 
 let handlerConfigured = false;
 
-export function configureNotificationHandler(): void {
+export async function configureNotificationHandler(): Promise<void> {
   if (handlerConfigured) return;
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
   handlerConfigured = true;
 
   Notifications.setNotificationHandler({
@@ -43,6 +47,8 @@ function resolveExpoProjectId(): string | null {
 
 async function ensureAndroidChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
   await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
     name: 'Connekta alerts',
     importance: Notifications.AndroidImportance.HIGH,
@@ -51,9 +57,21 @@ async function ensureAndroidChannel(): Promise<void> {
   });
 }
 
-export async function getPushPermissionStatus(): Promise<Notifications.PermissionStatus> {
+export async function getPushPermissionStatus(): Promise<PushPermissionStatus> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return 'undetermined';
   const settings = await Notifications.getPermissionsAsync();
   return settings.status;
+}
+
+export function pushUnavailableReason(): string | null {
+  if (!isPushRuntimeAvailable()) {
+    return 'Push notifications require a development or production build (not Expo Go).';
+  }
+  if (!Device.isDevice) {
+    return 'Push requires a physical device.';
+  }
+  return null;
 }
 
 export async function registerForPushNotificationsAsync(): Promise<{
@@ -61,12 +79,17 @@ export async function registerForPushNotificationsAsync(): Promise<{
   platform: 'ios' | 'android' | 'unknown';
   reason?: string;
 }> {
-  configureNotificationHandler();
-
-  if (!Device.isDevice) {
-    return { token: null, platform: 'unknown', reason: 'Push requires a physical device.' };
+  const unavailable = pushUnavailableReason();
+  if (unavailable) {
+    return { token: null, platform: 'unknown', reason: unavailable };
   }
 
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) {
+    return { token: null, platform: 'unknown', reason: 'Notifications module unavailable.' };
+  }
+
+  await configureNotificationHandler();
   await ensureAndroidChannel();
 
   let settings = await Notifications.getPermissionsAsync();
@@ -125,7 +148,10 @@ export async function showLocalNotification(
   body: string,
   data?: PushNotificationPayload,
 ): Promise<void> {
-  configureNotificationHandler();
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return;
+
+  await configureNotificationHandler();
   await ensureAndroidChannel();
   await Notifications.scheduleNotificationAsync({
     content: {

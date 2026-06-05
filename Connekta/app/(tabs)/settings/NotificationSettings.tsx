@@ -10,8 +10,10 @@ import { useAuth } from '@/context/AuthContext';
 import { saveDevicePushToken } from '@/connekta-firebase/firestore/devices';
 import {
   getPushPermissionStatus,
+  pushUnavailableReason,
   registerForPushNotificationsAsync,
 } from '@/services/push-notifications';
+import { isPushRuntimeAvailable } from '@/utils/push-runtime';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Font, Type } from '@/constants/typography';
@@ -112,7 +114,7 @@ export default function NotificationSettingsScreen() {
               </Text>
             </View>
           </View>
-          {status !== 'granted' && (
+          {status !== 'granted' && isPushRuntimeAvailable() && (
             <GlassButton
               title={busy ? 'Enabling…' : 'Enable notifications'}
               onPress={() => void onEnable()}
@@ -136,7 +138,8 @@ export default function NotificationSettingsScreen() {
       >
         <Ionicons name="information-circle" size={20} color={accent.cyan} style={{ marginRight: 10 }} />
         <Text style={[Type.caption, { color: colors.textMuted, flex: 1 }]}>
-          Remote alerts require a development or production build. SOS and place alerts will use this same channel in later phases.
+          {pushUnavailableReason() ??
+            'Remote alerts require a development or production build. SOS and place alerts will use this same channel in later phases.'}
         </Text>
       </View>
     </ScrollView>

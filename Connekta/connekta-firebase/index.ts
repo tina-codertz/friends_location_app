@@ -8,6 +8,7 @@ export {
   loginWithEmail,
   subscribeToAuthState,
   registerWithEmail,
+  updateUsername,
   verifyCurrentUserPassword,
 } from './auth-service';
 export {
