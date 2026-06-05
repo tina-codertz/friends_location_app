@@ -12,6 +12,11 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Connekta uses your location to show you on the map and optionally share with friends you approve.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.",
+        "NSLocationAlwaysUsageDescription": "Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.",
+        "UIBackgroundModes": [
+          "location"
+        ],
         "NSFaceIDUsageDescription": "Connekta uses Face ID to unlock the app and protect your session."
       },
       "bundleIdentifier": "com.christinakimario.friendslocationsharing"
@@ -20,6 +25,9 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
         "android.permission.USE_BIOMETRIC",

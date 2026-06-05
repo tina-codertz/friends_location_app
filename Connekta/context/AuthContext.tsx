@@ -17,6 +17,7 @@ import {
   disableBiometricUnlock,
   scheduleBiometricEnrollmentIfNeeded,
 } from '@/services/biometric-unlock';
+import { stopBackgroundLocationSharing } from '@/services/background-location';
 import { markOnboardingComplete } from '@/services/onboarding';
 import type { AppUser } from '@/types/user';
 
@@ -160,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(async () => {
     try {
+      await stopBackgroundLocationSharing();
       await firebaseLogout();
       await disableBiometricUnlock();
     } catch (err) {

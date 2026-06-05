@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
 import 'react-native-reanimated';
+import '@/services/background-location';
 
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';

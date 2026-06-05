@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, FlatList, StyleSheet, Alert } from 'react-native';
+import React, { useCallback, useState, useEffect } from 'react';
+import { View, Text, ScrollView, FlatList, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -7,31 +7,21 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
 import { locationAPI } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
-
-interface LocationEntry {
-  latitude: number;
-  longitude: number;
-  timestamp: string;
-}
+import type { LocationHistoryEntry } from '@/types/location';
 
 export default function LocationHistory() {
   const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
   const { user } = useAuth();
-  const [locations, setLocations] = useState<LocationEntry[]>([]);
+  const [locations, setLocations] = useState<LocationHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadLocationHistory();
-  }, [user?.uid]);
-
-  const loadLocationHistory = async () => {
+  const loadLocationHistory = useCallback(async () => {
     setLoading(true);
     try {
       if (user?.uid) {
-        // Placeholder: In a real app, you'd have a method to get location history
-        // For now, just load empty list
-        setLocations([]);
+        const res = await locationAPI.history(100);
+        setLocations(res.success ? res.locations : []);
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to load location history.');
@@ -39,9 +29,13 @@ export default function LocationHistory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]);
 
-  const renderLocationItem = ({ item }: { item: LocationEntry }) => (
+  useEffect(() => {
+    void loadLocationHistory();
+  }, [loadLocationHistory]);
+
+  const renderLocationItem = ({ item }: { item: LocationHistoryEntry }) => (
     <GlassCard borderRadius={16} intensity="light" style={{ marginBottom: 12, padding: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View
@@ -62,6 +56,9 @@ export default function LocationHistory() {
           </Text>
           <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
             {new Date(item.timestamp).toLocaleString()}
+          </Text>
+          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
+            {item.source} {item.accuracy != null ? `• ±${Math.round(item.accuracy)}m` : ''}
           </Text>
         </View>
       </View>
@@ -105,5 +102,3 @@ export default function LocationHistory() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({});

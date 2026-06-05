@@ -38,6 +38,13 @@ module.exports = ({ config }) => {
       {
         locationWhenInUsePermission:
           'Connekta uses your location to show you on the map and optionally share with friends you approve.',
+        locationAlwaysAndWhenInUsePermission:
+          'Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.',
+        locationAlwaysPermission:
+          'Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.',
+        isIosBackgroundLocationEnabled: true,
+        isAndroidBackgroundLocationEnabled: true,
+        isAndroidForegroundServiceEnabled: true,
       },
     ],
     [

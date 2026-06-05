@@ -28,7 +28,10 @@ export function useAppOpenLocationPing(active: boolean, uid: string | null | und
       const pos = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      const res = await locationAPI.ping(pos.coords.latitude, pos.coords.longitude);
+      const res = await locationAPI.ping(pos.coords.latitude, pos.coords.longitude, {
+        accuracy: pos.coords.accuracy,
+        source: 'app-open',
+      });
       if (res.success) markLocationPingSent();
     } catch {
       /* offline or permission */

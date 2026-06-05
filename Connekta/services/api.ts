@@ -11,15 +11,16 @@ import {
 } from '@/connekta-firebase/firestore/emergency';
 import {
   getMyLocationState,
+  listMyLocationHistory,
   listFriendLocations,
   pingLocation,
   setLocationSharing,
 } from '@/connekta-firebase/firestore/location';
 import type { FriendUser } from '@/types/friends';
-import type { FriendLocation } from '@/types/location';
+import type { FriendLocation, LocationHistoryEntry } from '@/types/location';
 import type { EmergencyContact } from '@/types/emergency';
 
-export type { FriendUser, FriendLocation, EmergencyContact };
+export type { FriendUser, FriendLocation, LocationHistoryEntry, EmergencyContact };
 
 let lastQuotaWarnAt = 0;
 
@@ -137,21 +138,28 @@ export const friendsAPI = {
 
 /** Location sharing (`users/{uid}` in Firestore). */
 export const locationAPI = {
-  async setSharing(enabled: boolean): Promise<{ success: boolean; sharing: boolean }> {
+  async setSharing(
+    enabled: boolean,
+    shareUntilIso?: string | null,
+  ): Promise<{ success: boolean; sharing: boolean }> {
     try {
       const uid = auth.currentUser?.uid;
       if (!uid) return { success: false, sharing: false };
-      return await setLocationSharing(uid, enabled);
+      return await setLocationSharing(uid, enabled, shareUntilIso);
     } catch (err) {
       warnApiFailure('locationAPI.setSharing', err);
       return { success: false, sharing: !enabled };
     }
   },
-  async ping(lat: number, lng: number): Promise<{ success: boolean; message?: string }> {
+  async ping(
+    lat: number,
+    lng: number,
+    options?: { accuracy?: number | null; source?: LocationHistoryEntry['source'] },
+  ): Promise<{ success: boolean; message?: string }> {
     try {
       const uid = auth.currentUser?.uid;
       if (!uid) return { success: false, message: 'Not signed in' };
-      return await pingLocation(uid, lat, lng);
+      return await pingLocation(uid, lat, lng, options);
     } catch (err) {
       warnApiFailure('locationAPI.ping', err);
       return { success: false, message: 'Could not update location' };
@@ -174,16 +182,28 @@ export const locationAPI = {
     lat: number | null;
     lng: number | null;
     updated_at: string | null;
+    share_until: string | null;
   }> {
     try {
       const uid = auth.currentUser?.uid;
       if (!uid) {
-        return { success: false, sharing: false, lat: null, lng: null, updated_at: null };
+        return { success: false, sharing: false, lat: null, lng: null, updated_at: null, share_until: null };
       }
       return await getMyLocationState(uid);
     } catch (err) {
       warnApiFailure('locationAPI.myState', err);
-      return { success: false, sharing: false, lat: null, lng: null, updated_at: null };
+      return { success: false, sharing: false, lat: null, lng: null, updated_at: null, share_until: null };
+    }
+  },
+  async history(max = 100): Promise<{ success: boolean; locations: LocationHistoryEntry[] }> {
+    try {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return { success: false, locations: [] };
+      const locations = await listMyLocationHistory(uid, max);
+      return { success: true, locations };
+    } catch (err) {
+      warnApiFailure('locationAPI.history', err);
+      return { success: false, locations: [] };
     }
   },
 };

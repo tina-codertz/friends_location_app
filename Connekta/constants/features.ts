@@ -1,4 +1,7 @@
-/** Location watch + ping only while Map tab is focused. */
+/**
+ * Supplemental map-dot updates while Map tab is focused.
+ * Primary sharing pipeline is the background location task (see background-location.ts).
+ */
 export const ENABLE_MAP_LOCATION_TRACKING =
   process.env.EXPO_PUBLIC_ENABLE_MAP_TRACKING !== 'false';
 
