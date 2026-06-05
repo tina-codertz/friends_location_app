@@ -38,6 +38,13 @@ module.exports = ({ config }) => {
       {
         locationWhenInUsePermission:
           'Connekta uses your location to show you on the map and optionally share with friends you approve.',
+        locationAlwaysAndWhenInUsePermission:
+          'Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.',
+        locationAlwaysPermission:
+          'Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.',
+        isIosBackgroundLocationEnabled: true,
+        isAndroidBackgroundLocationEnabled: true,
+        isAndroidForegroundServiceEnabled: true,
       },
     ],
     [
@@ -46,12 +53,22 @@ module.exports = ({ config }) => {
         RNMapboxMapsVersion: '11.16.2',
       },
     ],
+    [
+      'expo-notifications',
+      {
+        icon: './assets/images/location.png',
+        color: '#38BDF8',
+        defaultChannel: 'connekta-alerts',
+        sounds: [],
+      },
+    ],
   ];
 
   return {
     ...config,
     extra: {
       ...config.extra,
+      mapProvider,
       // Embedded for dev/production builds; also available as EXPO_PUBLIC_MAPBOX_TOKEN in JS
       ...(mapboxToken ? { mapboxAccessToken: mapboxToken } : {}),
       ...(googleMapsKey ? { googleMapsApiKey: googleMapsKey, googleMapsAndroidApiKey: googleMapsKey } : {}),

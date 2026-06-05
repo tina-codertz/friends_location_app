@@ -3,6 +3,7 @@ import React from 'react';
 
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { AppOpenLocationPing } from '@/components/location/AppOpenLocationPing';
+import { PushNotificationSetup } from '@/components/notifications/PushNotificationSetup';
 import { ConnektaTabBar } from '@/components/navigation/ConnektaTabBar';
 import { BiometricGate } from '@/components/security/BiometricGate';
 
@@ -14,6 +15,7 @@ export default function TabLayout() {
   return (
     <AuthGuard>
       <AppOpenLocationPing />
+      <PushNotificationSetup />
       <BiometricGate>
       <Tabs
         tabBar={(props) => <ConnektaTabBar {...props} />}

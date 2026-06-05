@@ -50,9 +50,62 @@ Verify:
 eas env:list --environment preview
 ```
 
-You should see `EXPO_PUBLIC_MAP_PROVIDER` (set to `google` in `eas.json`), `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`, Firebase, Mapbox download tokens, and `EXPO_PUBLIC_API_URL`.
+You should see `EXPO_PUBLIC_MAP_PROVIDER` (default `mapbox` in `eas.json`), `EXPO_PUBLIC_MAPBOX_TOKEN`, `MAPBOX_DOWNLOADS_TOKEN` (or `RNMAPBOX_MAPS_DOWNLOAD_TOKEN`), Firebase vars, and `EXPO_PUBLIC_API_URL`.
 
-**Google Maps on EAS:** `eas.json` sets `EXPO_PUBLIC_MAP_PROVIDER=google`. API keys must be in EAS (not committed in `eas.json`) — add them to `.env` then run `npm run env:push-eas`.
+**Mapbox on EAS (default):** `eas.json` sets `EXPO_PUBLIC_MAP_PROVIDER=mapbox`. Push tokens from `.env` with `npm run env:push-eas`, then **rebuild** the APK/AAB (provider is baked at build time).
+
+If `env:push-eas` fails with *“cannot change a secret variable to a non-secret”* for `EXPO_PUBLIC_MAPBOX_TOKEN`, delete it first (environment is a **positional** argument, not `--environment`):
+
+```bash
+npx eas-cli env:delete preview --variable-name EXPO_PUBLIC_MAPBOX_TOKEN --non-interactive
+npm run env:push-eas
+```
+
+**Optional Google Maps:** set `EXPO_PUBLIC_MAP_PROVIDER=google` in `.env` and EAS, add `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`, enable Maps SDK + billing + Android SHA-1 in Google Cloud, then rebuild.
+
+Confirm **production** too if you use `npm run build:android:store`:
+
+```bash
+eas env:list --environment production | grep -E 'MAPBOX|MAP_PROVIDER'
+```
+
+### Beige map with “Google” in the corner (tiles missing)
+
+Only applies when `EXPO_PUBLIC_MAP_PROVIDER=google`.
+
+That means the app **is** using Google Maps, but Google **rejected tile requests** for this APK’s signature. The UI (live feed, markers logic) can work while the basemap stays blank. Fix is in **Google Cloud Console**, not another app code change.
+
+**1. Open the key used for maps** (`EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` — not the Firebase key unless they are the same).
+
+**2. APIs & Services → Library** — enable:
+- Maps SDK for Android
+- (optional) Maps SDK for iOS
+
+**3. Credentials → your Maps key**
+
+- **Application restrictions** → Android apps → add **both** if you test locally and ship via EAS:
+  - Package: `com.christinakimario.friendslocationsharing`
+  - SHA-1: from EAS (release APK):
+
+```bash
+npx eas-cli credentials -p android
+```
+
+Pick the profile you built with (`preview-apk` for `npm run build:android:apk`). Open the keystore → copy **SHA-1 fingerprint**.
+
+- If you also run `npx expo run:android`, add a second entry with your **debug** SHA-1:
+
+```bash
+cd android && ./gradlew signingReport
+```
+
+Look under `Variant: debug` → `SHA1`.
+
+**4. Quick test:** set the key to **None** (unrestricted) for 5 minutes. Reopen the app (no rebuild needed). If tiles appear, the key is fine and you only need the correct SHA-1 entries — turn restrictions back on after.
+
+**5. Billing:** the Google Cloud project must have billing enabled (Maps has a free tier).
+
+Wait 5–10 minutes after saving key changes, then force-close and reopen Connekta. You do **not** need a new APK for Console-only fixes.
 
 ---
 

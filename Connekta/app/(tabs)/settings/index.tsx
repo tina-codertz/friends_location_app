@@ -125,6 +125,27 @@ export default function SettingsHomeScreen() {
         onPress={() => router.push('/(tabs)/settings/CircleManagement')}
       />
 
+      <GlassNavCard
+        title="Notifications"
+        subtitle="Circle requests, sharing updates, and alerts"
+        icon="notifications-outline"
+        onPress={() => router.push('/(tabs)/settings/NotificationSettings')}
+      />
+
+      <GlassNavCard
+        title="Location privacy"
+        subtitle="Exact, approximate, or paused sharing"
+        icon="shield-checkmark-outline"
+        onPress={() => router.push('/(tabs)/settings/LocationPrivacy')}
+      />
+
+      <GlassNavCard
+        title="Location history"
+        subtitle="View your route trail and recent pings"
+        icon="time-outline"
+        onPress={() => router.push('/(tabs)/settings/LocationHistory')}
+      />
+
       <GlassCard borderRadius={16} intensity="medium">
         <View style={styles.row}>
           <View style={{ flex: 1 }}>

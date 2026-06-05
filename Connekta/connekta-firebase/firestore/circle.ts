@@ -15,6 +15,7 @@ import {
 import { firestore } from '../config';
 import { friendshipDocId } from '../ids';
 import { ensureFirestoreSignedIn } from './friends';
+import { readPublicUsername } from './privacy';
 import type { FriendUser } from '@/types/friends';
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -28,9 +29,9 @@ function randomCode(length = 8): string {
 }
 
 async function userProfile(uid: string): Promise<FriendUser | null> {
-  const snap = await getDoc(doc(firestore, 'users', uid));
-  if (!snap.exists()) return null;
-  return { id: uid, username: String(snap.data()?.username ?? 'user') };
+  const username = await readPublicUsername(uid);
+  if (!username) return null;
+  return { id: uid, username };
 }
 
 function isPermissionDenied(err: unknown): boolean {
@@ -113,8 +114,9 @@ export async function searchUsers(
     const otherUid = String(d.data().uid ?? '');
     if (!otherUid || otherUid === uid) continue;
     if (await areFriends(uid, otherUid)) continue;
-    const profile = await userProfile(otherUid);
-    if (profile) out.push(profile);
+    const username = String(d.data().username ?? '').trim();
+    if (!username) continue;
+    out.push({ id: otherUid, username });
     if (out.length >= limit) break;
   }
   return out;

@@ -50,7 +50,9 @@ export function getGoogleMapsApiKey(): string | null {
   if (shared) return shared;
 
   const extra = getExpoExtra();
-  const fromExtra = normalizeMapsApiKey(extra?.googleMapsApiKey);
+  const fromExtra =
+    normalizeMapsApiKey(extra?.googleMapsApiKey) ??
+    normalizeMapsApiKey(extra?.googleMapsAndroidApiKey);
   if (fromExtra) return fromExtra;
 
   return null;
@@ -75,9 +77,12 @@ export function canUseGoogleMapsOnPlatform(): boolean {
   return false;
 }
 
-/** `EXPO_PUBLIC_MAP_PROVIDER=google` to use Google Maps (requires API keys + native rebuild). */
+/** `EXPO_PUBLIC_MAP_PROVIDER=google` or extra.mapProvider from app.config (EAS builds). */
 export function getMapProviderPreference(): MapProviderPreference {
-  const raw = process.env.EXPO_PUBLIC_MAP_PROVIDER?.trim().toLowerCase();
+  const extra = getExpoExtra();
+  const fromExtra =
+    typeof extra?.mapProvider === 'string' ? extra.mapProvider.trim().toLowerCase() : null;
+  const raw = (process.env.EXPO_PUBLIC_MAP_PROVIDER ?? fromExtra)?.trim().toLowerCase();
   if (raw === 'google') return 'google';
   return 'mapbox';
 }

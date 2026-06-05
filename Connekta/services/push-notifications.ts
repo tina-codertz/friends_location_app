@@ -1,0 +1,140 @@
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+import type { PushNotificationPayload } from '@/types/notifications';
+
+const ANDROID_CHANNEL_ID = 'connekta-alerts';
+
+export const NOTIFICATION_ROUTE_BY_TYPE: Record<string, string> = {
+  friend_request: '/(tabs)/friends',
+  friend_accepted: '/(tabs)/friends',
+  sharing_expired: '/(tabs)/ShareLocation',
+  sharing_paused: '/(tabs)/settings/LocationPrivacy',
+  sos: '/(tabs)/SOSScreen',
+  place_arrival: '/(tabs)/map',
+  place_departure: '/(tabs)/map',
+};
+
+let handlerConfigured = false;
+
+export function configureNotificationHandler(): void {
+  if (handlerConfigured) return;
+  handlerConfigured = true;
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
+
+function resolveExpoProjectId(): string | null {
+  const easProjectId = Constants.expoConfig?.extra?.eas?.projectId;
+  if (typeof easProjectId === 'string' && easProjectId.trim()) return easProjectId.trim();
+
+  const envProjectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim();
+  return envProjectId || null;
+}
+
+async function ensureAndroidChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+    name: 'Connekta alerts',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#38BDF8',
+  });
+}
+
+export async function getPushPermissionStatus(): Promise<Notifications.PermissionStatus> {
+  const settings = await Notifications.getPermissionsAsync();
+  return settings.status;
+}
+
+export async function registerForPushNotificationsAsync(): Promise<{
+  token: string | null;
+  platform: 'ios' | 'android' | 'unknown';
+  reason?: string;
+}> {
+  configureNotificationHandler();
+
+  if (!Device.isDevice) {
+    return { token: null, platform: 'unknown', reason: 'Push requires a physical device.' };
+  }
+
+  await ensureAndroidChannel();
+
+  let settings = await Notifications.getPermissionsAsync();
+  if (settings.status !== 'granted') {
+    settings = await Notifications.requestPermissionsAsync({
+      ios: { allowAlert: true, allowBadge: true, allowSound: true },
+    });
+  }
+
+  if (settings.status !== 'granted') {
+    return { token: null, platform: Platform.OS === 'ios' ? 'ios' : 'android', reason: 'Permission denied' };
+  }
+
+  const projectId = resolveExpoProjectId();
+  if (!projectId) {
+    return { token: null, platform: 'unknown', reason: 'Missing EAS projectId in app config.' };
+  }
+
+  try {
+    const token = await Notifications.getExpoPushTokenAsync({ projectId });
+    return {
+      token: token.data,
+      platform: Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'unknown',
+    };
+  } catch (err) {
+    console.warn('[push] token registration failed:', err);
+    return {
+      token: null,
+      platform: Platform.OS === 'ios' ? 'ios' : 'android',
+      reason: 'Could not get push token. Use a development build.',
+    };
+  }
+}
+
+export function parseNotificationPayload(
+  data: Record<string, unknown> | undefined,
+): PushNotificationPayload {
+  if (!data) return {};
+  return {
+    type: typeof data.type === 'string' ? (data.type as PushNotificationPayload['type']) : undefined,
+    route: typeof data.route === 'string' ? data.route : undefined,
+    fromUid: typeof data.fromUid === 'string' ? data.fromUid : undefined,
+  };
+}
+
+export function routeForNotificationPayload(payload: PushNotificationPayload): string | null {
+  if (payload.route?.trim()) return payload.route.trim();
+  if (payload.type && NOTIFICATION_ROUTE_BY_TYPE[payload.type]) {
+    return NOTIFICATION_ROUTE_BY_TYPE[payload.type];
+  }
+  return null;
+}
+
+export async function showLocalNotification(
+  title: string,
+  body: string,
+  data?: PushNotificationPayload,
+): Promise<void> {
+  configureNotificationHandler();
+  await ensureAndroidChannel();
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      data: data ?? {},
+      sound: true,
+      ...(Platform.OS === 'android' ? { channelId: ANDROID_CHANNEL_ID } : {}),
+    },
+    trigger: null,
+  });
+}

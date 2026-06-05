@@ -17,6 +17,9 @@ import {
   disableBiometricUnlock,
   scheduleBiometricEnrollmentIfNeeded,
 } from '@/services/biometric-unlock';
+import { stopBackgroundLocationSharing } from '@/services/background-location';
+import { migrateLegacyPrivacyDocs } from '@/connekta-firebase/firestore/privacy';
+import { clearPushRegistration } from '@/hooks/usePushNotifications';
 import { markOnboardingComplete } from '@/services/onboarding';
 import type { AppUser } from '@/types/user';
 
@@ -94,6 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(profile);
           if (profile) {
             await syncIdToken();
+            void migrateLegacyPrivacyDocs(fbUser.uid).catch(() => undefined);
           } else {
             setApiAuthToken(null);
             setToken(null);
@@ -160,6 +164,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(async () => {
     try {
+      const uid = auth.currentUser?.uid;
+      await stopBackgroundLocationSharing();
+      if (uid) await clearPushRegistration(uid);
       await firebaseLogout();
       await disableBiometricUnlock();
     } catch (err) {

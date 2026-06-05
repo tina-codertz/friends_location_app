@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  Alert,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +25,13 @@ import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
 import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
 import { resolvePlaceKind } from '@/utils/place-kind';
 import { locationAPI } from '@/services/api';
+import {
+  DEFAULT_MAP_SHARE_DURATION_MINUTES,
+  getLocationPermissionStatus,
+  showSharingStartFailureAlert,
+  startLiveLocationSharing,
+  stopBackgroundLocationSharing,
+} from '@/services/location-sharing';
 import { Font, Type } from '@/constants/typography';
 import type { MapRegion } from '@/types/map';
 import {
@@ -157,6 +165,7 @@ export default function MapTabScreen() {
 
           if (!ENABLE_MAP_LOCATION_TRACKING) return;
 
+          // Supplemental pings while the map is open; background task owns continuous sharing.
           const maybePing = (next: { lat: number; lng: number }, force = false) => {
             if (!sharingRef.current) return;
             if (!force && !canSendLocationPing()) return;
@@ -164,7 +173,7 @@ export default function MapTabScreen() {
             if (!force && prev && distanceM(prev, next) < MIN_MOVE_M) return;
             lastSent.current = next;
             markLocationPingSent();
-            locationAPI.ping(next.lat, next.lng).catch(() => undefined);
+            locationAPI.ping(next.lat, next.lng, { source: 'foreground' }).catch(() => undefined);
           };
 
           sub = await Location.watchPositionAsync(
@@ -201,34 +210,35 @@ export default function MapTabScreen() {
     setSharing(value);
     sharingRef.current = value;
     try {
-      await locationAPI.setSharing(value);
       if (value) {
-        let pos = me;
-        try {
-          const { status } = await Location.getForegroundPermissionsAsync();
-          if (status === 'granted') {
-            const fresh = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Balanced,
-            });
-            pos = { lat: fresh.coords.latitude, lng: fresh.coords.longitude };
-            setMe(pos);
-          }
-        } catch {
-          /* use last known me */
+        const result = await startLiveLocationSharing(DEFAULT_MAP_SHARE_DURATION_MINUTES);
+        if (!result.success) {
+          setSharing(false);
+          sharingRef.current = false;
+          showSharingStartFailureAlert(result.message, await getLocationPermissionStatus());
+          return;
         }
-        if (pos) {
-          lastSent.current = pos;
-          markLocationPingSent();
-          await locationAPI.ping(pos.lat, pos.lng);
-        }
+        const fresh = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const pos = { lat: fresh.coords.latitude, lng: fresh.coords.longitude };
+        setMe(pos);
+        lastSent.current = pos;
+        markLocationPingSent();
+        await locationAPI.ping(pos.lat, pos.lng, { source: 'foreground' });
         void refresh();
         void refreshPlaces();
       } else {
+        await stopBackgroundLocationSharing();
         lastSent.current = null;
       }
     } catch {
       setSharing(!value);
       sharingRef.current = !value;
+      Alert.alert(
+        'Live sharing',
+        value ? 'Could not start sharing. Open Share Location to check permissions.' : 'Could not stop sharing. Try again.',
+      );
     }
   };
 

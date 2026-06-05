@@ -13,6 +13,7 @@ import { MapEngineProvider } from '@/components/map/MapEngineContext';
 import { GoogleMapView } from '@/components/map/GoogleMapView';
 import { LegacyMapView } from '@/components/map/LegacyMapView';
 import { isValidMapRegion, type MapRegion } from '@/types/map';
+import { getMapProviderPreference } from '@/utils/maps-config';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Font, Type } from '@/constants/typography';
 
@@ -200,6 +201,21 @@ export const ConnektaMap = forwardRef<ConnektaMapRef, Props>(function ConnektaMa
           {props.children}
         </GoogleMapView>
       </MapEngineProvider>
+    );
+  }
+
+  if (engine === 'unavailable') {
+    const message =
+      props.fallbackMessage ??
+      (getMapProviderPreference() === 'google'
+        ? 'Google Maps is not configured in this build. Add EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to EAS, then rebuild the APK.'
+        : 'Mapbox token missing. Add EXPO_PUBLIC_MAPBOX_TOKEN to .env, then restart with: npx expo start -c');
+    return (
+      <View style={[styles.fallback, { backgroundColor: colors.mapBg }, props.containerStyle, props.style]}>
+        <Text style={[Type.body, { color: colors.textMuted, textAlign: 'center', fontFamily: Font.medium }]}>
+          {message}
+        </Text>
+      </View>
     );
   }
 
