@@ -132,8 +132,12 @@ export async function listFriends(uid: string): Promise<FriendUser[]> {
     const members = (d.data().memberIds as string[]) ?? [];
     const other = members.find((m) => m !== uid);
     if (!other) continue;
-    const profile = await userProfile(other);
-    if (profile) out.push(profile);
+    try {
+      const profile = await userProfile(other);
+      if (profile) out.push(profile);
+    } catch {
+      /* unreadable profile should not hide other friends */
+    }
   }
   out.sort((a, b) => a.username.localeCompare(b.username));
   return out;
@@ -337,15 +341,34 @@ export async function joinWithInviteCode(
   }
   const d = inviteSnap.data();
   const ownerUid = String(d.ownerUid);
+  if (ownerUid === uid) {
+    return { success: false, message: 'This is your own invite code' };
+  }
   const exp = d.expiresAt;
   if (exp instanceof Timestamp && exp.toDate().getTime() < Date.now()) {
     return { success: false, message: 'Invalid or expired code' };
   }
 
   const owner = await userProfile(ownerUid);
-  const result = await sendFriendRequest(uid, ownerUid);
+
+  if (await areFriends(uid, ownerUid)) {
+    return {
+      success: true,
+      message: 'Already in your circle',
+      circle_owner: owner ?? undefined,
+    };
+  }
+
+  const existing = await findRequestBetween(uid, ownerUid);
+  if (existing?.status === 'pending') {
+    await updateDoc(doc(firestore, 'friendRequests', existing.id), { status: 'accepted' });
+  }
+
+  await createFriendship(uid, ownerUid);
+
   return {
-    ...result,
+    success: true,
+    message: 'Joined circle',
     circle_owner: owner ?? undefined,
   };
 }

@@ -1,5 +1,16 @@
-import { doc, getDoc, setDoc, Timestamp, writeBatch } from 'firebase/firestore';
-import { firestore } from '../config';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  setDoc,
+  Timestamp,
+  where,
+  writeBatch,
+} from 'firebase/firestore';
+import { auth, firestore } from '../config';
 import { coordinatesForShareMode, type ShareMode } from '@/utils/location-privacy';
 
 export const PUBLIC_PROFILE_PATH = 'profile' as const;
@@ -74,17 +85,47 @@ export async function ensurePublicProfile(uid: string, username: string): Promis
   await setDoc(publicProfileRef(uid), { username }, { merge: true });
 }
 
+async function lookupUsernameByUid(uid: string): Promise<string | null> {
+  try {
+    const snap = await getDocs(
+      query(collection(firestore, 'usernames'), where('uid', '==', uid), limit(1)),
+    );
+    if (snap.empty) return null;
+    const name = snap.docs[0].data().username;
+    return typeof name === 'string' && name.trim() ? name.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function readPublicUsername(uid: string): Promise<string | null> {
-  const publicSnap = await getDoc(publicProfileRef(uid));
-  if (publicSnap.exists()) {
-    const name = publicSnap.data().username;
-    if (typeof name === 'string' && name.trim()) return name.trim();
+  try {
+    const publicSnap = await getDoc(publicProfileRef(uid));
+    if (publicSnap.exists()) {
+      const name = publicSnap.data().username;
+      if (typeof name === 'string' && name.trim()) return name.trim();
+    }
+  } catch {
+    /* network or rules */
   }
 
-  const userSnap = await getDoc(doc(firestore, 'users', uid));
-  if (!userSnap.exists()) return null;
-  const legacy = userSnap.data().username;
-  return typeof legacy === 'string' && legacy.trim() ? legacy.trim() : null;
+  const fromRegistry = await lookupUsernameByUid(uid);
+  if (fromRegistry) return fromRegistry;
+
+  // Root user doc is owner-only — never read another member's private profile.
+  if (auth.currentUser?.uid === uid) {
+    try {
+      const userSnap = await getDoc(doc(firestore, 'users', uid));
+      if (userSnap.exists()) {
+        const legacy = userSnap.data().username;
+        if (typeof legacy === 'string' && legacy.trim()) return legacy.trim();
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return null;
 }
 
 export async function getShareMode(uid: string): Promise<ShareMode> {
