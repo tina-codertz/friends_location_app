@@ -17,7 +17,7 @@ import {
   setLocationSharing,
 } from '@/connekta-firebase/firestore/location';
 import type { FriendUser } from '@/types/friends';
-import type { FriendLocation, LocationHistoryEntry } from '@/types/location';
+import type { FriendLocation, LocationHistoryEntry, LocationHistoryQuery } from '@/types/location';
 import type { EmergencyContact } from '@/types/emergency';
 
 export type { FriendUser, FriendLocation, LocationHistoryEntry, EmergencyContact };
@@ -195,11 +195,13 @@ export const locationAPI = {
       return { success: false, sharing: false, lat: null, lng: null, updated_at: null, share_until: null };
     }
   },
-  async history(max = 100): Promise<{ success: boolean; locations: LocationHistoryEntry[] }> {
+  async history(
+    options: LocationHistoryQuery | number = {},
+  ): Promise<{ success: boolean; locations: LocationHistoryEntry[] }> {
     try {
       const uid = auth.currentUser?.uid;
       if (!uid) return { success: false, locations: [] };
-      const locations = await listMyLocationHistory(uid, max);
+      const locations = await listMyLocationHistory(uid, options);
       return { success: true, locations };
     } catch (err) {
       warnApiFailure('locationAPI.history', err);

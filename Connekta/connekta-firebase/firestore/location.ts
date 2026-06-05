@@ -8,10 +8,12 @@ import {
   query,
   Timestamp,
   updateDoc,
+  where,
   writeBatch,
 } from 'firebase/firestore';
 import { firestore } from '../config';
-import type { FriendLocation, LocationHistoryEntry } from '@/types/location';
+import type { FriendLocation, LocationHistoryEntry, LocationHistoryQuery } from '@/types/location';
+import { LOCATION_HISTORY_MAX_POINTS } from '@/utils/location-history';
 import { ensureFirestoreSignedIn, getCircleMemberUids } from './friends';
 
 function updatedAtIso(data: Record<string, unknown>): string {
@@ -150,15 +152,24 @@ export async function listFriendLocations(uid: string): Promise<FriendLocation[]
 
 export async function listMyLocationHistory(
   uid: string,
-  max = 100,
+  options: LocationHistoryQuery | number = {},
 ): Promise<LocationHistoryEntry[]> {
   await ensureFirestoreSignedIn(uid);
+  const resolved =
+    typeof options === 'number' ? { max: options } : options;
+  const max = Math.max(1, Math.min(resolved.max ?? 100, LOCATION_HISTORY_MAX_POINTS));
+  const sinceMs = resolved.sinceMs;
+
+  const historyRef = collection(firestore, 'users', uid, 'locationHistory');
   const snap = await getDocs(
-    query(
-      collection(firestore, 'users', uid, 'locationHistory'),
-      orderBy('createdAt', 'desc'),
-      limit(Math.max(1, Math.min(max, 250))),
-    ),
+    sinceMs != null && Number.isFinite(sinceMs)
+      ? query(
+          historyRef,
+          where('createdAt', '>=', Timestamp.fromMillis(sinceMs)),
+          orderBy('createdAt', 'desc'),
+          limit(max),
+        )
+      : query(historyRef, orderBy('createdAt', 'desc'), limit(max)),
   );
 
   return snap.docs.map((entry) => {

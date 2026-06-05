@@ -125,6 +125,13 @@ export default function SettingsHomeScreen() {
         onPress={() => router.push('/(tabs)/settings/CircleManagement')}
       />
 
+      <GlassNavCard
+        title="Location history"
+        subtitle="View your route trail and recent pings"
+        icon="time-outline"
+        onPress={() => router.push('/(tabs)/settings/LocationHistory')}
+      />
+
       <GlassCard borderRadius={16} intensity="medium">
         <View style={styles.row}>
           <View style={{ flex: 1 }}>

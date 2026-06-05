@@ -7,11 +7,19 @@ export type FriendLocation = {
   share_until?: string | null;
 };
 
+export type LocationHistorySource = 'foreground' | 'background' | 'manual' | 'app-open';
+
 export type LocationHistoryEntry = {
   id: string;
   latitude: number;
   longitude: number;
   accuracy: number | null;
-  source: 'foreground' | 'background' | 'manual' | 'app-open';
+  source: LocationHistorySource;
   timestamp: string;
+};
+
+export type LocationHistoryQuery = {
+  max?: number;
+  /** Only return points at or after this Unix ms timestamp. */
+  sinceMs?: number;
 };
