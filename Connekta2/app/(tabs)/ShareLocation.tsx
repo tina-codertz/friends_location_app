@@ -1,19 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Share,
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Share, Alert, StyleSheet, Pressable } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { Row } from '@expo/ui';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { locationAPI } from '@/services/api';
@@ -28,7 +22,7 @@ import {
   stopLiveSharing,
   type LocationPermissionStatus,
 } from '@/services/location-sharing';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 
 const SHARE_DURATIONS = [
   { label: '30m', minutes: 30 },
@@ -39,7 +33,6 @@ const SHARE_DURATIONS = [
 ];
 
 export default function ShareLocationScreen() {
-  const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
   const { user } = useAuth();
   const [liveSharing, setLiveSharing] = useState(false);
@@ -130,24 +123,26 @@ export default function ShareLocationScreen() {
   const sharingSummary = formatSharingSummary(liveSharing, shareUntil);
   const showAlwaysSettingsCta =
     permissionStatus != null && needsAlwaysPermission(permissionStatus);
+  const liveButtonTitle = liveSharing
+    ? busy
+      ? 'Stopping...'
+      : 'Stop Live Sharing'
+    : busy
+      ? 'Starting...'
+      : 'Start Live Sharing';
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        padding: 20,
-        paddingTop: insets.top + 12,
-        paddingBottom: insets.bottom + 40,
-      }}
-    >
-      <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 8 }]}>Share Location</Text>
-      <Text style={[Type.body, { color: colors.textMuted, marginBottom: 20 }]}>
+    <NativeScreen scroll contentStyle={{ gap: 16, paddingBottom: 40 }}>
+      <NativeTypography variant="hero" color={colors.textPrimary}>
+        Share Location
+      </NativeTypography>
+      <NativeTypography variant="body" color={colors.textMuted}>
         Share your location with trusted contacts — even when the app is closed.
-      </Text>
+      </NativeTypography>
 
       {permissionStatus && (
-        <GlassCard borderRadius={16} intensity="light" style={{ marginBottom: 16 }}>
-          <View style={styles.row}>
+        <GlassCard borderRadius={16} intensity="light">
+          <Row spacing={12} alignment="center">
             <Ionicons
               name={
                 permissionStatus.background === 'granted'
@@ -160,14 +155,17 @@ export default function ShareLocationScreen() {
               color={permissionStatus.background === 'granted' ? accent.green : accent.electricBlue}
             />
             <View style={{ flex: 1 }}>
-              <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+              <NativeTypography
+                variant="body"
+                color={colors.textPrimary}
+                textStyle={{ fontFamily: Font.semibold }}>
                 {permissionStatusLabel(permissionStatus)}
-              </Text>
-              <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
+              </NativeTypography>
+              <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 4 }}>
                 {permissionStatusHint(permissionStatus)}
-              </Text>
+              </NativeTypography>
             </View>
-          </View>
+          </Row>
           {showAlwaysSettingsCta && (
             <GlassButton
               title="Open Settings — choose Always"
@@ -180,15 +178,18 @@ export default function ShareLocationScreen() {
         </GlassCard>
       )}
 
-      <GlassCard borderRadius={16} intensity="medium" style={{ marginBottom: 16 }}>
+      <GlassCard borderRadius={16} intensity="medium">
         <View style={[styles.row, { marginBottom: 14 }]}>
           <View style={{ flex: 1 }}>
-            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+            <NativeTypography
+              variant="body"
+              color={colors.textPrimary}
+              textStyle={{ fontFamily: Font.semibold }}>
               Live Location Sharing
-            </Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
+            </NativeTypography>
+            <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 4 }}>
               {sharingSummary}
-            </Text>
+            </NativeTypography>
           </View>
           <View
             style={[
@@ -203,37 +204,30 @@ export default function ShareLocationScreen() {
             {SHARE_DURATIONS.map((option) => {
               const selected = selectedDuration === option.minutes;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={option.label}
                   onPress={() => setSelectedDuration(option.minutes)}
-                  activeOpacity={0.8}
                   style={[
                     styles.durationButton,
                     {
                       borderColor: selected ? accent.electricBlue : colors.divider,
                       backgroundColor: selected ? `${accent.electricBlue}22` : 'transparent',
                     },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      Type.caption,
-                      {
-                        color: selected ? colors.textPrimary : colors.textMuted,
-                        fontFamily: selected ? Font.semibold : Font.regular,
-                      },
-                    ]}
-                  >
+                  ]}>
+                  <NativeTypography
+                    variant="caption"
+                    color={selected ? colors.textPrimary : colors.textMuted}
+                    textStyle={{ fontFamily: selected ? Font.semibold : Font.regular }}>
                     {option.label}
-                  </Text>
-                </TouchableOpacity>
+                  </NativeTypography>
+                </Pressable>
               );
             })}
           </View>
         )}
 
         <GlassButton
-          title={liveSharing ? (busy ? 'Stopping...' : 'Stop Live Sharing') : busy ? 'Starting...' : 'Start Live Sharing'}
+          title={liveButtonTitle}
           onPress={liveSharing ? onStopLiveSharing : onStartLiveSharing}
           variant={liveSharing ? 'secondary' : 'primary'}
           disabled={busy}
@@ -242,17 +236,19 @@ export default function ShareLocationScreen() {
       </GlassCard>
 
       {currentLat && currentLng && (
-        <GlassCard borderRadius={16} intensity="medium" style={{ marginBottom: 20 }}>
+        <GlassCard borderRadius={16} intensity="medium">
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
             <Ionicons name="location" size={24} color={accent.electricBlue} />
-            <Text style={[Type.section, { color: colors.textPrimary }]}>Last shared position</Text>
+            <NativeTypography variant="section" color={colors.textPrimary}>
+              Last shared position
+            </NativeTypography>
           </View>
-          <Text style={[Type.caption, { color: colors.textMuted }]}>
-            Latitude: {currentLat.toFixed(6)}
-          </Text>
-          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-            Longitude: {currentLng.toFixed(6)}
-          </Text>
+          <NativeTypography variant="caption" color={colors.textMuted}>
+            {`Latitude: ${currentLat.toFixed(6)}`}
+          </NativeTypography>
+          <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 4 }}>
+            {`Longitude: ${currentLng.toFixed(6)}`}
+          </NativeTypography>
         </GlassCard>
       )}
 
@@ -269,16 +265,16 @@ export default function ShareLocationScreen() {
           {
             backgroundColor: `${accent.electricBlue}11`,
             borderColor: `${accent.electricBlue}44`,
-            marginTop: 20,
           },
-        ]}
-      >
+        ]}>
         <Ionicons name="information-circle" size={20} color={accent.electricBlue} style={{ marginRight: 10 }} />
-        <Text style={[Type.caption, { color: colors.textMuted, flex: 1 }]}>
-          Live sharing runs in the background and stops when the timer expires or you turn it off. A notification stays visible while sharing is active.
-        </Text>
+        <View style={{ flex: 1 }}>
+          <NativeTypography variant="caption" color={colors.textMuted}>
+            Live sharing runs in the background and stops when the timer expires or you turn it off. A notification stays visible while sharing is active.
+          </NativeTypography>
+        </View>
       </View>
-    </ScrollView>
+    </NativeScreen>
   );
 }
 

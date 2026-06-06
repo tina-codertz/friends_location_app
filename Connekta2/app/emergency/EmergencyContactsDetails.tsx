@@ -1,17 +1,17 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 import { emergencyAPI } from '@/services/api';
 
 export default function EmergencyContactsDetails() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { colors, accent } = useAppTheme();
+  const { colors } = useAppTheme();
   const { id, name, phone } = useLocalSearchParams<{ id: string; name: string; phone: string }>();
 
   const handleDelete = async () => {
@@ -27,7 +27,7 @@ export default function EmergencyContactsDetails() {
               Alert.alert('Success', 'Contact deleted.');
               router.back();
             }
-          } catch (err) {
+          } catch {
             Alert.alert('Error', 'Failed to delete contact.');
           }
         },
@@ -35,34 +35,33 @@ export default function EmergencyContactsDetails() {
     ]);
   };
 
+  const avatarLetter = (name ?? '?').slice(0, 1).toUpperCase();
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        padding: 20,
-        paddingTop: insets.top + 12,
-        paddingBottom: insets.bottom + 40,
-      }}
-    >
+    <NativeScreen scroll contentStyle={{ gap: 16, paddingBottom: 40 }}>
       <GlassCard borderRadius={16} intensity="heavy" glowAccent style={{ paddingVertical: 28, alignItems: 'center' }}>
         <View style={[styles.avatar, { borderColor: colors.tealBorder }]}>
-          <Text style={{ fontSize: 36, color: colors.textPrimary, fontFamily: Font.bold }}>
-            {(name ?? '?').slice(0, 1).toUpperCase()}
-          </Text>
+          <NativeTypography variant="hero" color={colors.textPrimary} textStyle={{ fontFamily: Font.bold }}>
+            {avatarLetter}
+          </NativeTypography>
         </View>
-        <Text style={[Type.title, { color: colors.textPrimary, marginTop: 16 }]}>{name}</Text>
-        <Text style={[Type.body, { color: colors.textMuted, marginTop: 6 }]}>{phone}</Text>
+        <NativeTypography variant="title" color={colors.textPrimary} textStyle={{ marginTop: 16 }}>
+          {name ?? '—'}
+        </NativeTypography>
+        <NativeTypography variant="body" color={colors.textMuted} textStyle={{ marginTop: 6 }}>
+          {phone ?? '—'}
+        </NativeTypography>
       </GlassCard>
-
-      <View style={{ height: 20 }} />
 
       <GlassCard borderRadius={16} intensity="medium">
-        <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 12 }]}>Contact Information</Text>
-        <Row label="Name" value={name ?? '—'} colors={colors} />
-        <Row label="Phone" value={phone ?? '—'} colors={colors} />
+        <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ marginBottom: 12 }}>
+          Contact Information
+        </NativeTypography>
+        <ContactDetailRow label="Name" value={name ?? '—'} colors={colors} />
+        <ContactDetailRow label="Phone" value={phone ?? '—'} colors={colors} />
       </GlassCard>
 
-      <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
         <View style={{ flex: 1 }}>
           <GlassButton title="Close" onPress={() => router.back()} variant="tonal" fullWidth />
         </View>
@@ -70,11 +69,11 @@ export default function EmergencyContactsDetails() {
           <GlassButton title="Delete" onPress={handleDelete} variant="danger" fullWidth />
         </View>
       </View>
-    </ScrollView>
+    </NativeScreen>
   );
 }
 
-function Row({
+function ContactDetailRow({
   label,
   value,
   colors,
@@ -85,10 +84,15 @@ function Row({
 }) {
   return (
     <View style={{ paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.divider }}>
-      <Text style={[Type.caption, { color: colors.textMuted }]}>{label}</Text>
-      <Text style={[Type.body, { color: colors.textPrimary, marginTop: 4, fontFamily: Font.medium }]}>
+      <NativeTypography variant="caption" color={colors.textMuted}>
+        {label}
+      </NativeTypography>
+      <NativeTypography
+        variant="body"
+        color={colors.textPrimary}
+        textStyle={{ marginTop: 4, fontFamily: Font.medium }}>
         {value}
-      </Text>
+      </NativeTypography>
     </View>
   );
 }

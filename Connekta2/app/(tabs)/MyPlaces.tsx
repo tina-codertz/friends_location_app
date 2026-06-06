@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   Alert,
   StyleSheet,
-  TextInput,
   Modal,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,14 +14,18 @@ import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
 import type { MapRegion } from '@/types/map';
 import { capList, MAX_PLACE_MARKERS_MAIN } from '@/utils/map-limits';
 import * as Location from 'expo-location';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { Host } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { GlassIconButton } from '@/components/ui/GlassIconButton';
+import { GlassInput } from '@/components/ui/GlassInput';
 import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
+import { Font } from '@/constants/typography';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Font, Type } from '@/constants/typography';
 import { useAuth } from '@/context/AuthContext';
 import { firestoreErrorMessage } from '@/connekta-firebase';
 import {
@@ -47,7 +49,6 @@ const DEFAULT_REGION: MapRegion = {
 };
 
 export default function MyPlacesScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors, accent } = useAppTheme();
   const { user } = useAuth();
@@ -211,104 +212,99 @@ export default function MyPlacesScreen() {
     [placeKind, placeName]
   );
 
+  const pinCoordsText = pin ? `Pin: ${pin.lat.toFixed(5)}, ${pin.lng.toFixed(5)}` : '';
+
   const renderPlaceItem = ({ item }: { item: SavedPlace }) => {
     const kind = resolvePlaceKind(item);
     const meta = PLACE_KIND_META[kind];
+    const detailText = `${meta.label} · ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}`;
     return (
-    <TouchableOpacity onPress={() => focusPlace(item)} activeOpacity={0.85}>
-      <GlassCard borderRadius={16} intensity="light" style={{ marginBottom: 12, paddingVertical: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: `${accent.cyan}22`,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Ionicons name={meta.icon} size={22} color={accent.cyan} />
+      <Pressable onPress={() => focusPlace(item)}>
+        <GlassCard borderRadius={16} intensity="light" style={{ marginBottom: 12, paddingVertical: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: `${accent.cyan}22`,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+              <Ionicons name={meta.icon} size={22} color={accent.cyan} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <NativeTypography
+                variant="body"
+                color={colors.textPrimary}
+                textStyle={{ fontFamily: Font.semibold }}>
+                {item.name}
+              </NativeTypography>
+              <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 4 }}>
+                {detailText}
+              </NativeTypography>
+            </View>
+            <GlassIconButton name="trash-outline" onPress={() => handleDelete(item)} danger size={20} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>{item.name}</Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-              {meta.label} · {item.lat.toFixed(4)}, {item.lng.toFixed(4)}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => handleDelete(item)}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: 'rgba(255,67,54,0.12)',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Ionicons name="trash-outline" size={20} color="#FF4336" />
-          </TouchableOpacity>
-        </View>
-      </GlassCard>
-    </TouchableOpacity>
-  );
+        </GlassCard>
+      </Pressable>
+    );
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <NativeScreen contentStyle={{ paddingHorizontal: 0 }}>
       <View style={[styles.mapWrap, { backgroundColor: colors.mapBg }]}>
         {focused ? (
-        <ConnektaMap
-          ref={mapRef}
-          style={StyleSheet.absoluteFill}
-          initialRegion={region}
-          showUserLocation
-          rotateEnabled={false}
-          pitchEnabled={false}
-          onPress={
-            addOpen
-              ? (coord) => setPin({ lat: coord.latitude, lng: coord.longitude })
-              : undefined
-          }
-        >
-          {previewMarkers}
-          {addOpen && pin ? (
-            <PlaceAreaMarker
-              id="draft-place"
-              latitude={pin.lat}
-              longitude={pin.lng}
-              label={placeName.trim() || 'New place'}
-              placeKind={draftKind}
-              subtitle="Tap map to move pin"
-              accentColor={accent.cyan}
-            />
-          ) : null}
-        </ConnektaMap>
+          <ConnektaMap
+            ref={mapRef}
+            style={StyleSheet.absoluteFill}
+            initialRegion={region}
+            showUserLocation
+            rotateEnabled={false}
+            pitchEnabled={false}
+            onPress={
+              addOpen
+                ? (coord) => setPin({ lat: coord.latitude, lng: coord.longitude })
+                : undefined
+            }>
+            {previewMarkers}
+            {addOpen && pin ? (
+              <PlaceAreaMarker
+                id="draft-place"
+                latitude={pin.lat}
+                longitude={pin.lng}
+                label={placeName.trim() || 'New place'}
+                placeKind={draftKind}
+                subtitle="Tap map to move pin"
+                accentColor={accent.cyan}
+              />
+            ) : null}
+          </ConnektaMap>
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.mapPlaceholder]}>
             <ActivityIndicator color={accent.cyan} />
           </View>
         )}
 
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[styles.backBtn, { top: insets.top + 8, backgroundColor: colors.glassBgMedium, borderColor: colors.glassBorderMedium }]}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        <View style={styles.backBtnWrap}>
+          <GlassIconButton name="chevron-back" onPress={() => router.back()} size={24} />
+        </View>
       </View>
 
-      <View style={[styles.sheet, { backgroundColor: colors.bg, paddingBottom: insets.bottom + 16 }]}>
-        <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 4 }]}>My Places</Text>
-        <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 12 }]}>
+      <View style={[styles.sheet, { backgroundColor: colors.bg }]}>
+        <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ marginBottom: 4 }}>
+          My Places
+        </NativeTypography>
+        <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginBottom: 12 }}>
           Saved spots appear on the live map for everyone in your circle.
-        </Text>
+        </NativeTypography>
 
         {loading ? (
           <ActivityIndicator color={accent.electricBlue} style={{ marginVertical: 16 }} />
         ) : places.length === 0 ? (
-          <Text style={[Type.body, { color: colors.textMuted, marginBottom: 12 }]}>No places yet — add one below.</Text>
+          <NativeTypography variant="body" color={colors.textMuted} textStyle={{ marginBottom: 12 }}>
+            No places yet — add one below.
+          </NativeTypography>
         ) : (
           <FlatList
             data={places}
@@ -325,84 +321,71 @@ export default function MyPlacesScreen() {
       <Modal visible={addOpen} animationType="slide" transparent onRequestClose={() => setAddOpen(false)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}
-        >
-          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setAddOpen(false)} activeOpacity={1} />
-          <GlassCard
-            borderRadius={24}
-            intensity="heavy"
-            style={{
-              borderBottomLeftRadius: 0,
-              borderBottomRightRadius: 0,
-              padding: 20,
-              paddingBottom: insets.bottom + 20,
-            }}
-          >
-            <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>New place</Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 12 }]}>
-              Pick Home or Office (or another type), then name the spot and move the pin on the map.
-            </Text>
-            <PlaceKindPicker
-              value={placeKind}
-              onChange={onPlaceKindChange}
-              accentColor={accent.cyan}
-              textColor={colors.textPrimary}
-              mutedColor={colors.textMuted}
-              borderColor={colors.glassBorderMedium}
-              chipBg={colors.inputBg}
-            />
-            <TextInput
-              placeholder="e.g. Home, Office, Gym"
-              placeholderTextColor={colors.inputPlaceholder}
-              value={placeName}
-              onChangeText={setPlaceName}
-              style={[
-                styles.nameInput,
-                {
-                  color: colors.textPrimary,
-                  borderColor: colors.inputBorder,
-                  backgroundColor: colors.inputBg,
-                  fontFamily: Font.regular,
-                },
-              ]}
-            />
-            {pin ? (
-              <Text style={[Type.caption, { color: colors.textMuted, marginTop: 8 }]}>
-                Pin: {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}
-              </Text>
-            ) : null}
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-              <GlassButton title="Cancel" onPress={() => setAddOpen(false)} variant="tonal" style={{ flex: 1 }} />
-              <GlassButton
-                title={saving ? 'Saving…' : 'Save place'}
-                onPress={savePlace}
-                variant="primary"
-                style={{ flex: 1 }}
-                disabled={saving}
+          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setAddOpen(false)} />
+          <Host matchContents>
+            <GlassCard
+              borderRadius={24}
+              intensity="heavy"
+              style={{
+                borderBottomLeftRadius: 0,
+                borderBottomRightRadius: 0,
+                padding: 20,
+              }}>
+              <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ marginBottom: 8 }}>
+                New place
+              </NativeTypography>
+              <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginBottom: 12 }}>
+                Pick Home or Office (or another type), then name the spot and move the pin on the map.
+              </NativeTypography>
+              <PlaceKindPicker
+                value={placeKind}
+                onChange={onPlaceKindChange}
+                accentColor={accent.cyan}
+                textColor={colors.textPrimary}
+                mutedColor={colors.textMuted}
+                borderColor={colors.glassBorderMedium}
+                chipBg={colors.inputBg}
               />
-            </View>
-          </GlassCard>
+              <GlassInput
+                layout="stacked"
+                placeholder="e.g. Home, Office, Gym"
+                value={placeName}
+                onChangeText={setPlaceName}
+              />
+              {pin ? (
+                <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 8 }}>
+                  {pinCoordsText}
+                </NativeTypography>
+              ) : null}
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+                <GlassButton title="Cancel" onPress={() => setAddOpen(false)} variant="tonal" style={{ flex: 1 }} />
+                <GlassButton
+                  title={saving ? 'Saving…' : 'Save place'}
+                  onPress={savePlace}
+                  variant="primary"
+                  style={{ flex: 1 }}
+                  disabled={saving}
+                />
+              </View>
+            </GlassCard>
+          </Host>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </NativeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  mapWrap: { height: '42%' },
+  mapWrap: { height: '42%', position: 'relative' },
   mapPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backBtn: {
+  backBtnWrap: {
     position: 'absolute',
     left: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    top: 8,
   },
   sheet: {
     flex: 1,
@@ -411,12 +394,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: -12,
-  },
-  nameInput: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
+    paddingBottom: 16,
   },
 });

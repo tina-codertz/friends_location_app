@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet, Alert } from 'react-native';
+import { View, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Contacts from 'expo-contacts';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { GlassInput } from '@/components/ui/GlassInput';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Font, Type } from '@/constants/typography';
 import { emergencyAPI } from '@/services/api';
-import { GlassIconButton } from '@/components/ui/GlassIconButton';
 
 export default function EmergencyForm() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -50,7 +49,7 @@ export default function EmergencyForm() {
       await emergencyAPI.add(name.trim(), phone.trim());
       Alert.alert('Success', 'Emergency contact added.');
       router.back();
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Failed to add contact.');
     } finally {
       setLoading(false);
@@ -58,51 +57,32 @@ export default function EmergencyForm() {
   };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        padding: 20,
-        paddingTop: insets.top + 12,
-        paddingBottom: insets.bottom + 40,
-      }}
-    >
-      <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 8 }]}>Add Emergency Contact</Text>
-      <Text style={[Type.body, { color: colors.textMuted, marginBottom: 20 }]}>
+    <NativeScreen scroll contentStyle={{ gap: 16, paddingBottom: 40 }}>
+      <NativeTypography variant="hero" color={colors.textPrimary}>
+        Add Emergency Contact
+      </NativeTypography>
+      <NativeTypography variant="body" color={colors.textMuted}>
         Add a trusted contact who can be reached in case of emergency.
-      </Text>
+      </NativeTypography>
 
       <GlassCard borderRadius={16} intensity="heavy" glowAccent style={{ gap: 16 }}>
-        <View>
-          <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 8 }]}>Full Name</Text>
-          <TextInput
-            placeholder="Enter name"
-            placeholderTextColor={colors.inputPlaceholder}
-            value={name}
-            onChangeText={setName}
-            editable={!loading}
-            style={[
-              styles.input,
-              { color: colors.textPrimary, borderColor: colors.inputBorder, backgroundColor: colors.inputBg, fontFamily: Font.regular },
-            ]}
-          />
-        </View>
-
-        <View>
-          <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 8 }]}>Phone Number</Text>
-          <TextInput
-            placeholder="Enter phone number"
-            placeholderTextColor={colors.inputPlaceholder}
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            editable={!loading}
-            style={[
-              styles.input,
-              { color: colors.textPrimary, borderColor: colors.inputBorder, backgroundColor: colors.inputBg, fontFamily: Font.regular },
-            ]}
-          />
-        </View>
-
+        <GlassInput
+          layout="stacked"
+          label="Full Name"
+          placeholder="Enter name"
+          value={name}
+          onChangeText={setName}
+          editable={!loading}
+        />
+        <GlassInput
+          layout="stacked"
+          label="Phone Number"
+          placeholder="Enter phone number"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          editable={!loading}
+        />
         <GlassButton
           title="Pick from contacts"
           onPress={pickContact}
@@ -121,23 +101,7 @@ export default function EmergencyForm() {
         />
       </GlassCard>
 
-      <GlassButton
-        title="Cancel"
-        onPress={() => router.back()}
-        variant="tonal"
-        fullWidth
-        style={{ marginTop: 12 }}
-      />
-    </ScrollView>
+      <GlassButton title="Cancel" onPress={() => router.back()} variant="tonal" fullWidth />
+    </NativeScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  input: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-});

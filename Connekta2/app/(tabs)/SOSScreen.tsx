@@ -1,25 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Animated,
   TouchableOpacity,
-  Dimensions,
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { GlassButton } from '@/components/ui/GlassButton';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import * as Linking from 'expo-linking';
 import { emergencyAPI } from '@/services/api';
-import { Font, Type } from '@/constants/typography';
-
-const { height: SH, width: SW } = Dimensions.get('window');
+import { Font } from '@/constants/typography';
 
 export default function SOSScreen() {
   const insets = useSafeAreaInsets();
@@ -27,11 +24,10 @@ export default function SOSScreen() {
   const { user } = useAuth();
   const [triggering, setTriggering] = useState(false);
   const [lastSOS, setLastSOS] = useState<Date | null>(null);
-  
+
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
-  // Pulse animation for SOS button
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -39,7 +35,7 @@ export default function SOSScreen() {
         Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ])
     ).start();
-  }, []);
+  }, [pulseAnim]);
 
   const triggerSOS = async () => {
     try {
@@ -93,88 +89,92 @@ export default function SOSScreen() {
     }
   };
 
+  const lastSosText = lastSOS ? `Last SOS sent: ${lastSOS.toLocaleTimeString()}` : '';
+
   return (
-    <View style={[styles.root, { backgroundColor: colors.bg }]}>
-      {/* Background glow */}
-      <View style={[styles.glow, { backgroundColor: accent.sos }]} />
+    <NativeScreen contentStyle={{ paddingHorizontal: 0 }}>
+      <View style={[styles.root, { backgroundColor: colors.bg }]}>
+        <View style={[styles.glow, { backgroundColor: accent.sos }]} />
 
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-        {/* Title */}
-        <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 24, textAlign: 'center' }]}>
-          Emergency SOS
-        </Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+          <NativeTypography
+            variant="hero"
+            color={colors.textPrimary}
+            textStyle={{ marginBottom: 24, textAlign: 'center' }}>
+            Emergency SOS
+          </NativeTypography>
 
-        {/* Info card */}
-        <GlassCard 
-          borderRadius={24} 
-          intensity="medium" 
-          style={{ marginBottom: 40, borderColor: `${accent.sos}44`, borderWidth: 1 }}
-        >
-          <View style={{ alignItems: 'center' }}>
-            <Ionicons name="alert-circle" size={48} color={accent.sos} style={{ marginBottom: 12 }} />
-            <Text style={[Type.body, { color: colors.textPrimary, textAlign: 'center', marginBottom: 8 }]}>
-              Press the button below to send an emergency alert
-            </Text>
-            <Text style={[Type.caption, { color: colors.textMuted, textAlign: 'center' }]}>
-              Your location will be shared with your accepted emergency contacts
-            </Text>
-          </View>
-        </GlassCard>
+          <GlassCard
+            borderRadius={24}
+            intensity="medium"
+            style={{ marginBottom: 40, borderColor: `${accent.sos}44`, borderWidth: 1 }}>
+            <View style={{ alignItems: 'center' }}>
+              <Ionicons name="alert-circle" size={48} color={accent.sos} style={{ marginBottom: 12 }} />
+              <NativeTypography
+                variant="body"
+                color={colors.textPrimary}
+                textStyle={{ textAlign: 'center', marginBottom: 8 }}>
+                Press the button below to send an emergency alert
+              </NativeTypography>
+              <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ textAlign: 'center' }}>
+                Your location will be shared with your accepted emergency contacts
+              </NativeTypography>
+            </View>
+          </GlassCard>
 
-        {/* Large SOS Button */}
-        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          <TouchableOpacity
-            onPress={triggerSOS}
-            disabled={triggering}
-            activeOpacity={0.8}
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <TouchableOpacity
+              onPress={triggerSOS}
+              disabled={triggering}
+              activeOpacity={0.8}
+              style={[
+                styles.sosButton,
+                { backgroundColor: accent.sos, opacity: triggering ? 0.6 : 1 },
+              ]}>
+              <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulseAnim }], opacity: 0.3 }]} />
+              <Ionicons name="alert" size={60} color="#fff" />
+              <NativeTypography variant="section" color="#fff" textStyle={{ marginTop: 12 }}>
+                SOS
+              </NativeTypography>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {lastSOS ? (
+            <View style={{ marginTop: 40 }}>
+              <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ textAlign: 'center' }}>
+                {lastSosText}
+              </NativeTypography>
+            </View>
+          ) : null}
+
+          <View
             style={[
-              styles.sosButton,
-              { backgroundColor: accent.sos, opacity: triggering ? 0.6 : 1 },
-            ]}
-          >
-            <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulseAnim }], opacity: 0.3 }]} />
-            <Ionicons name="alert" size={60} color="#fff" />
-            <Text style={[Type.section, { color: '#fff', marginTop: 12 }]}>SOS</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Last SOS info */}
-        {lastSOS && (
-          <View style={{ marginTop: 40 }}>
-            <Text style={[Type.caption, { color: colors.textMuted, textAlign: 'center' }]}>
-              Last SOS sent: {lastSOS.toLocaleTimeString()}
-            </Text>
+              styles.warningBox,
+              {
+                backgroundColor: `${accent.sos}11`,
+                borderColor: `${accent.sos}44`,
+                marginTop: 40,
+              },
+            ]}>
+            <Ionicons name="information-circle" size={20} color={accent.sos} style={{ marginRight: 10 }} />
+            <View style={{ flex: 1 }}>
+              <NativeTypography variant="caption" color={colors.textMuted}>
+                Only accepted emergency contacts will receive SOS alerts.
+              </NativeTypography>
+            </View>
           </View>
-        )}
+        </View>
 
-        {/* Warning */}
-        <View
-          style={[
-            styles.warningBox,
-            {
-              backgroundColor: `${accent.sos}11`,
-              borderColor: `${accent.sos}44`,
-              marginTop: 40,
-            },
-          ]}
-        >
-          <Ionicons name="information-circle" size={20} color={accent.sos} style={{ marginRight: 10 }} />
-          <Text style={[Type.caption, { color: colors.textMuted, flex: 1 }]}>
-            Only accepted emergency contacts will receive SOS alerts.
-          </Text>
+        <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 20, alignItems: 'center' }}>
+          <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginBottom: 4 }}>
+            Logged in as
+          </NativeTypography>
+          <NativeTypography variant="body" color={colors.textPrimary} textStyle={{ fontFamily: Font.semibold }}>
+            {user?.username ?? '—'}
+          </NativeTypography>
         </View>
       </View>
-
-      {/* Bottom info */}
-      <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 20, alignItems: 'center' }}>
-        <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 4 }]}>
-          Logged in as
-        </Text>
-        <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
-          {user?.username}
-        </Text>
-      </View>
-    </View>
+    </NativeScreen>
   );
 }
 

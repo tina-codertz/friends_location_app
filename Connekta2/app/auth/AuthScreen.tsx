@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Dimensions,
   Animated,
@@ -12,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
+import { Host } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -19,6 +19,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassIconButton } from '@/components/ui/GlassIconButton';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { isUsernameAvailable } from '@/connekta-firebase';
@@ -172,6 +173,16 @@ export default function AuthScreen() {
   };
 
   const iconMuted = colors.textMuted;
+  const brandSub = isLogin
+    ? canBiometricSignIn
+      ? 'Session expired — sign in with biometrics or your password'
+      : 'Sign in to see your circle on the map'
+    : 'Create your account';
+  const bioBtnText = bioLoading ? 'Authenticating…' : 'Sign in with biometrics';
+  const footerPrompt = isLogin ? "Don't have an account? " : 'Already have an account? ';
+  const footerAction = isLogin ? 'Sign Up' : 'Sign In';
+  const termsText =
+    'By continuing, you agree to our Terms of Service and Privacy Policy';
 
   if (isLoggedIn) {
     return <Redirect href="/(tabs)/map" />;
@@ -204,16 +215,18 @@ export default function AuthScreen() {
                 <Ionicons name="radio-outline" size={28} color={colors.bg} />
               </View>
             </LinearGradient>
-            <Text style={[styles.brandName, { color: accent.cyan, fontFamily: FontBrand.extrabold }]}>
+            <NativeTypography
+              variant="hero"
+              color={accent.cyan}
+              textStyle={{ fontFamily: FontBrand.extrabold, letterSpacing: 0.5 }}>
               Connekta
-            </Text>
-            <Text style={[styles.brandSub, { color: colors.textSecondary, fontFamily: Font.regular }]}>
-              {isLogin
-                ? canBiometricSignIn
-                  ? 'Session expired — sign in with biometrics or your password'
-                  : 'Sign in to see your circle on the map'
-                : 'Create your account'}
-            </Text>
+            </NativeTypography>
+            <NativeTypography
+              variant="caption"
+              color={colors.textSecondary}
+              textStyle={{ marginTop: 8, textAlign: 'center', paddingHorizontal: 12, lineHeight: 20 }}>
+              {brandSub}
+            </NativeTypography>
           </Animated.View>
 
           <Animated.View
@@ -222,117 +235,118 @@ export default function AuthScreen() {
               transform: [{ translateY: cardTranslate }],
             }}
           >
-            <GlassCard intensity="medium" glowAccent borderRadius={24} style={styles.authCard}>
-              <View style={styles.modeRow}>
-                <GlassButton
-                  title="Sign In"
-                  onPress={() => setIsLogin(true)}
-                  variant={isLogin ? 'chipActive' : 'chip'}
-                  size="small"
-                  style={styles.modeBtn}
-                />
-                <GlassButton
-                  title="Sign Up"
-                  onPress={() => setIsLogin(false)}
-                  variant={!isLogin ? 'chipActive' : 'chip'}
-                  size="small"
-                  style={styles.modeBtn}
-                />
-              </View>
+            <Host matchContents style={{ width: '100%' }}>
+              <GlassCard intensity="medium" glowAccent borderRadius={24} style={styles.authCard}>
+                <View style={styles.modeRow}>
+                  <GlassButton
+                    title="Sign In"
+                    onPress={() => setIsLogin(true)}
+                    variant={isLogin ? 'chipActive' : 'chip'}
+                    size="small"
+                    style={styles.modeBtn}
+                  />
+                  <GlassButton
+                    title="Sign Up"
+                    onPress={() => setIsLogin(false)}
+                    variant={!isLogin ? 'chipActive' : 'chip'}
+                    size="small"
+                    style={styles.modeBtn}
+                  />
+                </View>
 
-              {!isLogin && (
+                {!isLogin && (
+                  <GlassInput
+                    layout="stacked"
+                    label="Username"
+                    placeholder="yourname"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    icon={<FieldIcon name="at" color={iconMuted} />}
+                  />
+                )}
+
                 <GlassInput
                   layout="stacked"
-                  label="Username"
-                  placeholder="yourname"
-                  value={username}
-                  onChangeText={setUsername}
+                  label="Email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChangeText={setEmail}
                   autoCapitalize="none"
+                  keyboardType="email-address"
                   autoCorrect={false}
-                  icon={<FieldIcon name="at" color={iconMuted} />}
+                  icon={<FieldIcon name="mail-outline" color={iconMuted} />}
                 />
-              )}
 
-              <GlassInput
-                layout="stacked"
-                label="Email"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-                icon={<FieldIcon name="mail-outline" color={iconMuted} />}
-              />
+                <GlassInput
+                  layout="stacked"
+                  label="Password"
+                  placeholder={isLogin ? 'Your password' : 'Min. 6 characters'}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  showSecureToggle
+                  icon={<FieldIcon name="lock-closed-outline" color={iconMuted} />}
+                />
 
-              <GlassInput
-                layout="stacked"
-                label="Password"
-                placeholder={isLogin ? 'Your password' : 'Min. 6 characters'}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                showSecureToggle
-                icon={<FieldIcon name="lock-closed-outline" color={iconMuted} />}
-              />
+                <GlassButton
+                  title={isLogin ? 'Sign In' : 'Create Account'}
+                  onPress={isLogin ? handleLogin : handleRegister}
+                  variant="primary"
+                  size="large"
+                  fullWidth
+                  loading={isLoading}
+                  disabled={isLoading || bioLoading}
+                  style={styles.submitBtn}
+                />
 
-              <GlassButton
-                title={isLogin ? 'Sign In' : 'Create Account'}
-                onPress={isLogin ? handleLogin : handleRegister}
-                variant="primary"
-                size="large"
-                fullWidth
-                loading={isLoading}
-                disabled={isLoading || bioLoading}
-                style={styles.submitBtn}
-              />
-
-              {isLogin && canBiometricSignIn ? (
-                <>
-                  <View style={styles.divider}>
-                    <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
-                    <Text style={[styles.dividerText, { color: colors.textTertiary, fontFamily: Font.medium }]}>
-                      or
-                    </Text>
-                    <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
-                  </View>
-                  <TouchableOpacity
-                    style={[styles.bioBtn, { borderColor: colors.tealBorder, backgroundColor: colors.tealGlass }]}
-                    onPress={() => void handleBiometricSignIn()}
-                    disabled={isLoading || bioLoading}
-                    activeOpacity={0.85}
-                  >
-                    <Ionicons
-                      name={Platform.OS === 'ios' ? 'scan-outline' : 'finger-print-outline'}
-                      size={26}
-                      color={accent.cyan}
+                {isLogin && canBiometricSignIn ? (
+                  <>
+                    <View style={styles.divider}>
+                      <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
+                      <NativeTypography variant="caption" color={colors.textTertiary} textStyle={{ marginHorizontal: 12 }}>
+                        or
+                      </NativeTypography>
+                      <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
+                    </View>
+                    <GlassButton
+                      title={bioBtnText}
+                      onPress={() => void handleBiometricSignIn()}
+                      variant="tonal"
+                      fullWidth
+                      disabled={isLoading || bioLoading}
+                      icon={
+                        <Ionicons
+                          name={Platform.OS === 'ios' ? 'scan-outline' : 'finger-print-outline'}
+                          size={26}
+                          color={accent.cyan}
+                        />
+                      }
                     />
-                    <Text style={[styles.bioBtnText, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
-                      {bioLoading ? 'Authenticating…' : 'Sign in with biometrics'}
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              ) : null}
-            </GlassCard>
+                  </>
+                ) : null}
+              </GlassCard>
+            </Host>
           </Animated.View>
 
           <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: colors.textSecondary, fontFamily: Font.regular }]}>
-              {isLogin ? "Don't have an account? " : 'Already have an account? '}
-            </Text>
+            <NativeTypography variant="body" color={colors.textSecondary}>
+              {footerPrompt}
+            </NativeTypography>
             <TouchableOpacity onPress={toggleMode} activeOpacity={0.7}>
-              <Text style={[styles.footerLink, { color: accent.cyan, fontFamily: Font.semibold }]}>
-                {isLogin ? 'Sign Up' : 'Sign In'}
-              </Text>
+              <NativeTypography variant="body" color={accent.cyan} textStyle={{ fontFamily: Font.semibold }}>
+                {footerAction}
+              </NativeTypography>
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.termsText, { color: colors.textTertiary, fontFamily: Font.regular }]}>
-            By continuing, you agree to our{' '}
-            <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Terms of Service</Text>
-            {' '}and{' '}
-            <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Privacy Policy</Text>
-          </Text>
+          <NativeTypography
+            variant="caption"
+            color={colors.textTertiary}
+            textStyle={{ textAlign: 'center', lineHeight: 17, paddingHorizontal: 8 }}>
+            {termsText}
+          </NativeTypography>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -384,17 +398,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brandName: {
-    fontSize: 30,
-    letterSpacing: 0.5,
-  },
-  brandSub: {
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: 'center',
-    paddingHorizontal: 12,
-    lineHeight: 20,
-  },
   authCard: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -414,30 +417,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 12, marginHorizontal: 12 },
-  bioBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  bioBtnText: { fontSize: 15 },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 22,
     marginBottom: 14,
   },
-  footerText: { fontSize: 14 },
-  footerLink: { fontSize: 14 },
-  termsText: {
-    fontSize: 11,
-    textAlign: 'center',
-    lineHeight: 17,
-    paddingHorizontal: 8,
-  },
-  termsLink: { textDecorationLine: 'underline' },
 });
