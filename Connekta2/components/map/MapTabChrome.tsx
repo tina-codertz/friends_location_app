@@ -1,20 +1,19 @@
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  Switch,
-  ScrollView,
   Pressable,
+  TextInput as RNTextInput,
 } from 'react-native';
+import { Host, Switch, Row } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassCard } from '@/components/ui/GlassCard';
+import { GlassIconButton } from '@/components/ui/GlassIconButton';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
-import { Font, FontBrand, Type } from '@/constants/typography';
+import { Font, FontBrand } from '@/constants/typography';
 import type { FriendLocation } from '@/types/location';
 import { Accent, type ThemeColors } from '@/constants/theme';
 
@@ -85,147 +84,143 @@ export function MapTabChrome({
   const insets = useSafeAreaInsets();
   const bottomPad = insets.bottom + TAB_BAR_CONTENT_HEIGHT + 16;
   const feedItems = locations.slice(0, 3);
+  const emptyFeedText = sharing
+    ? 'No friends sharing location yet. Invite your circle from Friends.'
+    : 'Turn on Live to share and see your circle on the map.';
 
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-      {/* Top header */}
       <View
         pointerEvents="box-none"
-        style={[styles.topWrap, { paddingTop: insets.top + 8, paddingHorizontal: 16 }]}
-      >
-        <GlassCard intensity="medium" borderRadius={16} glowAccent style={styles.headerCard}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity onPress={onOpenMenu} activeOpacity={0.85} style={styles.avatarWrap}>
-              <View style={[styles.avatar, { borderColor: accent.cyan }]}>
-                <Text style={[styles.avatarText, { color: colors.textPrimary }]}>{initials(username)}</Text>
-              </View>
-              {sharing ? (
-                <View style={[styles.liveDot, { backgroundColor: accent.green, borderColor: colors.bg }]} />
-              ) : null}
-            </TouchableOpacity>
-            <Text style={[styles.brand, { color: accent.cyan, fontFamily: FontBrand.bold }]}>Connekta</Text>
-            <View style={styles.headerActions}>
-              <View style={styles.sharePill}>
-                <Text style={[styles.shareLabel, { color: colors.textMuted, fontFamily: Font.medium }]}>Live</Text>
-                <Switch
-                  value={sharing}
-                  onValueChange={onToggleShare}
-                  trackColor={{ false: colors.divider, true: `${accent.cyan}66` }}
-                  thumbColor={sharing ? accent.cyan : colors.textTertiary}
-                  style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
-                />
-              </View>
-              <TouchableOpacity onPress={onToggleSearch} style={styles.iconBtn} activeOpacity={0.8}>
-                <Ionicons name="search" size={22} color={accent.cyan} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </GlassCard>
+        style={[styles.topWrap, { paddingTop: insets.top + 8, paddingHorizontal: 16 }]}>
+        <Host matchContents>
+          <GlassCard intensity="medium" borderRadius={16} glowAccent style={styles.headerCard}>
+            <Row spacing={10} alignment="center">
+              <Pressable onPress={onOpenMenu} style={styles.avatarWrap}>
+                <View style={[styles.avatar, { borderColor: accent.cyan }]}>
+                  <NativeTypography variant="caption" color={colors.textPrimary} textStyle={{ fontFamily: Font.bold }}>
+                    {initials(username)}
+                  </NativeTypography>
+                </View>
+                {sharing ? (
+                  <View style={[styles.liveDot, { backgroundColor: accent.green, borderColor: colors.bg }]} />
+                ) : null}
+              </Pressable>
+              <NativeTypography
+                variant="title"
+                color={accent.cyan}
+                textStyle={{ flex: 1, fontFamily: FontBrand.bold, letterSpacing: -0.3 }}>
+                Connekta
+              </NativeTypography>
+              <Row spacing={4} alignment="center">
+                <NativeTypography
+                  variant="caption"
+                  color={colors.textMuted}
+                  textStyle={{ fontFamily: Font.medium, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                  Live
+                </NativeTypography>
+                <Switch value={sharing} onValueChange={onToggleShare} />
+                <GlassIconButton name="search" onPress={onToggleSearch} size={22} />
+              </Row>
+            </Row>
+          </GlassCard>
+        </Host>
 
         {searchOpen ? (
-          <GlassCard intensity="medium" borderRadius={20} style={styles.searchCard}>
-            <View style={styles.searchRow}>
-              <Ionicons name="search-outline" size={20} color={colors.textMuted} />
-              <TextInput
-                value={searchQuery}
-                onChangeText={onSearchQueryChange}
-                placeholder="Find friends or places…"
-                placeholderTextColor={colors.inputPlaceholder}
-                style={[styles.searchInput, { color: colors.textPrimary, fontFamily: Font.regular }]}
-                autoCorrect={false}
-                autoCapitalize="none"
-              />
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              {CHIPS.map((c) => {
-                const active = filter === c.id;
-                return (
-                  <Pressable
-                    key={c.id}
-                    onPress={() => onFilterChange(c.id)}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: active ? `${accent.cyan}22` : colors.surface,
-                        borderColor: active ? accent.cyan : colors.glassBorderLight,
-                      },
-                    ]}
-                  >
-                    <Text
+          <Host matchContents>
+            <GlassCard intensity="medium" borderRadius={20} style={styles.searchCard}>
+              <Row spacing={8} alignment="center">
+                <Ionicons name="search-outline" size={20} color={colors.textMuted} />
+                <RNTextInput
+                  value={searchQuery}
+                  onChangeText={onSearchQueryChange}
+                  placeholder="Find friends or places…"
+                  placeholderTextColor={colors.inputPlaceholder}
+                  style={[styles.searchInput, { color: colors.textPrimary, fontFamily: Font.regular }]}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                />
+              </Row>
+              <View style={styles.chipRow}>
+                {CHIPS.map((c) => {
+                  const active = filter === c.id;
+                  return (
+                    <Pressable
+                      key={c.id}
+                      onPress={() => onFilterChange(c.id)}
                       style={[
-                        styles.chipText,
-                        { color: active ? accent.cyan : colors.textMuted, fontFamily: Font.semibold },
-                      ]}
-                    >
-                      {c.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </GlassCard>
+                        styles.chip,
+                        {
+                          backgroundColor: active ? `${accent.cyan}22` : colors.surface,
+                          borderColor: active ? accent.cyan : colors.glassBorderLight,
+                        },
+                      ]}>
+                      <NativeTypography
+                        variant="caption"
+                        color={active ? accent.cyan : colors.textMuted}
+                        textStyle={{ fontFamily: Font.semibold, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                        {c.label}
+                      </NativeTypography>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </GlassCard>
+          </Host>
         ) : null}
       </View>
 
-      {/* Right FABs */}
       <View pointerEvents="box-none" style={[styles.fabColumn, { top: insets.top + 120, right: 16 }]}>
-        <TouchableOpacity
-          onPress={onSOS}
-          activeOpacity={0.85}
-          style={[styles.fabSos, { backgroundColor: accent.sos, shadowColor: accent.sos }]}
-        >
-          <Ionicons name="warning" size={28} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={onAddPlace}
-          activeOpacity={0.85}
-          style={[styles.fabGlass, { borderColor: colors.glassBorderMedium, backgroundColor: colors.glassBgHeavy }]}
-        >
-          <Ionicons name="add" size={26} color={accent.cyan} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={onRecenter}
-          activeOpacity={0.85}
-          style={[styles.fabGlassSmall, { borderColor: colors.glassBorderMedium, backgroundColor: colors.glassBgHeavy }]}
-        >
-          <Ionicons name="locate" size={22} color={accent.cyan} />
-        </TouchableOpacity>
+        <Host matchContents>
+          <View style={{ alignItems: 'center', gap: 12 }}>
+            <View style={[styles.fabSos, { backgroundColor: accent.sos, shadowColor: accent.sos }]}>
+              <GlassIconButton name="warning" onPress={onSOS} size={28} color="#fff" />
+            </View>
+            <GlassIconButton name="add" onPress={onAddPlace} size={26} style={styles.fabGlass} />
+            <GlassIconButton name="locate" onPress={onRecenter} size={22} style={styles.fabGlassSmall} />
+          </View>
+        </Host>
       </View>
 
-      {/* Bottom live feed */}
       <View pointerEvents="box-none" style={[styles.bottomWrap, { paddingBottom: bottomPad, paddingHorizontal: 16 }]}>
-        <Text style={[styles.feedLabel, { color: colors.textMuted, fontFamily: Font.semibold }]}>LIVE FEED</Text>
-        <GlassCard intensity="medium" borderRadius={16} style={{ paddingVertical: 14, paddingHorizontal: 14 }}>
-          {feedItems.length === 0 ? (
-            <Text style={[Type.caption, { color: colors.textMuted, fontFamily: Font.regular }]}>
-              {sharing
-                ? 'No friends sharing location yet. Invite your circle from Friends.'
-                : 'Turn on Live to share and see your circle on the map.'}
-            </Text>
-          ) : (
-            feedItems.map((f, i) => (
-              <View
-                key={f.id}
-                style={[styles.feedRow, i > 0 && { marginTop: 12, opacity: i === 1 ? 0.9 : 0.75 }]}
-              >
-                <View style={[styles.feedAvatar, { backgroundColor: `${accent.cyan}33`, borderColor: accent.cyan }]}>
-                  <Text style={{ color: accent.cyan, fontFamily: Font.bold, fontSize: 13 }}>
-                    {initials(f.username)}
-                  </Text>
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[Type.bodyMedium, { color: colors.textPrimary }]} numberOfLines={1}>
-                    <Text style={{ fontFamily: Font.bold }}>{f.username}</Text>
-                    <Text style={{ fontFamily: Font.regular }}> is live on the map</Text>
-                  </Text>
-                  <Text style={[Type.caption, { color: colors.textMuted, marginTop: 2, fontFamily: Font.regular }]}>
-                    {relativeTime(f.updated_at)}
-                  </Text>
-                </View>
-              </View>
-            ))
-          )}
-        </GlassCard>
+        <NativeTypography
+          variant="caption"
+          color={colors.textMuted}
+          textStyle={{ fontFamily: Font.semibold, letterSpacing: 2, marginBottom: 8, marginLeft: 4, textTransform: 'uppercase' }}>
+          LIVE FEED
+        </NativeTypography>
+        <Host matchContents>
+          <GlassCard intensity="medium" borderRadius={16} style={{ paddingVertical: 14, paddingHorizontal: 14 }}>
+            {feedItems.length === 0 ? (
+              <NativeTypography variant="caption" color={colors.textMuted}>
+                {emptyFeedText}
+              </NativeTypography>
+            ) : (
+              feedItems.map((f, i) => {
+                const feedLine = `${f.username} is live on the map`;
+                return (
+                  <View
+                    key={f.id}
+                    style={[styles.feedRow, i > 0 && { marginTop: 12, opacity: i === 1 ? 0.9 : 0.75 }]}>
+                    <View style={[styles.feedAvatar, { backgroundColor: `${accent.cyan}33`, borderColor: accent.cyan }]}>
+                      <NativeTypography variant="caption" color={accent.cyan} textStyle={{ fontFamily: Font.bold }}>
+                        {initials(f.username)}
+                      </NativeTypography>
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <NativeTypography variant="body" color={colors.textPrimary}>
+                        {feedLine}
+                      </NativeTypography>
+                      <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 2 }}>
+                        {relativeTime(f.updated_at)}
+                      </NativeTypography>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </GlassCard>
+        </Host>
       </View>
     </View>
   );
@@ -234,7 +229,6 @@ export function MapTabChrome({
 const styles = StyleSheet.create({
   topWrap: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   headerCard: { paddingVertical: 10, paddingHorizontal: 14 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatarWrap: { position: 'relative' },
   avatar: {
     width: 40,
@@ -245,7 +239,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,219,233,0.12)',
   },
-  avatarText: { fontSize: 14, fontWeight: '700' },
   liveDot: {
     position: 'absolute',
     bottom: 0,
@@ -255,29 +248,20 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 2,
   },
-  brand: { flex: 1, fontSize: 22, letterSpacing: -0.3 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  sharePill: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  shareLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6 },
-  iconBtn: { padding: 6 },
   searchCard: { marginTop: 10, paddingVertical: 12, paddingHorizontal: 14 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 4 },
-  chipRow: { gap: 8, paddingRight: 8 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
   },
-  chipText: { fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
-  fabColumn: { position: 'absolute', alignItems: 'center', gap: 12, zIndex: 10 },
+  fabColumn: { position: 'absolute', alignItems: 'center', zIndex: 10 },
   fabSos: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 16,
@@ -287,31 +271,13 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#00DBE9',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 8,
   },
   fabGlassSmall: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   bottomWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10 },
-  feedLabel: {
-    fontSize: 11,
-    letterSpacing: 2,
-    marginBottom: 8,
-    marginLeft: 4,
-    textTransform: 'uppercase',
-  },
   feedRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   feedAvatar: {
     width: 40,

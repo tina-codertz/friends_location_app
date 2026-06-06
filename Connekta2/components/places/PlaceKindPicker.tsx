@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassButton } from '@/components/ui/GlassButton';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import type { PlaceKind } from '@/types/places';
 import { PLACE_KINDS, PLACE_KIND_META } from '@/utils/place-kind';
-import { Font } from '@/constants/typography';
 
 type Props = {
   value: PlaceKind;
@@ -19,45 +20,40 @@ export function PlaceKindPicker({
   value,
   onChange,
   accentColor,
-  textColor,
   mutedColor,
   borderColor,
   chipBg,
 }: Props) {
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.hint, { color: mutedColor }]}>What kind of place is this?</Text>
+      <NativeTypography variant="caption" color={mutedColor} textStyle={{ marginBottom: 8 }}>
+        What kind of place is this?
+      </NativeTypography>
       <View style={styles.row}>
         {PLACE_KINDS.filter((k) => k !== 'other').map((kind) => {
           const meta = PLACE_KIND_META[kind];
           const selected = value === kind;
           return (
-            <TouchableOpacity
+            <GlassButton
               key={kind}
+              title={meta.label}
               onPress={() => onChange(kind)}
-              activeOpacity={0.85}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: selected ? `${accentColor}22` : chipBg,
-                  borderColor: selected ? accentColor : borderColor,
-                },
-              ]}
-            >
-              <Ionicons
-                name={meta.icon}
-                size={16}
-                color={selected ? accentColor : mutedColor}
-              />
-              <Text
-                style={[
-                  styles.chipLabel,
-                  { color: selected ? textColor : mutedColor, fontFamily: Font.semibold },
-                ]}
-              >
-                {meta.label}
-              </Text>
-            </TouchableOpacity>
+              variant={selected ? 'chipActive' : 'chip'}
+              size="small"
+              icon={
+                <Ionicons
+                  name={meta.icon}
+                  size={16}
+                  color={selected ? accentColor : mutedColor}
+                />
+              }
+              style={{
+                backgroundColor: selected ? `${accentColor}22` : chipBg,
+                borderColor: selected ? accentColor : borderColor,
+                borderWidth: 1.5,
+                borderRadius: 999,
+              }}
+            />
           );
         })}
       </View>
@@ -67,26 +63,9 @@ export function PlaceKindPicker({
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 12 },
-  hint: {
-    fontFamily: Font.regular,
-    fontSize: 12,
-    marginBottom: 8,
-  },
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1.5,
-  },
-  chipLabel: {
-    fontSize: 13,
   },
 });

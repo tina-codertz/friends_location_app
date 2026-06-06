@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs/types';
-import { Host, Row, Button, Icon } from '@expo/ui';
+import { Host, Button } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,13 +10,6 @@ import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
 import { useAppTheme } from '@/context/ThemeContext';
 
 type TabKey = 'map' | 'friends' | 'emergency' | 'settings';
-
-const TAB_META: Record<TabKey, { ios: string; md: string; label: string }> = {
-  map: { ios: 'map.fill', md: 'map', label: 'Map' },
-  friends: { ios: 'person.2.fill', md: 'group', label: 'Friends' },
-  emergency: { ios: 'shield.fill', md: 'shield', label: 'Safety' },
-  settings: { ios: 'person.crop.circle.fill', md: 'account_circle', label: 'Profile' },
-};
 
 const VISIBLE_TABS: TabKey[] = ['map', 'friends', 'emergency', 'settings'];
 
@@ -48,12 +41,11 @@ export function ConnektaTabBar({ state, descriptors, navigation }: BottomTabBarP
         },
       ]}>
       <Host matchContents>
-        <Row spacing={0} style={{ height: TAB_BAR_CONTENT_HEIGHT, alignItems: 'center' }}>
+        <View style={styles.tabRow}>
           {ordered.map((route) => {
             const key = tabKeyFromRoute(route.name)!;
             const index = state.routes.findIndex((r) => r.key === route.key);
             const focused = state.index === index;
-            const meta = TAB_META[key];
 
             const onPress = () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -67,19 +59,24 @@ export function ConnektaTabBar({ state, descriptors, navigation }: BottomTabBarP
               }
             };
 
+            const ionName =
+              key === 'map'
+                ? 'map'
+                : key === 'friends'
+                  ? 'people'
+                  : key === 'emergency'
+                    ? 'shield'
+                    : 'person-circle';
+
             return (
               <View key={route.key} style={styles.tab}>
                 <Button variant={focused ? 'filled' : 'text'} onPress={onPress}>
-                  <Icon
-                    name={Icon.select({ ios: meta.ios, android: meta.md, web: meta.md })}
-                    size={22}
-                    color={focused ? '#fff' : colors.textMuted}
-                  />
+                  <Ionicons name={ionName} size={22} color={focused ? '#fff' : colors.textMuted} />
                 </Button>
               </View>
             );
           })}
-        </Row>
+        </View>
       </Host>
     </View>
   );
@@ -88,6 +85,11 @@ export function ConnektaTabBar({ state, descriptors, navigation }: BottomTabBarP
 const styles = StyleSheet.create({
   wrapper: {
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    height: TAB_BAR_CONTENT_HEIGHT,
+    alignItems: 'center',
   },
   tab: {
     flex: 1,

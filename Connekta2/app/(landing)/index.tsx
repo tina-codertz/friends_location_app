@@ -12,7 +12,9 @@ import {
 import { useRouter } from 'expo-router';
 import FloatingWords from '@/components/background/FloatingWords';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Host } from '@expo/ui';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -271,8 +273,12 @@ export default function LandingPage() {
 
           {/* Heading */}
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-            <Text style={[styles.heading, { color: colors.textPrimary }]}>{headings[slide].title}</Text>
-            <Text style={[styles.subheading, { color: colors.textSecondary }]}>{headings[slide].sub}</Text>
+            <NativeTypography variant="hero" color={colors.textPrimary} textStyle={styles.heading}>
+              {headings[slide].title}
+            </NativeTypography>
+            <NativeTypography variant="body" color={colors.textSecondary} textStyle={styles.subheading}>
+              {headings[slide].sub}
+            </NativeTypography>
           </Animated.View>
 
           {/* Tab labels — TAPPABLE for back-and-forth navigation */}
@@ -297,20 +303,23 @@ export default function LandingPage() {
             ))}
           </View>
 
-          <GlassButton
-            title={isLast ? 'Get Started' : 'Next'}
-            onPress={isLast ? handleJoin : advance}
-            variant={isLast ? 'primary' : 'tonal'}
-            size="large"
-            fullWidth
-          />
+          <Host matchContents style={{ width: '100%' }}>
+            <GlassButton
+              title={isLast ? 'Get Started' : 'Next'}
+              onPress={isLast ? handleJoin : advance}
+              variant={isLast ? 'primary' : 'tonal'}
+              size="large"
+              fullWidth
+            />
 
-          {/* Tap hint */}
-          {!isLast && (
-            <View style={styles.tapHint}>
-              <Text style={[styles.tapHintText, { color: colors.textTertiary }]}>or tap anywhere to continue</Text>
-            </View>
-          )}
+            {!isLast && (
+              <View style={styles.tapHint}>
+                <NativeTypography variant="caption" color={colors.textTertiary} textStyle={styles.tapHintText}>
+                  or tap anywhere to continue
+                </NativeTypography>
+              </View>
+            )}
+          </Host>
         </View>
 
       </View>

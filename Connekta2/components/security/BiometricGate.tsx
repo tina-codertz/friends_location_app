@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform, Alert } from 'react-native';
+import { View, StyleSheet, Platform, Alert } from 'react-native';
+import { Host } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Type } from '@/constants/typography';
 import {
   consumePendingBiometricCredentials,
   clearPendingBiometricCredentials,
@@ -76,8 +78,17 @@ export function BiometricGate({ children }: Props) {
     setNeedsEnroll(false);
   };
 
+  const bioHint =
+    Platform.OS === 'ios'
+      ? 'Sign back in faster after you sign out — use Face ID or Touch ID instead of typing your password.'
+      : 'Sign back in faster after you sign out — use your fingerprint instead of typing your password.';
+
   if (needsEnroll === null) {
-    return <View style={[styles.fill, { backgroundColor: colors.bg }]} />;
+    return (
+      <NativeScreen contentStyle={{ flex: 1 }}>
+        <View />
+      </NativeScreen>
+    );
   }
 
   if (!needsEnroll) {
@@ -85,8 +96,8 @@ export function BiometricGate({ children }: Props) {
   }
 
   return (
-    <View style={[styles.fill, { backgroundColor: colors.bg, padding: 24 }]}>
-      <View style={styles.centered}>
+    <NativeScreen contentStyle={{ justifyContent: 'center', paddingHorizontal: 24 }}>
+      <Host matchContents>
         <GlassCard intensity="medium" borderRadius={24} glowAccent style={styles.card}>
           <View style={[styles.iconRing, { borderColor: accent.cyan }]}>
             <Ionicons
@@ -95,13 +106,18 @@ export function BiometricGate({ children }: Props) {
               color={accent.cyan}
             />
           </View>
-          <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 12, textAlign: 'center' }]}>
+          <NativeTypography
+            variant="hero"
+            color={colors.textPrimary}
+            textStyle={{ marginBottom: 12, textAlign: 'center' }}>
             Quick sign-in
-          </Text>
-          <Text style={[Type.body, { color: colors.textMuted, marginBottom: 24, textAlign: 'center' }]}>
-            Sign back in faster after you sign out — use {Platform.OS === 'ios' ? 'Face ID or Touch ID' : 'your fingerprint'}{' '}
-            instead of typing your password.
-          </Text>
+          </NativeTypography>
+          <NativeTypography
+            variant="body"
+            color={colors.textMuted}
+            textStyle={{ marginBottom: 24, textAlign: 'center' }}>
+            {bioHint}
+          </NativeTypography>
           <GlassButton
             title="Enable biometrics"
             onPress={() => void completeEnrollment()}
@@ -112,14 +128,12 @@ export function BiometricGate({ children }: Props) {
           <View style={{ height: 12 }} />
           <GlassButton title="Not now" onPress={() => void skipEnrollment()} variant="tonal" fullWidth size="medium" />
         </GlassCard>
-      </View>
-    </View>
+      </Host>
+    </NativeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  centered: { flex: 1, justifyContent: 'center' },
   card: { paddingVertical: 28, paddingHorizontal: 8, alignItems: 'center' },
   iconRing: {
     width: 72,
