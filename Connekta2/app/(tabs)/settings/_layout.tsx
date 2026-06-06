@@ -1,18 +1,25 @@
-import { Stack } from 'expo-router'
+import { Stack } from 'expo-router';
+import React from 'react';
+import { useAppTheme } from '@/context/ThemeContext';
 
 export default function SettingsStackLayout() {
-    return (
-        <Stack
-        screenOptions={{
-            headerShown:true,
-            headerTitleStyle:{fontWeight:"600"},
-        }}>
-            <Stack.Screen name="index" options={{ title:"Settings", headerShown:false }} />
-            <Stack.Screen name="profile" options={{ title:"Profile" }} />
-            <Stack.Screen name="CircleManagement" options={{ title:"Circle Management" }} />
-            <Stack.Screen name="LocationHistory" options={{ title:"Location History" }} />
-            <Stack.Screen name="LocationPrivacy" options={{ title:"Location Privacy" }} />
-            <Stack.Screen name="NotificationSettings" options={{ title:"Notifications" }} />
-        </Stack>
-    )
+  const { colors } = useAppTheme();
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: true,
+        headerStyle: { backgroundColor: colors.navCard },
+        headerTintColor: colors.textPrimary,
+        headerTitleStyle: { fontWeight: '600' },
+        contentStyle: { backgroundColor: colors.bg },
+      }}
+    >
+      <Stack.Screen name="index" options={{ title: 'Settings', headerShown: false }} />
+      <Stack.Screen name="profile" options={{ title: 'Profile' }} />
+      <Stack.Screen name="CircleManagement" options={{ title: 'Circle Management' }} />
+      <Stack.Screen name="LocationHistory" options={{ title: 'Location History' }} />
+      <Stack.Screen name="LocationPrivacy" options={{ title: 'Location Privacy' }} />
+      <Stack.Screen name="NotificationSettings" options={{ title: 'Notifications' }} />
+    </Stack>
+  );
 }

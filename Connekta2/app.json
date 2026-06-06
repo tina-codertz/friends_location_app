@@ -7,17 +7,40 @@
     "icon": "./assets/images/icon.png",
     "scheme": "connekta2",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Connekta uses your location to show you on the map and optionally share with friends you approve.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.",
+        "NSLocationAlwaysUsageDescription": "Connekta uses background location only when you enable live sharing, so trusted circle members can see your location for the time you choose.",
+        "UIBackgroundModes": ["location", "remote-notification"],
+        "NSFaceIDUsageDescription": "Connekta uses Face ID to unlock the app and protect your session."
+      },
+      "bundleIdentifier": "com.christinakimario.connekta2"
     },
     "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ],
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#121212",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.christinakimario.connekta2"
     },
     "web": {
       "bundler": "metro",
@@ -26,18 +49,36 @@
     },
     "plugins": [
       "expo-router",
+      "expo-image",
       [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#121212"
+          }
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Connekta to use Face ID to unlock the app."
         }
       ],
       "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a513db9e-8ecd-42f4-b8b0-93ea65792788"
+      }
+    },
+    "owner": "christinakimario"
   }
 }

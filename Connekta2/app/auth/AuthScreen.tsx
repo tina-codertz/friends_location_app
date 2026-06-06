@@ -1,16 +1,66 @@
-import { useState, useEffect } from 'react';
-import { Alert, View, StyleSheet, ActivityIndicator } from 'react-native';
-import { Redirect } from 'expo-router';
-import { Host, Column, Text, TextInput, Button } from '@expo/ui';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  Animated,
+  TouchableOpacity,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import { Redirect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import { GlassCard } from '@/components/ui/GlassCard';
+import { GlassButton } from '@/components/ui/GlassButton';
+import { GlassInput } from '@/components/ui/GlassInput';
+import { GlassIconButton } from '@/components/ui/GlassIconButton';
+import { NativeTypography } from '@/components/ui/NativeTypography';
+import { ExpoUIRegion } from '@/components/ui/ExpoUIRegion';
+import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { isUsernameAvailable } from '@/connekta-firebase';
 import { validateUsername } from '@/utils/username';
+import { Font, FontBrand } from '@/constants/typography';
+import {
+  getBiometricPolicy,
+  readBiometricCredentialsForSignIn,
+} from '@/services/biometric-unlock';
+
+const { width: SW } = Dimensions.get('window');
+
+function FieldIcon({ name, color }: { name: keyof typeof Ionicons.glyphMap; color: string }) {
+  return <Ionicons name={name} size={20} color={color} />;
+}
 
 export default function AuthScreen() {
-  const { login, register, isLoading, isLoggedIn, error, clearError } = useAuth();
+  const router = useRouter();
+  const { colors, accent } = useAppTheme();
+  const { register, login, isLoading, isLoggedIn, error, clearError } = useAuth();
+
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [canBiometricSignIn, setCanBiometricSignIn] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
+
+  const heroOpacity = useRef(new Animated.Value(0)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardTranslate = useRef(new Animated.Value(24)).current;
+
+  useEffect(() => {
+    Animated.stagger(120, [
+      Animated.timing(heroOpacity, { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.parallel([
+        Animated.timing(cardOpacity, { toValue: 1, duration: 480, useNativeDriver: true }),
+        Animated.spring(cardTranslate, { toValue: 0, tension: 52, friction: 9, useNativeDriver: true }),
+      ]),
+    ]).start();
+  }, [heroOpacity, cardOpacity, cardTranslate]);
 
   useEffect(() => {
     if (error) {
@@ -18,73 +68,359 @@ export default function AuthScreen() {
     }
   }, [error, clearError]);
 
-  if (isLoggedIn) return <Redirect href="/(tabs)/map" />;
+  useEffect(() => {
+    void (async () => {
+      const policy = await getBiometricPolicy();
+      setCanBiometricSignIn(policy.hasStoredCredentials);
+      if (policy.lastEmail && !email) {
+        setEmail(policy.lastEmail);
+      }
+    })();
+  }, []);
 
-  const onSubmit = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Missing fields', 'Enter email and password.');
-      return;
-    }
-    if (!isLogin) {
-      const check = validateUsername(username);
-      if (!check.ok) {
-        Alert.alert('Username', check.message);
+  const handleBiometricSignIn = async () => {
+    setBioLoading(true);
+    clearError();
+    try {
+      const creds = await readBiometricCredentialsForSignIn();
+      if (!creds) {
+        Alert.alert('Biometrics', 'Could not read saved credentials. Sign in with your password.');
+        const policy = await getBiometricPolicy();
+        setCanBiometricSignIn(policy.hasStoredCredentials);
         return;
       }
-      await register(email.trim(), password, check.value);
-    } else {
-      await login(email.trim(), password);
+      await login(creds.email, creds.password);
+      router.replace('/(tabs)/map');
+    } catch (err) {
+      console.error('Biometric sign-in error:', err);
+    } finally {
+      setBioLoading(false);
     }
   };
 
+  const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+  const validatePassword = (value: string) => {
+    if (value.length < 6) {
+      return { ok: false as const, message: 'Password must be at least 6 characters' };
+    }
+    return { ok: true as const };
+  };
+
+  const handleLogin = async () => {
+    if (!validateEmail(email)) {
+      Alert.alert('Validation', 'Please enter a valid email');
+      return;
+    }
+    const pw = validatePassword(password);
+    if (!pw.ok) {
+      Alert.alert('Validation', pw.message);
+      return;
+    }
+
+    try {
+      await login(email.trim().toLowerCase(), password);
+      router.replace('/(tabs)/map');
+    } catch (err) {
+      console.error('Login error:', err);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!username.trim() || !email.trim() || !password) {
+      Alert.alert('Validation', 'Please fill in all fields');
+      return;
+    }
+
+    const usernameCheck = validateUsername(username);
+    if (!usernameCheck.ok) {
+      Alert.alert('Username', usernameCheck.message);
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      Alert.alert('Validation', 'Please enter a valid email');
+      return;
+    }
+
+    const pw = validatePassword(password);
+    if (!pw.ok) {
+      Alert.alert('Validation', pw.message);
+      return;
+    }
+
+    try {
+      const available = await isUsernameAvailable(usernameCheck.value);
+      if (!available) {
+        Alert.alert('Username taken', 'This username is already taken');
+        return;
+      }
+
+      await register(email.trim().toLowerCase(), password, usernameCheck.value);
+      setEmail('');
+      setUsername('');
+      setPassword('');
+      router.replace('/(tabs)/map');
+    } catch (err) {
+      console.error('Register error:', err);
+    }
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    clearError();
+    setPassword('');
+  };
+
+  const iconMuted = colors.textMuted;
+  const brandSub = isLogin
+    ? canBiometricSignIn
+      ? 'Session expired — sign in with biometrics or your password'
+      : 'Sign in to see your circle on the map'
+    : 'Create your account';
+  const bioBtnText = bioLoading ? 'Authenticating…' : 'Sign in with biometrics';
+  const footerPrompt = isLogin ? "Don't have an account? " : 'Already have an account? ';
+  const footerAction = isLogin ? 'Sign Up' : 'Sign In';
+  const termsText =
+    'By continuing, you agree to our Terms of Service and Privacy Policy';
+
+  if (isLoggedIn) {
+    return <Redirect href="/(tabs)/map" />;
+  }
+
   return (
-    <View style={styles.shell}>
-      <Host style={{ flex: 1 }}>
-        <Column spacing={16} style={{ padding: 24, paddingTop: 80 }}>
-          <Text textStyle={{ fontSize: 28, fontWeight: '700' }}>
-            {isLogin ? 'Sign In' : 'Create Account'}
-          </Text>
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <View style={[styles.glowTop, { backgroundColor: colors.tealGlow }]} />
+      <View style={[styles.glowBottom, { backgroundColor: colors.tealGlow }]} />
 
-          {!isLogin && (
-            <TextInput
-              placeholder="Username"
-              onChangeText={setUsername}
-              autoCapitalize="none"
-            />
-          )}
-          <TextInput
-            placeholder="Email"
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <TextInput
-            placeholder="Password"
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {router.canGoBack() ? (
+            <GlassIconButton name="chevron-back" onPress={() => router.back()} style={styles.backBtn} />
+          ) : null}
 
-          {isLoading ? (
-            <ActivityIndicator style={{ marginTop: 16 }} />
-          ) : (
-            <Button
-              variant="filled"
-              label={isLogin ? 'Sign In' : 'Create Account'}
-              onPress={() => void onSubmit()}
-            />
-          )}
+          <Animated.View style={[styles.hero, { opacity: heroOpacity }]}>
+            <LinearGradient
+              colors={[`${accent.cyan}33`, `${accent.cyanDeep}11`]}
+              style={[styles.logoRing, { borderColor: colors.tealBorder }]}
+            >
+              <View style={[styles.logoInner, { backgroundColor: accent.cyan }]}>
+                <Ionicons name="radio-outline" size={28} color={colors.bg} />
+              </View>
+            </LinearGradient>
+            <NativeTypography
+              variant="hero"
+              color={accent.cyan}
+              textStyle={{ fontFamily: FontBrand.extrabold, letterSpacing: 0.5 }}>
+              Connekta
+            </NativeTypography>
+            <NativeTypography
+              variant="caption"
+              color={colors.textSecondary}
+              textStyle={{ marginTop: 8, textAlign: 'center', paddingHorizontal: 12, lineHeight: 20 }}>
+              {brandSub}
+            </NativeTypography>
+          </Animated.View>
 
-          <Button
-            variant="text"
-            label={isLogin ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
-            onPress={() => setIsLogin((v) => !v)}
-          />
-        </Column>
-      </Host>
+          <Animated.View
+            style={{
+              opacity: cardOpacity,
+              transform: [{ translateY: cardTranslate }],
+            }}
+          >
+            <ExpoUIRegion style={{ width: '100%' }}>
+              <GlassCard intensity="medium" glowAccent borderRadius={24} style={styles.authCard}>
+                <View style={styles.modeRow}>
+                  <GlassButton
+                    title="Sign In"
+                    onPress={() => setIsLogin(true)}
+                    variant={isLogin ? 'chipActive' : 'chip'}
+                    size="small"
+                    style={styles.modeBtn}
+                  />
+                  <GlassButton
+                    title="Sign Up"
+                    onPress={() => setIsLogin(false)}
+                    variant={!isLogin ? 'chipActive' : 'chip'}
+                    size="small"
+                    style={styles.modeBtn}
+                  />
+                </View>
+
+                {!isLogin && (
+                  <GlassInput
+                    layout="stacked"
+                    label="Username"
+                    placeholder="yourname"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    icon={<FieldIcon name="at" color={iconMuted} />}
+                  />
+                )}
+
+                <GlassInput
+                  layout="stacked"
+                  label="Email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                  icon={<FieldIcon name="mail-outline" color={iconMuted} />}
+                />
+
+                <GlassInput
+                  layout="stacked"
+                  label="Password"
+                  placeholder={isLogin ? 'Your password' : 'Min. 6 characters'}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  showSecureToggle
+                  icon={<FieldIcon name="lock-closed-outline" color={iconMuted} />}
+                />
+
+                <GlassButton
+                  title={isLogin ? 'Sign In' : 'Create Account'}
+                  onPress={isLogin ? handleLogin : handleRegister}
+                  variant="primary"
+                  size="large"
+                  fullWidth
+                  loading={isLoading}
+                  disabled={isLoading || bioLoading}
+                  style={styles.submitBtn}
+                />
+
+                {isLogin && canBiometricSignIn ? (
+                  <>
+                    <View style={styles.divider}>
+                      <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
+                      <NativeTypography variant="caption" color={colors.textTertiary} textStyle={{ marginHorizontal: 12 }}>
+                        or
+                      </NativeTypography>
+                      <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
+                    </View>
+                    <GlassButton
+                      title={bioBtnText}
+                      onPress={() => void handleBiometricSignIn()}
+                      variant="tonal"
+                      fullWidth
+                      disabled={isLoading || bioLoading}
+                      icon={
+                        <Ionicons
+                          name={Platform.OS === 'ios' ? 'scan-outline' : 'finger-print-outline'}
+                          size={26}
+                          color={accent.cyan}
+                        />
+                      }
+                    />
+                  </>
+                ) : null}
+              </GlassCard>
+            </ExpoUIRegion>
+          </Animated.View>
+
+          <View style={styles.footer}>
+            <NativeTypography variant="body" color={colors.textSecondary}>
+              {footerPrompt}
+            </NativeTypography>
+            <TouchableOpacity onPress={toggleMode} activeOpacity={0.7}>
+              <NativeTypography variant="body" color={accent.cyan} textStyle={{ fontFamily: Font.semibold }}>
+                {footerAction}
+              </NativeTypography>
+            </TouchableOpacity>
+          </View>
+
+          <NativeTypography
+            variant="caption"
+            color={colors.textTertiary}
+            textStyle={{ textAlign: 'center', lineHeight: 17, paddingHorizontal: 8 }}>
+            {termsText}
+          </NativeTypography>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  shell: { flex: 1, backgroundColor: '#fff' },
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  glowTop: {
+    position: 'absolute',
+    top: -100,
+    left: SW / 2 - 180,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    opacity: 0.9,
+  },
+  glowBottom: {
+    position: 'absolute',
+    bottom: -120,
+    right: -80,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    opacity: 0.5,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 56 : 36,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+  },
+  backBtn: { alignSelf: 'flex-start', marginBottom: 20 },
+  hero: { alignItems: 'center', marginBottom: 28 },
+  logoRing: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  logoInner: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authCard: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 22,
+  },
+  modeRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  modeBtn: { flex: 1 },
+  submitBtn: { marginTop: 4 },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 14,
+  },
+  dividerLine: { flex: 1, height: 1 },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 22,
+    marginBottom: 14,
+  },
 });

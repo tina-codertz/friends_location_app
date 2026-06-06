@@ -1,8 +1,10 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import {
   auth,
+  clearAuthQuotaBackoff,
   firebaseAuthErrorMessage,
   firebaseLogout,
   loadAppUser,
@@ -12,6 +14,13 @@ import {
   updateUsername,
 } from '@/connekta-firebase';
 import { setApiAuthToken } from '@/services/auth-token';
+import {
+  disableBiometricUnlock,
+  scheduleBiometricEnrollmentIfNeeded,
+} from '@/services/biometric-unlock';
+import { stopLiveSharing } from '@/services/location-sharing';
+import { migrateLegacyPrivacyDocs } from '@/connekta-firebase/firestore/privacy';
+import { clearPushRegistration } from '@/hooks/usePushNotifications';
 import { markOnboardingComplete } from '@/services/onboarding';
 import type { AppUser } from '@/types/user';
 
@@ -19,6 +28,7 @@ export type { AppUser };
 
 export interface AuthContextType {
   user: AppUser | null;
+  /** Firebase ID token for legacy Cloudflare API (map/friends) until full migration */
   token: string | null;
   isLoading: boolean;
   isLoggedIn: boolean;
@@ -32,7 +42,7 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const idToken = await fbUser.getIdToken();
       setApiAuthToken(idToken);
       setToken(idToken);
+      clearAuthQuotaBackoff();
     } catch (err) {
       console.warn('[AUTH] Failed to refresh ID token:', err);
       setApiAuthToken(null);
@@ -60,6 +71,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       let deviceId = await SecureStore.getItemAsync('device_id');
       if (deviceId) return deviceId;
+
+      try {
+        deviceId = await AsyncStorage.getItem('device_id');
+        if (deviceId) {
+          await SecureStore.setItemAsync('device_id', deviceId);
+          return deviceId;
+        }
+      } catch {
+        /* ignore */
+      }
+
       deviceId = `device-${Date.now()}`;
       await SecureStore.setItemAsync('device_id', deviceId);
       return deviceId;
@@ -75,8 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (fbUser) {
           const profile = await loadAppUser(fbUser);
           setUser(profile);
-          if (profile) await syncIdToken();
-          else {
+          if (profile) {
+            await syncIdToken();
+            void migrateLegacyPrivacyDocs(fbUser.uid).catch(() => undefined);
+          } else {
             setApiAuthToken(null);
             setToken(null);
           }
@@ -107,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(profile);
         await syncIdToken();
         await markOnboardingComplete();
+        await scheduleBiometricEnrollmentIfNeeded(email, password);
       } catch (err: unknown) {
         const errorMsg = firebaseAuthErrorMessage(err);
         setError(errorMsg);
@@ -127,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(profile);
         await syncIdToken();
         await markOnboardingComplete();
+        await scheduleBiometricEnrollmentIfNeeded(email, password);
       } catch (err: unknown) {
         const errorMsg = firebaseAuthErrorMessage(err);
         setError(errorMsg);
@@ -140,7 +166,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
+      const uid = auth.currentUser?.uid;
+      await stopLiveSharing({ showAlerts: false });
+      if (uid) await clearPushRegistration(uid);
       await firebaseLogout();
+      await disableBiometricUnlock();
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
@@ -157,34 +187,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profile = await updateUsername(username);
       setUser(profile);
     } catch (err: unknown) {
-      setError(firebaseAuthErrorMessage(err));
+      const errorMsg = firebaseAuthErrorMessage(err);
+      setError(errorMsg);
       throw err;
     }
   }, []);
 
-  const clearError = useCallback(() => setError(null), []);
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isLoading,
-        isLoggedIn: Boolean(user),
-        error,
-        register,
-        login,
-        logout,
-        updateProfile,
-        clearError,
-      }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
+  const value: AuthContextType = {
+    user,
+    token,
+    isLoading,
+    isLoggedIn: Boolean(user),
+    error,
+    register,
+    login,
+    logout,
+    updateProfile,
+    clearError,
+  };
 
-export function useAuth(): AuthContextType {
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within <AuthProvider>');
+  if (!context) {
+    throw new Error('useAuth must be used within <AuthProvider>');
+  }
   return context;
-}
+};

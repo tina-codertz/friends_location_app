@@ -2,6 +2,8 @@ import { initializeApp, getApps } from 'firebase/app';
 import {
   getAuth,
   initializeAuth,
+  // Metro resolves firebase/auth → @firebase/auth with RN persistence on native.
+  // @ts-expect-error getReactNativePersistence exists in the RN auth bundle.
   getReactNativePersistence,
 } from '@firebase/auth';
 import { getFirestore, setLogLevel } from 'firebase/firestore';
