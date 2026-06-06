@@ -1,21 +1,30 @@
 /**
- * Native text field — Expo UI TextInput with controlled state bridge.
+ * GlassInput — Transparent field with optional stacked or floating label.
  */
-import React, { useEffect } from 'react';
-import { View, type ViewStyle, type TextInputProps } from 'react-native';
-import { Column, Text, TextInput, Button, useNativeState } from '@expo/ui';
-import { useAppTheme } from '@/context/ThemeContext';
 
-interface GlassInputProps extends Omit<TextInputProps, 'style' | 'value' | 'onChangeText'> {
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  TextInput,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  TextInputProps,
+  ViewStyle,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/context/ThemeContext';
+import { Font } from '@/constants/typography';
+
+interface GlassInputProps extends TextInputProps {
   label?: string;
   error?: string;
   showSecureToggle?: boolean;
   containerStyle?: ViewStyle;
   icon?: React.ReactNode;
+  /** stacked = label above field (auth); floating = label inside field */
   layout?: 'floating' | 'stacked';
-  style?: TextInputProps['style'];
-  value?: string;
-  onChangeText?: (text: string) => void;
 }
 
 export const GlassInput: React.FC<GlassInputProps> = ({
@@ -23,57 +32,192 @@ export const GlassInput: React.FC<GlassInputProps> = ({
   error,
   showSecureToggle = false,
   containerStyle,
-  layout = 'floating',
+  icon,
   secureTextEntry,
+  value,
   placeholder,
-  value = '',
-  onChangeText,
-  autoCapitalize,
-  autoCorrect,
-  keyboardType,
-  editable,
-  multiline,
+  layout = 'floating',
+  ...rest
 }) => {
-  const { colors } = useAppTheme();
-  const textState = useNativeState(value);
-  const [hidden, setHidden] = React.useState(secureTextEntry ?? false);
+  const { colors, accent } = useAppTheme();
+  const [focused, setFocused] = useState(false);
+  const [hidden, setHidden] = useState(secureTextEntry ?? false);
+  const borderAnim = useRef(new Animated.Value(0)).current;
+  const labelAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
+
   const stacked = layout === 'stacked';
-  const fieldPlaceholder = stacked ? placeholder : label || placeholder;
+  const floated = stacked || focused || Boolean(value && String(value).length > 0);
 
   useEffect(() => {
-    if (value !== textState.value) {
-      textState.value = value;
-    }
-  }, [value, textState]);
+    Animated.timing(borderAnim, {
+      toValue: focused ? 1 : 0,
+      duration: 220,
+      useNativeDriver: false,
+    }).start();
+  }, [focused, borderAnim]);
+
+  useEffect(() => {
+    if (stacked) return;
+    Animated.timing(labelAnim, {
+      toValue: floated ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [floated, labelAnim, stacked]);
+
+  const borderColor = error
+    ? colors.errorBorder
+    : borderAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [colors.inputBorder, colors.inputBorderFocus],
+      });
+
+  const labelTranslate = labelAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [18, 0],
+  });
+
+  const labelScale = labelAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.82],
+  });
 
   return (
-    <View style={[{ marginBottom: 16 }, containerStyle]}>
-      <Column spacing={6}>
-        {stacked && label ? (
-          <Text textStyle={{ fontSize: 13, color: colors.textMuted, fontWeight: '500' }}>{label}</Text>
+    <View style={[styles.container, containerStyle]}>
+      {stacked && label ? (
+        <Text style={[styles.stackedLabel, { color: colors.textSecondary, fontFamily: Font.medium }]}>
+          {label}
+        </Text>
+      ) : null}
+
+      <Animated.View
+        style={[
+          styles.inputWrap,
+          {
+            borderColor,
+            backgroundColor: error ? colors.errorBg : focused ? colors.inputBgFocus : colors.inputBg,
+            shadowColor: colors.glassShadow,
+            shadowOpacity: focused ? 0.12 : 0.06,
+            shadowRadius: focused ? 10 : 6,
+            shadowOffset: { width: 0, height: 3 },
+            elevation: focused ? 2 : 1,
+          },
+        ]}
+      >
+        <View style={[styles.innerHighlight, { backgroundColor: colors.glassHighlight }]} />
+
+        {!stacked && label ? (
+          <Animated.Text
+            pointerEvents="none"
+            style={[
+              styles.floatingLabel,
+              {
+                color: focused ? accent.cyanDeep : colors.textMuted,
+                fontFamily: Font.medium,
+                left: icon ? 44 : 16,
+                transform: [{ translateY: labelTranslate }, { scale: labelScale }],
+              },
+            ]}
+          >
+            {label}
+          </Animated.Text>
         ) : null}
+
+        {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
+
         <TextInput
-          value={textState}
-          onChangeText={onChangeText}
-          placeholder={fieldPlaceholder}
+          {...rest}
+          value={value}
+          placeholder={stacked || floated ? placeholder : undefined}
           secureTextEntry={showSecureToggle ? hidden : secureTextEntry}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={autoCorrect}
-          keyboardType={keyboardType}
-          editable={editable}
-          multiline={multiline}
+          onFocus={(e) => {
+            setFocused(true);
+            rest.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            rest.onBlur?.(e);
+          }}
+          style={[
+            styles.input,
+            {
+              color: colors.textPrimary,
+              fontFamily: Font.regular,
+              paddingTop: stacked ? 14 : label ? 22 : 14,
+              paddingLeft: icon ? 0 : undefined,
+            },
+            rest.style,
+          ]}
+          placeholderTextColor={colors.inputPlaceholder}
+          selectionColor={accent.cyanDeep}
         />
+
         {showSecureToggle ? (
-          <Button
-            variant="text"
-            label={hidden ? 'Show password' : 'Hide password'}
-            onPress={() => setHidden((v) => !v)}
-          />
+          <TouchableOpacity onPress={() => setHidden(!hidden)} style={styles.toggleBtn} hitSlop={12}>
+            <Ionicons
+              name={hidden ? 'eye-outline' : 'eye-off-outline'}
+              size={20}
+              color={colors.textMuted}
+            />
+          </TouchableOpacity>
         ) : null}
-        {error ? <Text textStyle={{ fontSize: 12, color: '#ef4444' }}>{error}</Text> : null}
-      </Column>
+      </Animated.View>
+
+      {error ? (
+        <Text style={[styles.errorText, { color: accent.sos, fontFamily: Font.medium }]}>{error}</Text>
+      ) : null}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { marginBottom: 16 },
+  stackedLabel: {
+    fontSize: 13,
+    marginBottom: 8,
+    marginLeft: 2,
+    letterSpacing: 0.3,
+  },
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    minHeight: 52,
+  },
+  innerHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+  },
+  floatingLabel: {
+    position: 'absolute',
+    top: 8,
+    fontSize: 12,
+    letterSpacing: 0.4,
+    zIndex: 2,
+  },
+  iconWrap: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingBottom: 14,
+    paddingRight: 4,
+  },
+  toggleBtn: {
+    paddingLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: { fontSize: 12, marginTop: 8, marginLeft: 4 },
+});
 
 export default GlassInput;

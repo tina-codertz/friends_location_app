@@ -13,8 +13,8 @@ import { useRouter } from 'expo-router';
 import FloatingWords from '@/components/background/FloatingWords';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { NativeTypography } from '@/components/ui/NativeTypography';
+import { ExpoUIRegion } from '@/components/ui/ExpoUIRegion';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Host } from '@expo/ui';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -220,9 +220,9 @@ export default function LandingPage() {
   const slideComponents = [<Slide0 key="0" />, <Slide1 key="1" />, <Slide2 key="2" />];
 
   const headings = [
-    { title: 'See your friends,\nright now.',    sub: 'Live location on a shared map. Always opt-in, always private.' },
-    { title: 'Your circle,\nyour rules.',        sub: 'Accept or reject requests. Only accepted friends see where you are.' },
- 
+    { title: 'See your friends,\nright now.', sub: 'Live location on a shared map. Always opt-in, always private.' },
+    { title: 'Your circle,\nyour rules.', sub: 'Accept or reject requests. Only accepted friends see where you are.' },
+    { title: 'Sign in your way.', sub: 'Email, password, and optional biometrics — you stay in control.' },
   ];
 
   return (
@@ -303,7 +303,7 @@ export default function LandingPage() {
             ))}
           </View>
 
-          <Host matchContents style={{ width: '100%' }}>
+          <ExpoUIRegion style={{ width: '100%' }}>
             <GlassButton
               title={isLast ? 'Get Started' : 'Next'}
               onPress={isLast ? handleJoin : advance}
@@ -319,7 +319,7 @@ export default function LandingPage() {
                 </NativeTypography>
               </View>
             )}
-          </Host>
+          </ExpoUIRegion>
         </View>
 
       </View>

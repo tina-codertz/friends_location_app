@@ -1,6 +1,6 @@
 /**
- * Card surface — RN View so it is safe inside FlatList rows and outside Host.
- * Expo UI Column crashes when mounted outside a Host ancestor.
+ * Card surface — RN View so it is safe inside FlatList rows and ExpoUIRegion islands.
+ * Expo UI layout primitives crash when mounted outside a Host ancestor.
  */
 import React from 'react';
 import { View, type ViewStyle } from 'react-native';

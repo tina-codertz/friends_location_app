@@ -15,7 +15,6 @@ import type { MapRegion } from '@/types/map';
 import { capList, MAX_PLACE_MARKERS_MAIN } from '@/utils/map-limits';
 import * as Location from 'expo-location';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Host } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
@@ -23,6 +22,7 @@ import { GlassIconButton } from '@/components/ui/GlassIconButton';
 import { GlassInput } from '@/components/ui/GlassInput';
 import { PlaceAreaMarker } from '@/components/map/PlaceAreaMarker';
 import { NativeScreen } from '@/components/ui/NativeScreen';
+import { ExpoUIRegion } from '@/components/ui/ExpoUIRegion';
 import { NativeTypography } from '@/components/ui/NativeTypography';
 import { Font } from '@/constants/typography';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -323,7 +323,7 @@ export default function MyPlacesScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setAddOpen(false)} />
-          <Host matchContents>
+          <ExpoUIRegion>
             <GlassCard
               borderRadius={24}
               intensity="heavy"
@@ -369,7 +369,7 @@ export default function MyPlacesScreen() {
                 />
               </View>
             </GlassCard>
-          </Host>
+          </ExpoUIRegion>
         </KeyboardAvoidingView>
       </Modal>
     </NativeScreen>

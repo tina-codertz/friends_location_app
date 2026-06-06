@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Platform, Alert } from 'react-native';
-import { Host } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { NativeScreen } from '@/components/ui/NativeScreen';
 import { NativeTypography } from '@/components/ui/NativeTypography';
+import { ExpoUIRegion } from '@/components/ui/ExpoUIRegion';
 import { useAppTheme } from '@/context/ThemeContext';
 import {
   consumePendingBiometricCredentials,
@@ -97,7 +97,7 @@ export function BiometricGate({ children }: Props) {
 
   return (
     <NativeScreen contentStyle={{ justifyContent: 'center', paddingHorizontal: 24 }}>
-      <Host matchContents>
+      <ExpoUIRegion>
         <GlassCard intensity="medium" borderRadius={24} glowAccent style={styles.card}>
           <View style={[styles.iconRing, { borderColor: accent.cyan }]}>
             <Ionicons
@@ -128,7 +128,7 @@ export function BiometricGate({ children }: Props) {
           <View style={{ height: 12 }} />
           <GlassButton title="Not now" onPress={() => void skipEnrollment()} variant="tonal" fullWidth size="medium" />
         </GlassCard>
-      </Host>
+      </ExpoUIRegion>
     </NativeScreen>
   );
 }

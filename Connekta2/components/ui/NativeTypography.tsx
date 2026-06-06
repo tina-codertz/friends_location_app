@@ -1,6 +1,8 @@
 import React from 'react';
+import { Text as RNText } from 'react-native';
 import { Text } from '@expo/ui';
 import { Font, Type } from '@/constants/typography';
+import { useExpoUI } from '@/context/ExpoUIContext';
 import type { TextStyle } from 'react-native';
 
 type Variant = keyof typeof Type;
@@ -31,8 +33,15 @@ function toExpoTextStyle(base: TextStyle, color?: string, extra?: TextStyle): Ex
   return style;
 }
 
-/** Expo UI Text with Connekta typography tokens — string children only. */
+/** Connekta typography — @expo/ui Text inside ExpoUIRegion, RN Text elsewhere. */
 export function NativeTypography({ children, variant = 'body', color, textStyle }: Props) {
+  const { isHosted, disabled } = useExpoUI();
   const base = Type[variant] as TextStyle;
+  const merged = { ...base, color, ...textStyle };
+
+  if (disabled || !isHosted) {
+    return <RNText style={merged}>{children}</RNText>;
+  }
+
   return <Text textStyle={toExpoTextStyle(base, color, textStyle)}>{children}</Text>;
 }

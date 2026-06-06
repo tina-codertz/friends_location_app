@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Host, Switch } from '@expo/ui';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassNavCard } from '@/components/ui/GlassNavCard';
 import { NativeScreen } from '@/components/ui/NativeScreen';
 import { NativeTypography } from '@/components/ui/NativeTypography';
+import { ExpoUIRegion } from '@/components/ui/ExpoUIRegion';
+import { ExpoUISwitch } from '@/components/ui/ExpoUISwitch';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { Font } from '@/constants/typography';
@@ -134,17 +135,19 @@ export default function SettingsHomeScreen() {
       />
 
       <GlassCard borderRadius={16} intensity="medium">
-        <View style={styles.bioRow}>
-          <View style={{ flex: 1 }}>
-            <NativeTypography
-              variant="body"
-              color={colors.textPrimary}
-              textStyle={{ fontFamily: Font.semibold }}>
-              Biometric sign-in
-            </NativeTypography>
+        <ExpoUIRegion>
+          <View style={styles.bioRow}>
+            <View style={{ flex: 1 }}>
+              <NativeTypography
+                variant="body"
+                color={colors.textPrimary}
+                textStyle={{ fontFamily: Font.semibold }}>
+                Biometric sign-in
+              </NativeTypography>
+            </View>
+            <ExpoUISwitch value={bio} onValueChange={(v) => void toggleBio(v)} />
           </View>
-          <Switch value={bio} onValueChange={(v) => void toggleBio(v)} />
-        </View>
+        </ExpoUIRegion>
       </GlassCard>
 
       <GlassCard borderRadius={16} intensity="light">
@@ -182,7 +185,7 @@ export default function SettingsHomeScreen() {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}>
-          <Host matchContents>
+          <ExpoUIRegion>
             <GlassCard borderRadius={20} intensity="heavy" glowAccent style={styles.modalCard}>
               <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ marginBottom: 8 }}>
                 Confirm password
@@ -211,7 +214,7 @@ export default function SettingsHomeScreen() {
                 fullWidth
               />
             </GlassCard>
-          </Host>
+          </ExpoUIRegion>
         </KeyboardAvoidingView>
       </Modal>
     </NativeScreen>

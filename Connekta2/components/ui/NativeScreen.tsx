@@ -1,24 +1,26 @@
 import React from 'react';
-import { View, StyleSheet, type ViewStyle } from 'react-native';
+import { View, ScrollView, StyleSheet, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Host, ScrollView } from '@expo/ui';
 import { useAppTheme } from '@/context/ThemeContext';
+import { ExpoUIHostScope } from '@/context/ExpoUIContext';
 
 type Props = {
   children: React.ReactNode;
   scroll?: boolean;
   style?: ViewStyle;
-  hostStyle?: ViewStyle;
   contentStyle?: ViewStyle;
   edges?: ('top' | 'bottom')[];
 };
 
-/** React Native shell + Expo UI Host — use at the root of every screen. */
+/**
+ * Standard RN screen shell for expo-router routes.
+ * Does NOT mount a Host — mixing RN views inside a full-screen Host crashes
+ * SwiftUIVirtualView in Expo Go. Use ExpoUIRegion for small @expo/ui islands.
+ */
 export function NativeScreen({
   children,
   scroll = false,
   style,
-  hostStyle,
   contentStyle,
   edges = ['top'],
 }: Props) {
@@ -27,21 +29,33 @@ export function NativeScreen({
   const paddingTop = edges.includes('top') ? insets.top : 0;
   const paddingBottom = edges.includes('bottom') ? insets.bottom : 0;
 
-  const host = (
-    <Host style={[{ flex: 1 }, hostStyle]}>
-      {scroll ? (
-        <ScrollView>
-          <View style={[{ paddingTop, paddingBottom, paddingHorizontal: 20 }, contentStyle]}>
-            {children}
-          </View>
-        </ScrollView>
-      ) : (
-        <View style={[{ flex: 1, paddingTop, paddingBottom }, contentStyle]}>{children}</View>
-      )}
-    </Host>
+  const content = (
+    <View
+      style={[
+        scroll ? undefined : { flex: 1 },
+        { paddingTop, paddingBottom },
+        scroll ? [{ paddingHorizontal: 20 }, contentStyle] : contentStyle,
+      ]}>
+      {children}
+    </View>
   );
 
-  return <View style={[styles.shell, { backgroundColor: colors.bg }, style]}>{host}</View>;
+  return (
+    <ExpoUIHostScope disabled>
+      <View style={[styles.shell, { backgroundColor: colors.bg }, style]}>
+        {scroll ? (
+          <ScrollView
+            contentContainerStyle={[{ paddingBottom }, contentStyle]}
+            style={{ flex: 1, paddingTop, paddingHorizontal: 20 }}
+            showsVerticalScrollIndicator={false}>
+            {children}
+          </ScrollView>
+        ) : (
+          content
+        )}
+      </View>
+    </ExpoUIHostScope>
+  );
 }
 
 const styles = StyleSheet.create({

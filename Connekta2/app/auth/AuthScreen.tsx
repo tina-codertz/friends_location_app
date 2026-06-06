@@ -11,7 +11,6 @@ import {
   Alert,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
-import { Host } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -20,6 +19,7 @@ import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassIconButton } from '@/components/ui/GlassIconButton';
 import { NativeTypography } from '@/components/ui/NativeTypography';
+import { ExpoUIRegion } from '@/components/ui/ExpoUIRegion';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { isUsernameAvailable } from '@/connekta-firebase';
@@ -235,7 +235,7 @@ export default function AuthScreen() {
               transform: [{ translateY: cardTranslate }],
             }}
           >
-            <Host matchContents style={{ width: '100%' }}>
+            <ExpoUIRegion style={{ width: '100%' }}>
               <GlassCard intensity="medium" glowAccent borderRadius={24} style={styles.authCard}>
                 <View style={styles.modeRow}>
                   <GlassButton
@@ -327,7 +327,7 @@ export default function AuthScreen() {
                   </>
                 ) : null}
               </GlassCard>
-            </Host>
+            </ExpoUIRegion>
           </Animated.View>
 
           <View style={styles.footer}>

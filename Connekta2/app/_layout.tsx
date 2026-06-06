@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import '@/services/background-location';
 
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
+import { ExpoUIProvider } from '@/context/ExpoUIContext';
 import { AuthProvider } from '@/context/AuthContext';
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -119,9 +120,11 @@ export default function RootLayout() {
   return (
     <FontBootstrap>
       <AppThemeProvider>
-        <AuthProvider>
-          <InnerRootLayout />
-        </AuthProvider>
+        <ExpoUIProvider>
+          <AuthProvider>
+            <InnerRootLayout />
+          </AuthProvider>
+        </ExpoUIProvider>
       </AppThemeProvider>
     </FontBootstrap>
   );
