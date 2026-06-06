@@ -1,24 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
   Alert,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
 import { friendsAPI, getApiErrorMessage, type FriendUser } from '@/services/api';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 import { useAuth } from '@/context/AuthContext';
 import { useFriendLocations } from '@/hooks/useFriendLocations';
 import { PlaceLabelMarker } from '@/components/map/PlaceLabelMarker';
@@ -26,7 +26,6 @@ import type { MapRegion } from '@/types/map';
 import { capList, MAX_FRIEND_MARKERS_PREVIEW } from '@/utils/map-limits';
 
 export default function FriendsTabScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { invite: inviteParam } = useLocalSearchParams<{ invite?: string }>();
   const { user, isLoggedIn } = useAuth();
@@ -152,7 +151,9 @@ export default function FriendsTabScreen() {
   const renderHeader = () => (
     <View style={{ gap: 14, marginBottom: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 }}>
-        <Text style={[Type.hero, { color: colors.textPrimary }]}>My Circle</Text>
+        <NativeTypography variant="hero" color={colors.textPrimary}>
+          My Circle
+        </NativeTypography>
         <GlassButton
           title="Manage"
           onPress={() => router.push('/(tabs)/settings/CircleManagement')}
@@ -167,7 +168,9 @@ export default function FriendsTabScreen() {
         {!region ? (
           <View style={[styles.mapPlaceholder, { backgroundColor: colors.surface }]}>
             <ActivityIndicator color={accent.electricBlue} />
-            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 8 }]}>Getting your location…</Text>
+            <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 8 }}>
+              Getting your location…
+            </NativeTypography>
           </View>
         ) : focused ? (
           <ConnektaMap
@@ -201,18 +204,23 @@ export default function FriendsTabScreen() {
         </View>
       </View>
 
-      <Text style={[Type.caption, { color: colors.textMuted, paddingHorizontal: 4 }]}>
+      <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ paddingHorizontal: 4 }}>
         Centered on you. Friends appear when they have live sharing on.
-      </Text>
+      </NativeTypography>
 
       {incoming.length > 0 ? (
         <GlassCard borderRadius={16} intensity="heavy" glowAccent padding={14}>
-          <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 10 }]}>Pending requests</Text>
+          <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ marginBottom: 10 }}>
+            Pending requests
+          </NativeTypography>
           {incoming.map((u) => (
             <View key={u.id} style={[styles.reqRow, { borderColor: colors.divider }]}>
-              <Text style={[Type.body, { color: colors.textPrimary, flex: 1, fontFamily: Font.medium }]}>
+              <NativeTypography
+                variant="body"
+                color={colors.textPrimary}
+                textStyle={{ flex: 1, fontFamily: Font.medium }}>
                 {u.username}
-              </Text>
+              </NativeTypography>
               <GlassButton title="Accept" onPress={() => accept(u.id)} variant="chipActive" size="small" />
               <GlassButton title="Decline" onPress={() => reject(u.id)} variant="chip" size="small" />
             </View>
@@ -220,29 +228,28 @@ export default function FriendsTabScreen() {
         </GlassCard>
       ) : null}
 
-      <Text style={[Type.section, { color: colors.textPrimary, paddingHorizontal: 4 }]}>
-        Friends ({friends.length})
-      </Text>
+      <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ paddingHorizontal: 4 }}>
+        {`Friends (${friends.length})`}
+      </NativeTypography>
     </View>
   );
 
   if (!isLoggedIn || loading) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.bg }]}>
+      <NativeScreen contentStyle={{ justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator color={accent.electricBlue} />
-      </View>
+      </NativeScreen>
     );
   }
 
   return (
-    <View style={[styles.fill, { backgroundColor: colors.bg }]}>
+    <NativeScreen contentStyle={{ paddingHorizontal: 0 }}>
       <FlatList
         data={friends}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={{
-          paddingTop: insets.top + 12,
           paddingHorizontal: 20,
-          paddingBottom: insets.bottom + 120,
+          paddingBottom: 120,
           gap: 10,
         }}
         ListHeaderComponent={renderHeader}
@@ -259,8 +266,9 @@ export default function FriendsTabScreen() {
         }
         renderItem={({ item }) => {
           const isLive = friendLocations.some((f) => f.username === item.username);
+          const statusText = isLive ? 'Sharing location' : 'Not sharing live location';
           return (
-            <TouchableOpacity onPress={() => focusFriend(item.username)} activeOpacity={0.85}>
+            <Pressable onPress={() => focusFriend(item.username)}>
               <GlassCard borderRadius={20} intensity="light" style={{ paddingVertical: 14 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <View
@@ -271,40 +279,43 @@ export default function FriendsTabScreen() {
                       backgroundColor: isLive ? `${accent.coral}22` : `${accent.electricBlue}18`,
                       alignItems: 'center',
                       justifyContent: 'center',
-                    }}
-                  >
+                    }}>
                     <Ionicons name="person" size={20} color={isLive ? accent.coral : accent.electricBlue} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+                    <NativeTypography
+                      variant="body"
+                      color={colors.textPrimary}
+                      textStyle={{ fontFamily: Font.semibold }}>
                       {item.username}
-                    </Text>
-                    <Text style={[Type.caption, { color: colors.textMuted, marginTop: 2 }]}>
-                      {isLive ? 'Sharing location' : 'Not sharing live location'}
-                    </Text>
+                    </NativeTypography>
+                    <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 2 }}>
+                      {statusText}
+                    </NativeTypography>
                   </View>
                   {isLive ? <View style={[styles.liveDot, { backgroundColor: accent.coral }]} /> : null}
                 </View>
               </GlassCard>
-            </TouchableOpacity>
+            </Pressable>
           );
         }}
         ListEmptyComponent={
           <GlassCard borderRadius={16} intensity="light" style={{ padding: 20, alignItems: 'center' }}>
             <Ionicons name="people-outline" size={36} color={colors.textMuted} />
-            <Text style={[Type.body, { color: colors.textMuted, marginTop: 10, textAlign: 'center' }]}>
+            <NativeTypography
+              variant="body"
+              color={colors.textMuted}
+              textStyle={{ marginTop: 10, textAlign: 'center' }}>
               No friends yet. Open Manage to invite or join a circle.
-            </Text>
+            </NativeTypography>
           </GlassCard>
         }
       />
-    </View>
+    </NativeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   mapBox: {
     height: 240,
     borderRadius: 20,
@@ -328,11 +339,6 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 14,
   },
   liveDot: {
     width: 10,

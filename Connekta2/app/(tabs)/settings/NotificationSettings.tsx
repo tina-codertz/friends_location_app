@@ -1,10 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, Alert, StyleSheet, ActivityIndicator, Linking, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Alert, StyleSheet, ActivityIndicator, Linking, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { Row } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { saveDevicePushToken } from '@/connekta-firebase/firestore/devices';
@@ -16,10 +18,9 @@ import {
 import { isPushRuntimeAvailable } from '@/utils/push-runtime';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 
 export default function NotificationSettingsScreen() {
-  const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
   const { user } = useAuth();
   const [status, setStatus] = useState<string>('unknown');
@@ -77,19 +78,19 @@ export default function NotificationSettingsScreen() {
   const statusLabel =
     status === 'granted' ? 'Enabled' : status === 'denied' ? 'Blocked in system settings' : 'Not enabled yet';
 
+  const statusDetail =
+    status === 'granted'
+      ? 'Push token is registered for this device.'
+      : 'Allow notifications to hear when friends interact with your circle.';
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        padding: 20,
-        paddingTop: insets.top + 12,
-        paddingBottom: insets.bottom + 40,
-      }}
-    >
-      <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 8 }]}>Notifications</Text>
-      <Text style={[Type.body, { color: colors.textMuted, marginBottom: 20 }]}>
+    <NativeScreen scroll contentStyle={{ gap: 16, paddingBottom: 40 }}>
+      <NativeTypography variant="hero" color={colors.textPrimary}>
+        Notifications
+      </NativeTypography>
+      <NativeTypography variant="body" color={colors.textMuted}>
         Get alerts for circle requests, acceptances, and sharing updates.
-      </Text>
+      </NativeTypography>
 
       {loading ? (
         <GlassCard borderRadius={16} intensity="light" style={{ padding: 24, alignItems: 'center' }}>
@@ -97,23 +98,24 @@ export default function NotificationSettingsScreen() {
         </GlassCard>
       ) : (
         <GlassCard borderRadius={16} intensity="medium" style={{ marginBottom: 16, padding: 14 }}>
-          <View style={styles.row}>
+          <Row spacing={12} alignment="center">
             <Ionicons
               name={status === 'granted' ? 'notifications' : 'notifications-off'}
               size={24}
               color={status === 'granted' ? accent.green : colors.textMuted}
             />
             <View style={{ flex: 1 }}>
-              <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+              <NativeTypography
+                variant="body"
+                color={colors.textPrimary}
+                textStyle={{ fontFamily: Font.semibold }}>
                 {statusLabel}
-              </Text>
-              <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
-                {status === 'granted'
-                  ? 'Push token is registered for this device.'
-                  : 'Allow notifications to hear when friends interact with your circle.'}
-              </Text>
+              </NativeTypography>
+              <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 4 }}>
+                {statusDetail}
+              </NativeTypography>
             </View>
-          </View>
+          </Row>
           {status !== 'granted' && isPushRuntimeAvailable() && (
             <GlassButton
               title={busy ? 'Enabling…' : 'Enable notifications'}
@@ -134,20 +136,20 @@ export default function NotificationSettingsScreen() {
             backgroundColor: `${accent.cyan}11`,
             borderColor: `${accent.cyan}44`,
           },
-        ]}
-      >
+        ]}>
         <Ionicons name="information-circle" size={20} color={accent.cyan} style={{ marginRight: 10 }} />
-        <Text style={[Type.caption, { color: colors.textMuted, flex: 1 }]}>
-          {pushUnavailableReason() ??
-            'Remote alerts require a development or production build. SOS and place alerts will use this same channel in later phases.'}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <NativeTypography variant="caption" color={colors.textMuted}>
+            {pushUnavailableReason() ??
+              'Remote alerts require a development or production build. SOS and place alerts will use this same channel in later phases.'}
+          </NativeTypography>
+        </View>
       </View>
-    </ScrollView>
+    </NativeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   infoBox: {
     flexDirection: 'row',
     padding: 14,

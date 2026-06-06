@@ -1,13 +1,14 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Pressable, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
 import { locationAPI } from '@/services/api';
 import { stopLiveSharing } from '@/services/location-sharing';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 import {
   shareModeDescription,
   shareModeLabel,
@@ -23,7 +24,6 @@ const MODE_ICONS: Record<ShareMode, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function LocationPrivacyScreen() {
-  const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
   const [mode, setMode] = useState<ShareMode>('paused');
   const [sharing, setSharing] = useState(false);
@@ -73,19 +73,19 @@ export default function LocationPrivacyScreen() {
     [busy, mode],
   );
 
+  const liveSharingStatus = sharing ? 'On — circle can see you' : 'Off — location hidden';
+  const liveSharingDetail = sharing
+    ? `Showing: ${shareModeLabel(mode)}`
+    : 'Turn on live sharing from the map or Share Location when you are ready.';
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        padding: 20,
-        paddingTop: insets.top + 12,
-        paddingBottom: insets.bottom + 40,
-      }}
-    >
-      <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 8 }]}>Location privacy</Text>
-      <Text style={[Type.body, { color: colors.textMuted, marginBottom: 20 }]}>
+    <NativeScreen scroll contentStyle={{ gap: 16, paddingBottom: 40 }}>
+      <NativeTypography variant="hero" color={colors.textPrimary}>
+        Location privacy
+      </NativeTypography>
+      <NativeTypography variant="body" color={colors.textMuted}>
         Control what your circle sees when live sharing is on. Your email and full history stay private.
-      </Text>
+      </NativeTypography>
 
       {loading ? (
         <GlassCard borderRadius={16} intensity="light" style={{ padding: 24, alignItems: 'center' }}>
@@ -93,28 +93,29 @@ export default function LocationPrivacyScreen() {
         </GlassCard>
       ) : (
         <>
-          <GlassCard borderRadius={16} intensity="medium" style={{ marginBottom: 16, padding: 14 }}>
-            <Text style={[Type.caption, { color: colors.textMuted }]}>Live sharing</Text>
-            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold, marginTop: 4 }]}>
-              {sharing ? 'On — circle can see you' : 'Off — location hidden'}
-            </Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>
-              {sharing
-                ? `Showing: ${shareModeLabel(mode)}`
-                : 'Turn on live sharing from the map or Share Location when you are ready.'}
-            </Text>
+          <GlassCard borderRadius={16} intensity="medium" style={{ padding: 14 }}>
+            <NativeTypography variant="caption" color={colors.textMuted}>
+              Live sharing
+            </NativeTypography>
+            <NativeTypography
+              variant="body"
+              color={colors.textPrimary}
+              textStyle={{ fontFamily: Font.semibold, marginTop: 4 }}>
+              {liveSharingStatus}
+            </NativeTypography>
+            <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 6 }}>
+              {liveSharingDetail}
+            </NativeTypography>
           </GlassCard>
 
           {MODES.map((option) => {
             const selected = mode === option;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={option}
                 onPress={() => void onSelectMode(option)}
                 disabled={busy}
-                activeOpacity={0.85}
-                style={{ marginBottom: 10 }}
-              >
+                style={{ opacity: busy ? 0.7 : 1 }}>
                 <GlassCard
                   borderRadius={16}
                   intensity={selected ? 'medium' : 'light'}
@@ -122,16 +123,13 @@ export default function LocationPrivacyScreen() {
                     padding: 14,
                     borderWidth: 1,
                     borderColor: selected ? accent.electricBlue : colors.divider,
-                    opacity: busy ? 0.7 : 1,
-                  }}
-                >
+                  }}>
                   <View style={styles.row}>
                     <View
                       style={[
                         styles.iconWrap,
                         { backgroundColor: selected ? `${accent.electricBlue}33` : colors.glassBgLight },
-                      ]}
-                    >
+                      ]}>
                       <Ionicons
                         name={MODE_ICONS[option]}
                         size={22}
@@ -139,19 +137,22 @@ export default function LocationPrivacyScreen() {
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+                      <NativeTypography
+                        variant="body"
+                        color={colors.textPrimary}
+                        textStyle={{ fontFamily: Font.semibold }}>
                         {shareModeLabel(option)}
-                      </Text>
-                      <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>
+                      </NativeTypography>
+                      <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 4 }}>
                         {shareModeDescription(option)}
-                      </Text>
+                      </NativeTypography>
                     </View>
                     {selected ? (
                       <Ionicons name="checkmark-circle" size={22} color={accent.electricBlue} />
                     ) : null}
                   </View>
                 </GlassCard>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </>
@@ -163,16 +164,16 @@ export default function LocationPrivacyScreen() {
           {
             backgroundColor: `${accent.cyan}11`,
             borderColor: `${accent.cyan}44`,
-            marginTop: 12,
           },
-        ]}
-      >
+        ]}>
         <Ionicons name="shield-checkmark" size={20} color={accent.cyan} style={{ marginRight: 10 }} />
-        <Text style={[Type.caption, { color: colors.textMuted, flex: 1 }]}>
-          Only circle members can read your shared position. Account email and location history are visible only to you.
-        </Text>
+        <View style={{ flex: 1 }}>
+          <NativeTypography variant="caption" color={colors.textMuted}>
+            Only circle members can read your shared position. Account email and location history are visible only to you.
+          </NativeTypography>
+        </View>
       </View>
-    </ScrollView>
+    </NativeScreen>
   );
 }
 

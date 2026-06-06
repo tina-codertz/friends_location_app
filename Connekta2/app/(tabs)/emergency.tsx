@@ -1,36 +1,24 @@
 import React, { useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TextInput,
-  StyleSheet,
-  Share,
-  Alert,
-  Platform,
-  TouchableOpacity,
-} from 'react-native';
+import { View, FlatList, StyleSheet, Share, Alert, Pressable } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as Contacts from 'expo-contacts';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassIconButton } from '@/components/ui/GlassIconButton';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
 import { emergencyAPI, type EmergencyContact } from '@/services/api';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 import { useAuth } from '@/context/AuthContext';
 
 export default function EmergencyTabScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
   const { user } = useAuth();
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -65,12 +53,11 @@ export default function EmergencyTabScreen() {
           return;
         }
 
-        // Automatically add the selected contact to emergency contacts
         try {
           await emergencyAPI.add(contactName.trim(), contactPhone.trim());
           void load();
           Alert.alert('Success', `${contactName} added to emergency contacts.`);
-        } catch (err) {
+        } catch {
           Alert.alert('Error', 'Failed to add contact.');
         }
       }
@@ -79,27 +66,11 @@ export default function EmergencyTabScreen() {
     }
   };
 
-  const add = async () => {
-    if (!name.trim() || !phone.trim()) {
-      Alert.alert('Missing info', 'Add a name and phone number.');
-      return;
-    }
-    try {
-      await emergencyAPI.add(name.trim(), phone.trim());
-      setName('');
-      setPhone('');
-      void load();
-      Alert.alert('Success', 'Contact added.');
-    } catch (err) {
-      Alert.alert('Error', 'Failed to add contact.');
-    }
-  };
-
   const remove = async (id: string) => {
     try {
       await emergencyAPI.remove(id);
       void load();
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Failed to remove contact.');
     }
   };
@@ -114,30 +85,34 @@ export default function EmergencyTabScreen() {
     }
   };
 
+  const signedInText = `Signed in as ${user?.username ?? '—'}`;
+
   return (
-    <View style={[styles.fill, { backgroundColor: colors.bg }]}>
+    <NativeScreen contentStyle={{ paddingHorizontal: 0 }}>
       <FlatList
         data={contacts}
         keyExtractor={(c) => String(c.id)}
         contentContainerStyle={{
-          paddingTop: insets.top + 16,
           paddingHorizontal: 20,
-          paddingBottom: insets.bottom + 120,
+          paddingBottom: 120,
           gap: 12,
         }}
         ListHeaderComponent={
           <View style={{ gap: 16, marginBottom: 8 }}>
-            <Text style={[Type.hero, { color: colors.textPrimary }]}>Safety</Text>
-            <Text style={[Type.body, { color: colors.textMuted }]}>
+            <NativeTypography variant="hero" color={colors.textPrimary}>
+              Safety
+            </NativeTypography>
+            <NativeTypography variant="body" color={colors.textMuted}>
               Add trusted emergency contacts and share your location link with them for your safety.
-            </Text>
-
+            </NativeTypography>
 
             <GlassCard borderRadius={16} intensity="heavy" glowAccent>
-              <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Safety contacts</Text>
-              <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 16 }]}>
+              <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ marginBottom: 8 }}>
+                Safety contacts
+              </NativeTypography>
+              <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginBottom: 16 }}>
                 Add people who can be reached in an emergency.
-              </Text>
+              </NativeTypography>
               <View style={{ gap: 10 }}>
                 <GlassButton
                   title="Add from contacts"
@@ -170,21 +145,19 @@ export default function EmergencyTabScreen() {
               </View>
             </GlassCard>
 
-            <Text style={[Type.caption, { color: colors.textMuted }]}>
-              Signed in as <Text style={{ fontFamily: Font.semibold, color: colors.textSecondary }}>{user?.username}</Text>
-            </Text>
+            <NativeTypography variant="caption" color={colors.textMuted}>
+              {signedInText}
+            </NativeTypography>
           </View>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <Pressable
             onPress={() =>
               router.push({
                 pathname: '/emergency/EmergencyContactsDetails',
                 params: { id: String(item.id), name: item.name, phone: item.phone },
               })
-            }
-          >
+            }>
             <GlassCard borderRadius={16} intensity="medium" padding={14}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View
@@ -195,40 +168,37 @@ export default function EmergencyTabScreen() {
                     backgroundColor: `${accent.cyan}22`,
                     justifyContent: 'center',
                     alignItems: 'center',
-                  }}
-                >
+                  }}>
                   <Ionicons name="person" size={20} color={accent.cyan} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+                  <NativeTypography
+                    variant="body"
+                    color={colors.textPrimary}
+                    textStyle={{ fontFamily: Font.semibold }}>
                     {item.name}
-                  </Text>
-                  <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4 }]}>{item.phone}</Text>
+                  </NativeTypography>
+                  <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 4 }}>
+                    {item.phone}
+                  </NativeTypography>
                 </View>
                 <GlassIconButton name="trash-outline" onPress={() => remove(item.id)} danger />
               </View>
             </GlassCard>
-          </TouchableOpacity>
+          </Pressable>
         )}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', gap: 8 }}>
             <Ionicons name="alert-circle-outline" size={40} color={colors.textMuted} />
-            <Text style={[Type.body, { color: colors.textMuted }]}>No contacts yet</Text>
-            <Text style={[Type.caption, { color: colors.textMuted }]}>Add people you trust for emergencies</Text>
+            <NativeTypography variant="body" color={colors.textMuted}>
+              No contacts yet
+            </NativeTypography>
+            <NativeTypography variant="caption" color={colors.textMuted}>
+              Add people you trust for emergencies
+            </NativeTypography>
           </View>
         }
       />
-    </View>
+    </NativeScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-});

@@ -1,24 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Switch,
-  Alert,
-  ScrollView,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Host, Switch, Row } from '@expo/ui';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassInput } from '@/components/ui/GlassInput';
 import { GlassNavCard } from '@/components/ui/GlassNavCard';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 import {
   deviceSupportsBiometric,
   disableBiometricUnlock,
@@ -28,7 +20,6 @@ import {
 import { verifyCurrentUserPassword } from '@/connekta-firebase';
 
 export default function SettingsHomeScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors, accent } = useAppTheme();
   const { logout, user } = useAuth();
@@ -98,17 +89,13 @@ export default function SettingsHomeScreen() {
   };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        paddingTop: insets.top + 20,
-        paddingHorizontal: 20,
-        paddingBottom: insets.bottom + 120,
-        gap: 16,
-      }}
-    >
-      <Text style={[Type.hero, { color: colors.textPrimary }]}>Profile</Text>
-      <Text style={[Type.body, { color: colors.textMuted }]}>Manage your account, security, and preferences.</Text>
+    <NativeScreen scroll contentStyle={{ gap: 16, paddingBottom: 120 }}>
+      <NativeTypography variant="hero" color={colors.textPrimary}>
+        Profile
+      </NativeTypography>
+      <NativeTypography variant="body" color={colors.textMuted}>
+        Manage your account, security, and preferences.
+      </NativeTypography>
 
       <GlassNavCard
         title="Profile"
@@ -147,26 +134,29 @@ export default function SettingsHomeScreen() {
       />
 
       <GlassCard borderRadius={16} intensity="medium">
-        <View style={styles.row}>
+        <Row spacing={12} alignment="center">
           <View style={{ flex: 1 }}>
-            <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+            <NativeTypography
+              variant="body"
+              color={colors.textPrimary}
+              textStyle={{ fontFamily: Font.semibold }}>
               Biometric sign-in
-            </Text>
+            </NativeTypography>
           </View>
-          <Switch
-            value={bio}
-            onValueChange={toggleBio}
-            trackColor={{ false: colors.divider, true: `${accent.cyan}88` }}
-            thumbColor={bio ? accent.cyan : colors.textTertiary}
-          />
-        </View>
+          <Switch value={bio} onValueChange={(v) => void toggleBio(v)} />
+        </Row>
       </GlassCard>
 
       <GlassCard borderRadius={16} intensity="light">
-        <Text style={[Type.caption, { color: colors.textMuted }]}>Session</Text>
-        <Text style={[Type.body, { color: colors.textPrimary, marginTop: 8, fontFamily: Font.medium }]}>
-          {user?.username}
-        </Text>
+        <NativeTypography variant="caption" color={colors.textMuted}>
+          Session
+        </NativeTypography>
+        <NativeTypography
+          variant="body"
+          color={colors.textPrimary}
+          textStyle={{ marginTop: 8, fontFamily: Font.medium }}>
+          {user?.username ?? '—'}
+        </NativeTypography>
         <View style={{ height: 16 }} />
         <GlassButton
           title="Sign out"
@@ -191,42 +181,44 @@ export default function SettingsHomeScreen() {
       <Modal visible={passwordModal} transparent animationType="fade" onRequestClose={() => setPasswordModal(false)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
-        >
-          <GlassCard borderRadius={20} intensity="heavy" glowAccent style={styles.modalCard}>
-            <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Confirm password</Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 16 }]}>
-              Enter your password once to enable biometric sign-in after inactivity.
-            </Text>
-            <GlassInput
-              layout="stacked"
-              label="Password"
-              placeholder="Your password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              showSecureToggle
-            />
-            <GlassButton title="Enable" onPress={() => void onConfirmPassword()} variant="primary" fullWidth />
-            <View style={{ height: 10 }} />
-            <GlassButton
-              title="Cancel"
-              onPress={() => {
-                setPasswordModal(false);
-                setConfirmPassword('');
-              }}
-              variant="tonal"
-              fullWidth
-            />
-          </GlassCard>
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}>
+          <Host matchContents>
+            <GlassCard borderRadius={20} intensity="heavy" glowAccent style={styles.modalCard}>
+              <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ marginBottom: 8 }}>
+                Confirm password
+              </NativeTypography>
+              <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginBottom: 16 }}>
+                Enter your password once to enable biometric sign-in after inactivity.
+              </NativeTypography>
+              <GlassInput
+                layout="stacked"
+                label="Password"
+                placeholder="Your password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                showSecureToggle
+              />
+              <GlassButton title="Enable" onPress={() => void onConfirmPassword()} variant="primary" fullWidth />
+              <View style={{ height: 10 }} />
+              <GlassButton
+                title="Cancel"
+                onPress={() => {
+                  setPasswordModal(false);
+                  setConfirmPassword('');
+                }}
+                variant="tonal"
+                fullWidth
+              />
+            </GlassCard>
+          </Host>
         </KeyboardAvoidingView>
       </Modal>
-    </ScrollView>
+    </NativeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   modalBackdrop: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCard: { padding: 20 },
 });

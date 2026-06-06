@@ -1,22 +1,22 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   Alert,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ConnektaMap, type ConnektaMapRef } from '@/components/map/ConnektaMap';
 import { HistoryRouteLayer } from '@/components/map/HistoryRouteLayer';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 import { locationAPI } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import type { LocationHistoryEntry, LocationHistorySource } from '@/types/location';
@@ -49,7 +49,6 @@ const SOURCE_FILTERS: { id: LocationHistorySource | 'all'; label: string }[] = [
 ];
 
 export default function LocationHistory() {
-  const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
   const { user } = useAuth();
   const mapRef = useRef<ConnektaMapRef>(null);
@@ -137,7 +136,7 @@ export default function LocationHistory() {
         }`;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+    <NativeScreen contentStyle={{ paddingHorizontal: 0 }}>
       <View style={[styles.mapWrap, { borderColor: colors.divider }]}>
         {mapRegion ? (
           <ConnektaMap
@@ -163,9 +162,9 @@ export default function LocationHistory() {
             ) : (
               <>
                 <Ionicons name="map-outline" size={36} color={colors.textMuted} />
-                <Text style={[Type.caption, { color: colors.textMuted, marginTop: 8 }]}>
+                <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 8 }}>
                   Route appears when history has 2+ points
-                </Text>
+                </NativeTypography>
               </>
             )}
           </View>
@@ -174,24 +173,22 @@ export default function LocationHistory() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={{
-          padding: 20,
-          paddingBottom: insets.bottom + 40,
-        }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent.cyan} />
-        }
-      >
-        <Text style={[Type.hero, { color: colors.textPrimary, marginBottom: 8 }]}>Location History</Text>
-        <Text style={[Type.body, { color: colors.textMuted, marginBottom: 12 }]}>
-          Your movement trail from live sharing. Kept for {LOCATION_HISTORY_RETENTION_DAYS} days.
-        </Text>
+        }>
+        <NativeTypography variant="hero" color={colors.textPrimary} textStyle={{ marginBottom: 8 }}>
+          Location History
+        </NativeTypography>
+        <NativeTypography variant="body" color={colors.textMuted} textStyle={{ marginBottom: 12 }}>
+          {`Your movement trail from live sharing. Kept for ${LOCATION_HISTORY_RETENTION_DAYS} days.`}
+        </NativeTypography>
 
         <View style={styles.chipRow}>
           {RANGE_FILTERS.map((chip) => {
             const active = rangeFilter === chip.id;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={chip.id}
                 onPress={() => {
                   setRangeFilter(chip.id);
@@ -203,20 +200,14 @@ export default function LocationHistory() {
                     borderColor: active ? accent.electricBlue : colors.divider,
                     backgroundColor: active ? `${accent.electricBlue}22` : 'transparent',
                   },
-                ]}
-              >
-                <Text
-                  style={[
-                    Type.caption,
-                    {
-                      color: active ? colors.textPrimary : colors.textMuted,
-                      fontFamily: active ? Font.semibold : Font.regular,
-                    },
-                  ]}
-                >
+                ]}>
+                <NativeTypography
+                  variant="caption"
+                  color={active ? colors.textPrimary : colors.textMuted}
+                  textStyle={{ fontFamily: active ? Font.semibold : Font.regular }}>
                   {chip.label}
-                </Text>
-              </TouchableOpacity>
+                </NativeTypography>
+              </Pressable>
             );
           })}
         </View>
@@ -225,7 +216,7 @@ export default function LocationHistory() {
           {SOURCE_FILTERS.map((chip) => {
             const active = sourceFilter === chip.id;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={chip.id}
                 onPress={() => {
                   setSourceFilter(chip.id);
@@ -237,105 +228,114 @@ export default function LocationHistory() {
                     borderColor: active ? accent.cyan : colors.divider,
                     backgroundColor: active ? `${accent.cyan}18` : 'transparent',
                   },
-                ]}
-              >
-                <Text
-                  style={[
-                    Type.caption,
-                    {
-                      color: active ? colors.textPrimary : colors.textMuted,
-                      fontFamily: active ? Font.semibold : Font.regular,
-                    },
-                  ]}
-                >
+                ]}>
+                <NativeTypography
+                  variant="caption"
+                  color={active ? colors.textPrimary : colors.textMuted}
+                  textStyle={{ fontFamily: active ? Font.semibold : Font.regular }}>
                   {chip.label}
-                </Text>
-              </TouchableOpacity>
+                </NativeTypography>
+              </Pressable>
             );
           })}
         </ScrollView>
 
-        <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 16 }]}>{summaryText}</Text>
+        <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginBottom: 16 }}>
+          {summaryText}
+        </NativeTypography>
 
         {loading ? (
           <GlassCard borderRadius={16} intensity="light" style={{ padding: 20, alignItems: 'center' }}>
             <ActivityIndicator color={accent.cyan} />
-            <Text style={[Type.body, { color: colors.textMuted, marginTop: 12 }]}>Loading history…</Text>
+            <NativeTypography variant="body" color={colors.textMuted} textStyle={{ marginTop: 12 }}>
+              Loading history…
+            </NativeTypography>
           </GlassCard>
         ) : dayGroups.length === 0 ? (
           <GlassCard borderRadius={16} intensity="light" style={{ padding: 20, alignItems: 'center' }}>
             <Ionicons name="map" size={40} color={colors.textMuted} style={{ marginBottom: 12 }} />
-            <Text style={[Type.body, { color: colors.textMuted }]}>No location history</Text>
-            <Text style={[Type.caption, { color: colors.textMuted, marginTop: 4, textAlign: 'center' }]}>
+            <NativeTypography variant="body" color={colors.textMuted}>
+              No location history
+            </NativeTypography>
+            <NativeTypography
+              variant="caption"
+              color={colors.textMuted}
+              textStyle={{ marginTop: 4, textAlign: 'center' }}>
               Enable live sharing to build a trail. Points appear as you move.
-            </Text>
+            </NativeTypography>
           </GlassCard>
         ) : (
           dayGroups.map((group) => {
             const daySelected = selectedDayKey === group.dayKey;
             return (
               <View key={group.dayKey} style={{ marginBottom: 16 }}>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => onSelectDay(group.dayKey)}
-                  activeOpacity={0.8}
                   style={[
                     styles.dayHeader,
                     {
                       backgroundColor: daySelected ? `${accent.electricBlue}18` : colors.glassBgLight,
                       borderColor: daySelected ? accent.electricBlue : colors.divider,
                     },
-                  ]}
-                >
-                  <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.semibold }]}>
+                  ]}>
+                  <NativeTypography
+                    variant="body"
+                    color={colors.textPrimary}
+                    textStyle={{ fontFamily: Font.semibold }}>
                     {group.label}
-                  </Text>
-                  <Text style={[Type.caption, { color: colors.textMuted }]}>
-                    {group.entries.length} point{group.entries.length === 1 ? '' : 's'}
-                  </Text>
-                </TouchableOpacity>
+                  </NativeTypography>
+                  <NativeTypography variant="caption" color={colors.textMuted}>
+                    {`${group.entries.length} point${group.entries.length === 1 ? '' : 's'}`}
+                  </NativeTypography>
+                </Pressable>
 
-                {group.entries.map((item) => (
-                  <GlassCard
-                    key={item.id}
-                    borderRadius={14}
-                    intensity="light"
-                    style={{ marginTop: 8, padding: 12, opacity: selectedDayKey && !daySelected ? 0.45 : 1 }}
-                  >
-                    <View style={styles.entryRow}>
-                      <View
-                        style={[
-                          styles.entryIcon,
-                          { backgroundColor: daySelected ? accent.electricBlue : `${accent.electricBlue}88` },
-                        ]}
-                      >
-                        <Ionicons name="navigate" size={18} color="#fff" />
+                {group.entries.map((item) => {
+                  const coordsText = `${item.latitude.toFixed(5)}, ${item.longitude.toFixed(5)}`;
+                  const sourceText = `${sourceLabel(item.source)}${
+                    item.accuracy != null ? ` · ±${Math.round(item.accuracy)}m` : ''
+                  }`;
+                  return (
+                    <GlassCard
+                      key={item.id}
+                      borderRadius={14}
+                      intensity="light"
+                      style={{ marginTop: 8, padding: 12, opacity: selectedDayKey && !daySelected ? 0.45 : 1 }}>
+                      <View style={styles.entryRow}>
+                        <View
+                          style={[
+                            styles.entryIcon,
+                            { backgroundColor: daySelected ? accent.electricBlue : `${accent.electricBlue}88` },
+                          ]}>
+                          <Ionicons name="navigate" size={18} color="#fff" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <NativeTypography
+                            variant="body"
+                            color={colors.textPrimary}
+                            textStyle={{ fontFamily: Font.medium }}>
+                            {formatHistoryTime(item.timestamp)}
+                          </NativeTypography>
+                          <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 2 }}>
+                            {coordsText}
+                          </NativeTypography>
+                          <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 2 }}>
+                            {sourceText}
+                          </NativeTypography>
+                        </View>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[Type.body, { color: colors.textPrimary, fontFamily: Font.medium }]}>
-                          {formatHistoryTime(item.timestamp)}
-                        </Text>
-                        <Text style={[Type.caption, { color: colors.textMuted, marginTop: 2 }]}>
-                          {item.latitude.toFixed(5)}, {item.longitude.toFixed(5)}
-                        </Text>
-                        <Text style={[Type.caption, { color: colors.textMuted, marginTop: 2 }]}>
-                          {sourceLabel(item.source)}
-                          {item.accuracy != null ? ` · ±${Math.round(item.accuracy)}m` : ''}
-                        </Text>
-                      </View>
-                    </View>
-                  </GlassCard>
-                ))}
+                    </GlassCard>
+                  );
+                })}
               </View>
             );
           })
         )}
       </ScrollView>
-    </View>
+    </NativeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
   mapWrap: {
     height: 220,
     borderBottomWidth: StyleSheet.hairlineWidth,

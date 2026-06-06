@@ -1,29 +1,28 @@
 import React, { useCallback, useState } from 'react';
 import {
   View,
-  Text,
-  ScrollView,
   FlatList,
   StyleSheet,
   Alert,
-  TouchableOpacity,
+  Pressable,
   Share,
-  TextInput,
   ActivityIndicator,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { GlassIconButton } from '@/components/ui/GlassIconButton';
+import { GlassInput } from '@/components/ui/GlassInput';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 import { friendsAPI, getApiErrorMessage, type FriendUser } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { buildCircleInviteLink, formatInviteMessage } from '@/utils/invite';
 
 export default function CircleManagement() {
-  const insets = useSafeAreaInsets();
   const { invite: inviteParam } = useLocalSearchParams<{ invite?: string }>();
   const { colors, accent } = useAppTheme();
   const { user } = useAuth();
@@ -167,6 +166,11 @@ export default function CircleManagement() {
     }
   };
 
+  const expiryLabel = inviteExpiry
+    ? `Expires ${new Date(inviteExpiry).toLocaleDateString()}`
+    : '';
+  const inviteLinkText = inviteCode ? `Link: ${buildCircleInviteLink(inviteCode)}` : '';
+
   const renderFriendItem = ({ item }: { item: FriendUser }) => {
     const isRemoving = removingId === item.id;
     return (
@@ -177,58 +181,50 @@ export default function CircleManagement() {
               style={[
                 styles.memberAvatar,
                 { backgroundColor: `${accent.electricBlue}22` },
-              ]}
-            >
+              ]}>
               <Ionicons name="person" size={18} color={accent.electricBlue} />
             </View>
-            <Text
-              style={[Type.body, styles.memberName, { color: colors.textPrimary }]}
-              numberOfLines={1}
-            >
+            <NativeTypography
+              variant="body"
+              color={colors.textPrimary}
+              textStyle={{ flex: 1, fontFamily: Font.medium }}>
               {item.username}
-            </Text>
+            </NativeTypography>
           </View>
-          <TouchableOpacity
-            onPress={() => confirmRemoveMember(item)}
-            disabled={isRemoving}
-            style={styles.removeBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel={`Remove ${item.username}`}
-          >
-            {isRemoving ? (
-              <ActivityIndicator size="small" color={accent.coral} />
-            ) : (
-              <Ionicons name="trash-outline" size={22} color={accent.coral} />
-            )}
-          </TouchableOpacity>
+          {isRemoving ? (
+            <ActivityIndicator size="small" color={accent.coral} />
+          ) : (
+            <GlassIconButton
+              name="trash-outline"
+              onPress={() => confirmRemoveMember(item)}
+              danger
+              size={22}
+            />
+          )}
         </View>
       </GlassCard>
     );
   };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        padding: 20,
-        paddingTop: insets.top + 12,
-        paddingBottom: insets.bottom + 40,
-        gap: 16,
-      }}
-    >
-      <Text style={[Type.hero, { color: colors.textPrimary }]}>Circle management</Text>
-      <Text style={[Type.body, { color: colors.textMuted }]}>
+    <NativeScreen scroll contentStyle={{ gap: 16, paddingBottom: 40 }}>
+      <NativeTypography variant="hero" color={colors.textPrimary}>
+        Circle management
+      </NativeTypography>
+      <NativeTypography variant="body" color={colors.textMuted}>
         Generate a code, share your invite link, or join another circle with a code. View friends and the map on the My Circle tab.
-      </Text>
+      </NativeTypography>
 
       <GlassCard borderRadius={16} intensity="heavy" glowAccent>
-        <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Your invite code</Text>
-        <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 14 }]}>
+        <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ marginBottom: 8 }}>
+          Your invite code
+        </NativeTypography>
+        <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginBottom: 14 }}>
           Share this code or link so others can request to join your circle.
-        </Text>
+        </NativeTypography>
 
         {inviteCode ? (
-          <TouchableOpacity onPress={copyCode} activeOpacity={0.8}>
+          <Pressable onPress={copyCode}>
             <View
               style={{
                 backgroundColor: colors.surface,
@@ -238,29 +234,28 @@ export default function CircleManagement() {
                 borderWidth: 1,
                 borderColor: colors.tealBorder,
                 marginBottom: 12,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: Font.bold,
-                  fontSize: 28,
-                  letterSpacing: 6,
-                  color: accent.electricBlue,
-                }}
-              >
+              }}>
+              <NativeTypography
+                variant="hero"
+                color={accent.electricBlue}
+                textStyle={{ fontFamily: Font.bold, letterSpacing: 6 }}>
                 {inviteCode}
-              </Text>
-              <Text style={[Type.caption, { color: colors.textMuted, marginTop: 6 }]}>Tap to share code</Text>
+              </NativeTypography>
+              <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 6 }}>
+                Tap to share code
+              </NativeTypography>
             </View>
-          </TouchableOpacity>
+          </Pressable>
         ) : (
-          <Text style={[Type.body, { color: colors.textMuted, marginBottom: 12 }]}>No active code yet.</Text>
+          <NativeTypography variant="body" color={colors.textMuted} textStyle={{ marginBottom: 12 }}>
+            No active code yet.
+          </NativeTypography>
         )}
 
         {inviteExpiry ? (
-          <Text style={[Type.caption, { color: colors.textTertiary, marginBottom: 12 }]}>
-            Expires {new Date(inviteExpiry).toLocaleDateString()}
-          </Text>
+          <NativeTypography variant="caption" color={colors.textTertiary} textStyle={{ marginBottom: 12 }}>
+            {expiryLabel}
+          </NativeTypography>
         ) : null}
 
         <View style={{ gap: 10 }}>
@@ -275,36 +270,28 @@ export default function CircleManagement() {
         </View>
 
         {inviteCode ? (
-          <Text style={[Type.caption, { color: colors.textMuted, marginTop: 12 }]} numberOfLines={2}>
-            Link: {buildCircleInviteLink(inviteCode)}
-          </Text>
+          <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginTop: 12 }}>
+            {inviteLinkText}
+          </NativeTypography>
         ) : null}
       </GlassCard>
 
       <GlassCard borderRadius={16} intensity="medium">
-        <Text style={[Type.section, { color: colors.textPrimary, marginBottom: 8 }]}>Join a circle</Text>
-        <Text style={[Type.caption, { color: colors.textMuted, marginBottom: 12 }]}>
-          Enter a friend&apos;s invite code to request joining their circle.
-        </Text>
-        <TextInput
+        <NativeTypography variant="section" color={colors.textPrimary} textStyle={{ marginBottom: 8 }}>
+          Join a circle
+        </NativeTypography>
+        <NativeTypography variant="caption" color={colors.textMuted} textStyle={{ marginBottom: 12 }}>
+          Enter a friend's invite code to request joining their circle.
+        </NativeTypography>
+        <GlassInput
+          layout="stacked"
           placeholder="INVITE CODE"
-          placeholderTextColor={colors.inputPlaceholder}
           value={joinCode}
           onChangeText={(t) => setJoinCode(t.toUpperCase())}
           autoCapitalize="characters"
           autoCorrect={false}
           maxLength={8}
-          style={[
-            styles.codeInput,
-            {
-              color: colors.textPrimary,
-              borderColor: colors.inputBorder,
-              backgroundColor: colors.inputBg,
-              fontFamily: Font.semibold,
-            },
-          ]}
         />
-        <View style={{ height: 12 }} />
         <GlassButton
           title={joining ? 'Joining…' : 'Join with code'}
           onPress={joinCircle}
@@ -314,32 +301,27 @@ export default function CircleManagement() {
         />
       </GlassCard>
 
-      <Text style={[Type.section, { color: colors.textPrimary }]}>Members ({friends.length})</Text>
+      <NativeTypography variant="section" color={colors.textPrimary}>
+        {`Members (${friends.length})`}
+      </NativeTypography>
 
       {loading ? (
         <ActivityIndicator color={accent.electricBlue} />
       ) : friends.length === 0 ? (
         <GlassCard borderRadius={16} intensity="light" style={{ padding: 20, alignItems: 'center' }}>
           <Ionicons name="people-outline" size={40} color={colors.textMuted} />
-          <Text style={[Type.body, { color: colors.textMuted, marginTop: 8 }]}>No friends in your circle yet</Text>
+          <NativeTypography variant="body" color={colors.textMuted} textStyle={{ marginTop: 8 }}>
+            No friends in your circle yet
+          </NativeTypography>
         </GlassCard>
       ) : (
         <FlatList data={friends} renderItem={renderFriendItem} keyExtractor={(item) => String(item.id)} scrollEnabled={false} />
       )}
-    </ScrollView>
+    </NativeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  codeInput: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 20,
-    letterSpacing: 4,
-    textAlign: 'center',
-  },
   memberCard: {
     marginBottom: 12,
     paddingVertical: 12,
@@ -362,16 +344,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  memberName: {
-    flex: 1,
-    fontFamily: Font.medium,
-  },
-  removeBtn: {
-    width: 40,
-    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },

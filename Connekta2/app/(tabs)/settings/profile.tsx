@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Alert, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, StyleSheet, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
+import { NativeScreen } from '@/components/ui/NativeScreen';
+import { NativeTypography } from '@/components/ui/NativeTypography';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { firebaseAuthErrorMessage } from '@/connekta-firebase';
 import { validateUsername } from '@/utils/username';
-import { Font, Type } from '@/constants/typography';
+import { Font } from '@/constants/typography';
 
 export default function ProfileScreen() {
-  const insets = useSafeAreaInsets();
   const { colors, accent } = useAppTheme();
   const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -48,17 +48,14 @@ export default function ProfileScreen() {
     }
   };
 
+  const avatarLetter = (editUsername ?? '?').slice(0, 1).toUpperCase();
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ 
-        padding: 20, 
-        paddingTop: insets.top + 12, 
-        paddingBottom: insets.bottom + 40 
-      }}
-    >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <Text style={[Type.hero, { color: colors.textPrimary }]}>Profile</Text>
+    <NativeScreen scroll contentStyle={{ gap: 16, paddingBottom: 40 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <NativeTypography variant="hero" color={colors.textPrimary}>
+          Profile
+        </NativeTypography>
         <GlassButton
           title={isEditing ? 'Cancel' : 'Edit profile'}
           onPress={() => {
@@ -77,9 +74,9 @@ export default function ProfileScreen() {
 
       <GlassCard borderRadius={16} intensity="heavy" glowAccent style={{ paddingVertical: 28, alignItems: 'center' }}>
         <View style={[styles.avatar, { borderColor: colors.tealBorder }]}>
-          <Text style={{ fontSize: 36, color: colors.textPrimary, fontFamily: Font.bold }}>
-            {(editUsername ?? '?').slice(0, 1).toUpperCase()}
-          </Text>
+          <NativeTypography variant="hero" color={colors.textPrimary} textStyle={{ fontFamily: Font.bold }}>
+            {avatarLetter}
+          </NativeTypography>
         </View>
         {isEditing ? (
           <TextInput
@@ -100,17 +97,21 @@ export default function ProfileScreen() {
             autoCorrect={false}
           />
         ) : (
-          <Text style={[Type.title, { color: colors.textPrimary, marginTop: 16 }]}>{user?.username}</Text>
+          <NativeTypography
+            variant="title"
+            color={colors.textPrimary}
+            textStyle={{ marginTop: 16 }}>
+            {user?.username ?? '—'}
+          </NativeTypography>
         )}
-        <Text style={[Type.body, { color: colors.textMuted, marginTop: 6 }]}>{user?.email}</Text>
+        <NativeTypography variant="body" color={colors.textMuted} textStyle={{ marginTop: 6 }}>
+          {user?.email ?? '—'}
+        </NativeTypography>
       </GlassCard>
 
-      <View style={{ height: 20 }} />
-
       <GlassCard borderRadius={16} intensity="medium">
-        
-        <Row label="Account" value="Active" colors={colors} />
-        <Row
+        <ProfileDetailRow label="Account" value="Active" colors={colors} />
+        <ProfileDetailRow
           label="User ID"
           value={user?.uid ? `${user.uid.slice(0, 8)}…` : '—'}
           colors={colors}
@@ -119,7 +120,7 @@ export default function ProfileScreen() {
       </GlassCard>
 
       {isEditing && (
-        <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <GlassButton
               title={saving ? 'Saving…' : 'Save'}
@@ -142,11 +143,11 @@ export default function ProfileScreen() {
           </View>
         </View>
       )}
-    </ScrollView>
+    </NativeScreen>
   );
 }
 
-function Row({
+function ProfileDetailRow({
   label,
   value,
   colors,
@@ -159,15 +160,15 @@ function Row({
 }) {
   return (
     <View style={{ paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.divider }}>
-      <Text style={[Type.caption, { color: colors.textMuted }]}>{label}</Text>
-      <Text
-        style={[
-          Type.body,
-          { color: muted ? colors.textMuted : colors.textPrimary, marginTop: 4, fontFamily: Font.medium },
-        ]}
-      >
+      <NativeTypography variant="caption" color={colors.textMuted}>
+        {label}
+      </NativeTypography>
+      <NativeTypography
+        variant="body"
+        color={muted ? colors.textMuted : colors.textPrimary}
+        textStyle={{ marginTop: 4, fontFamily: Font.medium }}>
         {value}
-      </Text>
+      </NativeTypography>
     </View>
   );
 }
