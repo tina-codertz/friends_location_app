@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Alert, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Host, Switch, Row } from '@expo/ui';
+import { Host, Switch } from '@expo/ui';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { GlassInput } from '@/components/ui/GlassInput';
@@ -134,7 +134,7 @@ export default function SettingsHomeScreen() {
       />
 
       <GlassCard borderRadius={16} intensity="medium">
-        <Row spacing={12} alignment="center">
+        <View style={styles.bioRow}>
           <View style={{ flex: 1 }}>
             <NativeTypography
               variant="body"
@@ -144,7 +144,7 @@ export default function SettingsHomeScreen() {
             </NativeTypography>
           </View>
           <Switch value={bio} onValueChange={(v) => void toggleBio(v)} />
-        </Row>
+        </View>
       </GlassCard>
 
       <GlassCard borderRadius={16} intensity="light">
@@ -219,6 +219,7 @@ export default function SettingsHomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  bioRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   modalBackdrop: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCard: { padding: 20 },
 });

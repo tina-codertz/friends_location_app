@@ -3,7 +3,6 @@ import { View, Share, Alert, StyleSheet, Pressable } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { Row } from '@expo/ui';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { NativeScreen } from '@/components/ui/NativeScreen';
@@ -142,7 +141,7 @@ export default function ShareLocationScreen() {
 
       {permissionStatus && (
         <GlassCard borderRadius={16} intensity="light">
-          <Row spacing={12} alignment="center">
+          <View style={styles.row}>
             <Ionicons
               name={
                 permissionStatus.background === 'granted'
@@ -165,7 +164,7 @@ export default function ShareLocationScreen() {
                 {permissionStatusHint(permissionStatus)}
               </NativeTypography>
             </View>
-          </Row>
+          </View>
           {showAlwaysSettingsCta && (
             <GlassButton
               title="Open Settings — choose Always"

@@ -1,9 +1,10 @@
 /**
- * Native button — Expo UI (@expo/ui) with Connekta variant names preserved.
+ * Native button — Expo UI label buttons inside Host; RN pressable when an icon is present.
  */
 import React from 'react';
-import { View, type ViewStyle, type TextStyle } from 'react-native';
-import { Button, Row, Text } from '@expo/ui';
+import { Pressable, StyleSheet, Text, View, type ViewStyle, type TextStyle } from 'react-native';
+import { Button } from '@expo/ui';
+import { Font } from '@/constants/typography';
 import { useAppTheme } from '@/context/ThemeContext';
 
 export type ButtonVariant =
@@ -40,32 +41,80 @@ function mapVariant(variant: ButtonVariant): 'filled' | 'outlined' | 'text' {
   return 'text';
 }
 
+function rnButtonStyle(variant: ButtonVariant, colors: ReturnType<typeof useAppTheme>['colors'], accent: ReturnType<typeof useAppTheme>['accent']) {
+  switch (variant) {
+    case 'primary':
+      return { backgroundColor: accent.cyanDeep, borderColor: accent.cyanDeep, textColor: '#fff' };
+    case 'danger':
+      return { backgroundColor: accent.sos, borderColor: accent.sos, textColor: '#fff' };
+    case 'chipActive':
+      return { backgroundColor: accent.cyanDeep, borderColor: accent.cyan, textColor: '#fff' };
+    case 'chip':
+      return { backgroundColor: colors.surface, borderColor: colors.glassBorderLight, textColor: colors.textMuted };
+    case 'tonal':
+    case 'glass':
+    case 'outline':
+    case 'secondary':
+      return { backgroundColor: colors.tealGlass, borderColor: colors.tealBorder, textColor: colors.textPrimary };
+    default:
+      return { backgroundColor: 'transparent', borderColor: 'transparent', textColor: colors.textPrimary };
+  }
+}
+
 export const GlassButton: React.FC<GlassButtonProps> = ({
   title,
   onPress,
   variant = 'primary',
+  size = 'medium',
   disabled = false,
   loading = false,
   fullWidth = false,
   icon,
   style,
+  textStyle,
 }) => {
-  const { accent } = useAppTheme();
+  const { accent, colors } = useAppTheme();
   const label = loading ? 'Loading…' : title;
   const expoVariant = mapVariant(variant);
   const tint =
     variant === 'danger' ? accent.sos : variant === 'chipActive' ? accent.cyanDeep : undefined;
 
-  const button = icon ? (
-    <Button variant={expoVariant} onPress={onPress} disabled={disabled || loading}>
-      <Row spacing={6} alignment="center">
-        {icon}
-        <Text textStyle={{ fontWeight: '600', color: expoVariant === 'filled' ? '#fff' : undefined }}>
-          {label}
-        </Text>
-      </Row>
-    </Button>
-  ) : (
+  if (icon) {
+    const look = rnButtonStyle(variant, colors, accent);
+    const padV = size === 'small' ? 8 : size === 'large' ? 16 : 12;
+    const padH = size === 'small' ? 12 : size === 'large' ? 20 : 16;
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={disabled || loading}
+        style={({ pressed }) => [
+          styles.rnBtn,
+          {
+            paddingVertical: padV,
+            paddingHorizontal: padH,
+            backgroundColor: look.backgroundColor,
+            borderColor: look.borderColor,
+            opacity: disabled || loading ? 0.5 : pressed ? 0.88 : 1,
+          },
+          fullWidth && styles.fullWidth,
+          style,
+        ]}>
+        <View style={styles.rnRow}>
+          {icon}
+          <Text
+            style={[
+              styles.rnLabel,
+              { color: look.textColor, fontFamily: Font.semibold },
+              textStyle,
+            ]}>
+            {label}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  }
+
+  const button = (
     <Button
       variant={expoVariant}
       label={label}
@@ -75,7 +124,25 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
     />
   );
 
-  return <View style={[fullWidth && { width: '100%' }, style]}>{button}</View>;
+  return <View style={[fullWidth && styles.fullWidth, style]}>{button}</View>;
 };
+
+const styles = StyleSheet.create({
+  fullWidth: { width: '100%' },
+  rnBtn: {
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  rnLabel: {
+    fontSize: 15,
+  },
+});
 
 export default GlassButton;

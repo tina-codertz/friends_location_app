@@ -1,9 +1,9 @@
 /**
- * Native card surface — Expo UI Column with grouped styling.
+ * Card surface — RN View so it is safe inside FlatList rows and outside Host.
+ * Expo UI Column crashes when mounted outside a Host ancestor.
  */
 import React from 'react';
-import { type ViewStyle } from 'react-native';
-import { Column } from '@expo/ui';
+import { View, type ViewStyle } from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
 
 type GlassIntensity = 'light' | 'medium' | 'heavy';
@@ -37,18 +37,18 @@ export const GlassCard: React.FC<GlassCardProps> = ({
         : colors.glassBgMedium;
 
   return (
-    <Column
-      spacing={8}
+    <View
       style={{
         padding,
         borderRadius,
         borderWidth: 1,
         borderColor: glowAccent ? colors.tealBorder : colors.glassBorderMedium,
         backgroundColor: isDark ? bgColor : colors.bgCard,
+        gap: 8,
         ...style,
       }}>
       {children}
-    </Column>
+    </View>
   );
 };
 

@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Alert, StyleSheet, ActivityIndicator, Linking, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { Row } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { GlassButton } from '@/components/ui/GlassButton';
@@ -98,7 +97,7 @@ export default function NotificationSettingsScreen() {
         </GlassCard>
       ) : (
         <GlassCard borderRadius={16} intensity="medium" style={{ marginBottom: 16, padding: 14 }}>
-          <Row spacing={12} alignment="center">
+          <View style={styles.row}>
             <Ionicons
               name={status === 'granted' ? 'notifications' : 'notifications-off'}
               size={24}
@@ -115,7 +114,7 @@ export default function NotificationSettingsScreen() {
                 {statusDetail}
               </NativeTypography>
             </View>
-          </Row>
+          </View>
           {status !== 'granted' && isPushRuntimeAvailable() && (
             <GlassButton
               title={busy ? 'Enabling…' : 'Enable notifications'}
@@ -150,6 +149,7 @@ export default function NotificationSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   infoBox: {
     flexDirection: 'row',
     padding: 14,
