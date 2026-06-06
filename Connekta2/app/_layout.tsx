@@ -1,38 +1,110 @@
-import { useFonts } from 'expo-font';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Montserrat_700Bold, Montserrat_800ExtraBold } from '@expo-google-fonts/montserrat';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import 'react-native-reanimated';
+import '@/services/background-location';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export const unstable_settings = {
-  
-  initialRouteName: 'index',
+  anchor: 'index',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+/**
+ * Inner layout that reads the theme from AppThemeProvider.
+ * Must be a child of AppThemeProvider so the hook works.
+ */
+function InnerRootLayout() {
+  const { isDark, colors } = useAppTheme();
 
-export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  // Build a React Navigation theme from our palette
+  const navTheme = isDark
+    ? {
+        ...DarkTheme,
+        colors: {
+          ...DarkTheme.colors,
+          background: colors.navBackground,
+          card: colors.navCard,
+          text: colors.navText,
+          border: colors.navBorder,
+          primary: colors.navPrimary,
+        },
+      }
+    : {
+        ...DefaultTheme,
+        colors: {
+          ...DefaultTheme.colors,
+          background: colors.navBackground,
+          card: colors.navCard,
+          text: colors.navText,
+          border: colors.navBorder,
+          primary: colors.navPrimary,
+        },
+      };
+
+  return (
+    <ThemeProvider value={navTheme}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.bg },
+        }}>
+        <Stack.Screen name="index" options={{ animation: 'none' }} />
+
+        {/* Landing — first launch only (before first sign-up / sign-in) */}
+        <Stack.Screen name="(landing)" />
+
+        {/* Auth Screens */}
+        <Stack.Screen
+          name="auth/AuthScreen"
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+
+        {/* Main App Tabs */}
+        <Stack.Screen name="(tabs)" />
+
+        {/* Emergency Screens */}
+        <Stack.Screen 
+          name="emergency/EmergencyContactsDetails"
+          options={{ 
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }} 
+        />
+        <Stack.Screen 
+          name="emergency/EmergencyForm"
+          options={{ 
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }} 
+        />
+
+      </Stack>
+      <StatusBar style={colors.statusBarStyle} />
+    </ThemeProvider>
+  );
+}
+
+function FontBootstrap({ children }: { children: React.ReactNode }) {
+  const [loaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Montserrat_700Bold,
+    Montserrat_800ExtraBold,
   });
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
 
   useEffect(() => {
     if (loaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => undefined);
     }
   }, [loaded]);
 
@@ -40,29 +112,17 @@ export default function RootLayout() {
     return null;
   }
 
-  return(
-    <AuthProvider>
-    <RootLayoutNav />
-    </AuthProvider>
-
-  )
-  
-   
+  return <>{children}</>;
 }
 
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{headerShown:false}}>
-        <Stack.Screen name="index" options={{animation:"none"}} />
-        <Stack.Screen name="(landing)" />
-        <Stack.Screen name="auth/AuthScreen" options={{animation:"slide_from_right"}} />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="emergency/EmergencyContactsDetails" options={{presentation:"modal", animation:"slide_from_bottom"}} />
-        <Stack.Screen name="emergency/EmergencyForm" options={{presentation:"modal", animation:"slide_from_bottom"}} />
-      </Stack>
-    </ThemeProvider>
+    <FontBootstrap>
+      <AppThemeProvider>
+        <AuthProvider>
+          <InnerRootLayout />
+        </AuthProvider>
+      </AppThemeProvider>
+    </FontBootstrap>
   );
 }

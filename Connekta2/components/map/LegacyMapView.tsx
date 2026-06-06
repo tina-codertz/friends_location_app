@@ -1,0 +1,98 @@
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
+import { Platform, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import MapView, { UrlTile, type Region } from 'react-native-maps';
+import {
+  getMapboxAccessToken,
+  getMapboxRasterStyleId,
+  MAP_ZOOM,
+  type MapColorMode,
+} from '@/utils/maps-config';
+import { useAppTheme } from '@/context/ThemeContext';
+import type { MapRegion } from '@/types/map';
+import type { ConnektaMapRef } from '@/components/map/ConnektaMap';
+
+type Props = {
+  style?: StyleProp<ViewStyle>;
+  initialRegion: MapRegion;
+  colorMode: MapColorMode;
+  showUserLocation?: boolean;
+  onPress?: (coord: { latitude: number; longitude: number }) => void;
+  children?: React.ReactNode;
+};
+
+/**
+ * Fallback when native @rnmapbox/maps is unavailable (Expo Go).
+ * Mapbox 512px raster tiles only — no Apple/Google base map underneath.
+ */
+export const LegacyMapView = forwardRef<ConnektaMapRef, Props>(function LegacyMapView(
+  { style, initialRegion, colorMode, showUserLocation = true, onPress, children },
+  ref
+) {
+  const { colors, accent } = useAppTheme();
+  const mapRef = useRef<MapView>(null);
+  const token = getMapboxAccessToken();
+  const rasterStyle = getMapboxRasterStyleId(colorMode);
+  const useMapboxTilesOnly = Boolean(token);
+
+  const region: Region = {
+    latitude: initialRegion.latitude,
+    longitude: initialRegion.longitude,
+    latitudeDelta: initialRegion.latitudeDelta ?? MAP_ZOOM.defaultLatitudeDelta,
+    longitudeDelta: initialRegion.longitudeDelta ?? MAP_ZOOM.defaultLatitudeDelta,
+  };
+
+  useImperativeHandle(ref, () => ({
+    flyTo: (r: MapRegion, durationMs = 500) => {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: r.latitude,
+          longitude: r.longitude,
+          latitudeDelta: r.latitudeDelta ?? MAP_ZOOM.defaultLatitudeDelta,
+          longitudeDelta: r.longitudeDelta ?? MAP_ZOOM.defaultLatitudeDelta,
+        },
+        durationMs
+      );
+    },
+  }));
+
+  return (
+    <MapView
+      ref={mapRef}
+      style={[styles.fill, { backgroundColor: colors.mapBg }, style]}
+      initialRegion={region}
+      mapType={useMapboxTilesOnly ? 'none' : 'standard'}
+      showsUserLocation={showUserLocation}
+      showsMyLocationButton={Platform.OS === 'android'}
+      loadingBackgroundColor={colors.mapBg}
+      loadingIndicatorColor={accent.cyan}
+      rotateEnabled={false}
+      onPress={
+        onPress
+          ? (e) => {
+              onPress({
+                latitude: e.nativeEvent.coordinate.latitude,
+                longitude: e.nativeEvent.coordinate.longitude,
+              });
+            }
+          : undefined
+      }
+    >
+      {useMapboxTilesOnly ? (
+        <UrlTile
+          urlTemplate={`https://api.mapbox.com/styles/v1/mapbox/${rasterStyle}/tiles/512/{z}/{x}/{y}@2x?access_token=${token}`}
+          maximumZ={20}
+          minimumZ={0}
+          tileSize={512}
+          zIndex={0}
+          flipY={false}
+          shouldReplaceMapContent={Platform.OS === 'ios'}
+        />
+      ) : null}
+      {children}
+    </MapView>
+  );
+});
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+});
